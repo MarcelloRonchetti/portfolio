@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting…</title>
+    <script>
+      // GitHub Pages serves this file for any path it doesn't recognise.
+      // We redirect back to index.html, preserving the path as a query param
+      // so the app can restore it on load.
+      var repo = '/portfolio';
+      var path = window.location.pathname.slice(repo.length) || '/';
+      var search = window.location.search;
+      var hash = window.location.hash;
+      var redirect = repo + '/?p=' + encodeURIComponent(path + search) + hash;
+      window.location.replace(redirect);
+    </script>
+  </head>
+  <body></body>
+</html>
