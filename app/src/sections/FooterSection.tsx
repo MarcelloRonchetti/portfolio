@@ -82,7 +82,7 @@ export default function FooterSection() {
         </div>
 
         <div className="animate-in w-full mt-16 pt-8 border-t border-dark-gray/30 text-center">
-          <p className="text-sm text-silver">© 2025 Marcello Ronchetti. Built with passion.</p>
+          <p className="text-sm text-silver">© 2025 Marcello Ronchetti.</p>
           <p className="text-sm text-dark-gray mt-2">Hosted on GitHub Pages</p>
         </div>
       </div>
