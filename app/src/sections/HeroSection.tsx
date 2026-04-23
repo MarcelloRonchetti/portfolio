@@ -91,7 +91,7 @@ export default function HeroSection() {
           ref={labelRef}
           className="font-mono text-xs tracking-[0.08em] text-mint mb-6 opacity-0 translate-y-4"
         >
-          {'// SVILUPPATORE & INGEGNERE'}
+          {'// Cybersecurity, Artificial Intelligence & developer'}
         </p>
 
         <h1
