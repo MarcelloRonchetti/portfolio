@@ -1,0 +1,173 @@
+// Portfolio data — Italian primary, English alternatives where useful.
+// Placeholder text — real content fills in over time.
+
+export type Route =
+  | 'cover'
+  | 'tech'
+  | 'project'
+  | 'foto'
+  | 'story'
+  | 'about'
+  | 'contact'
+
+export type Project = {
+  id: string
+  year: string
+  title: string
+  kind: string
+  tagline: string
+  summary: string
+  stack: string[]
+  status?: 'live' | 'beta' | 'archived'
+  featured?: boolean
+  problem?: string
+  approach?: string
+  outcome?: string
+  stats?: [string, string][]
+}
+
+export type Collection = {
+  tag: string
+  n: number
+  desc: string
+  hue: 'oxblood' | 'brass' | 'leather'
+  no: string
+}
+
+export const DATA = {
+  identity: {
+    name: 'Marcello Ronchetti',
+    initials: 'MR',
+    location: 'Padova, IT',
+    year: '2026',
+    volume: 'VOLUME II',
+    tagline_it: 'Una mano scrive codice.\nL\'altra alza la macchina.',
+    tagline_en: 'One hand writes code.\nThe other lifts the camera.',
+  },
+
+  tech: {
+    title_it: 'L\'ingegnere',
+    title_en: 'The engineer',
+    subtitle_it: 'Embedded systems · IoT · Intelligenza artificiale · Cybersecurity',
+    intro_it:
+      'Costruisco cose che ascoltano, decidono e parlano. Quando la realtà non basta, la riscrivo in firmware.',
+
+    skills: {
+      languages: ['C / C++', 'Rust', 'Python', 'TypeScript', 'Bash'],
+      embedded: ['ESP-IDF', 'FreeRTOS', 'STM32', 'Zephyr', 'PlatformIO'],
+      iot: ['MQTT', 'LoRaWAN', 'BLE', 'Modbus', 'CAN'],
+      ai: ['PyTorch', 'OpenCV', 'MediaPipe', 'ONNX Runtime'],
+      sec: ['nmap', 'Wireshark', 'Burp', 'Metasploit', 'Ghidra'],
+      ops: ['Docker', 'Linux', 'Git', 'CI/CD', 'InfluxDB'],
+    },
+
+    certifications: [
+      { y: '2025', n: 'CCNA — Cisco Certified Network Associate', org: 'Cisco' },
+      { y: '2024', n: 'eJPT — Junior Penetration Tester', org: 'INE Security' },
+      { y: '2024', n: 'ITS Embedded Systems — Diploma', org: 'ITS Academy' },
+      { y: '2023', n: 'Networking Essentials', org: 'Cisco' },
+    ],
+
+    projects: [
+      {
+        id: 'greenhouse-controller',
+        year: '2026',
+        title: 'greenhouse-controller',
+        kind: 'IoT · Embedded',
+        tagline: 'Una serra che si ascolta.',
+        summary:
+          'Sistema embedded autonomo per la gestione climatica di una serra didattica — sensori, attuatori, dashboard real-time e OTA.',
+        stack: ['ESP32', 'C/C++', 'MQTT', 'React', 'InfluxDB', 'Telegraf'],
+        status: 'live',
+        featured: true,
+        problem:
+          'La serra dell\'orto didattico richiedeva supervisione costante: temperatura, umidità di suolo e aria, ventilazione. Un esperimento di automazione completa, gestibile da remoto.',
+        approach:
+          'Modulo ESP32 master + 4 nodi satellite via LoRa. Sensori SHT41, capacitivi di suolo, anemometro. Broker MQTT su Raspberry Pi, persistenza InfluxDB, frontend React con grafici live e regole IFTTT-like.',
+        outcome:
+          'Riduzione del 40% degli interventi manuali nella prima stagione. Aggiornamenti OTA testati in produzione. PCB alla terza revisione, codice open-source.',
+        stats: [
+          ['6 mesi', 'iterazione'],
+          ['3 rev.', 'PCB'],
+          ['~4.2 kB', 'firmware'],
+          ['MIT', 'licenza'],
+        ],
+      },
+      {
+        id: 'pose-bike-fitter', year: '2025', title: 'pose-bike-fitter', kind: 'AI · Computer vision',
+        tagline: 'Il bike-fit, riletto dal pixel.',
+        summary: 'Analisi della postura su bici da corsa via video singolo, con suggerimenti di regolazione automatici.',
+        stack: ['PyTorch', 'MediaPipe', 'OpenCV', 'FastAPI', 'Next.js'],
+        status: 'beta',
+      },
+      {
+        id: 'lan-vuln-scan', year: '2025', title: 'lan-vuln-scan', kind: 'Cybersecurity · CLI',
+        tagline: 'Audit di rete, dal terminale.',
+        summary: 'Scanner TUI in Rust per audit di LAN domestiche — discovery, fingerprint OS/servizio, report markdown.',
+        stack: ['Rust', 'tokio', 'ratatui', 'nmap', 'OUI db'],
+        status: 'live',
+      },
+      {
+        id: 'rtos-audio-synth', year: '2024', title: 'rtos-audio-synth', kind: 'Embedded · DSP',
+        tagline: 'Sintetizzatore a chip singolo.',
+        summary: 'Mini-synth FM su STM32 con FreeRTOS, controllo MIDI, output stereo I²S a 48 kHz.',
+        stack: ['STM32F4', 'FreeRTOS', 'C', 'I²S', 'MIDI'],
+        status: 'archived',
+      },
+      {
+        id: 'lora-mesh-sensors', year: '2024', title: 'lora-mesh-sensors', kind: 'IoT · Wireless',
+        tagline: 'Una rete che cresce in giardino.',
+        summary: 'Rete mesh LoRa di sensori ambientali a basso consumo per monitoraggio orto-giardino.',
+        stack: ['LoRa', 'ESP32', 'InfluxDB', 'Grafana'],
+        status: 'live',
+      },
+      {
+        id: 'esp32-can-bridge', year: '2024', title: 'esp32-can-bridge', kind: 'Automotive · Firmware',
+        tagline: 'Il bus che parla via Wi-Fi.',
+        summary: 'Bridge bidirezionale ESP32 ↔ CAN ↔ WebSocket per diagnosi automotive in tempo reale.',
+        stack: ['ESP32', 'CAN', 'WebSocket', 'C++'],
+        status: 'live',
+      },
+    ] as Project[],
+  },
+
+  foto: {
+    title_it: 'Il fotografo',
+    title_en: 'The photographer',
+    subtitle_it: 'Sport · Motorsport · Reportage',
+    intro_it:
+      'Sport e motorsport in pista e fuori — un decimo di secondo alla volta. Pista, fango, asfalto, neve, podio.',
+    pull_quote: '"L\'unica differenza tra una fotografia e un ricordo è chi la sta guardando."',
+    shot_count: '12.480',
+    season: '2025 — Q4',
+
+    collections: [
+      { tag: 'MotoGP', n: 124, desc: 'mugello · misano · barcelona', hue: 'oxblood', no: 'I' },
+      { tag: 'WRC', n: 88, desc: 'sardegna · italia · monza', hue: 'brass', no: 'II' },
+      { tag: 'F1 · F2', n: 56, desc: 'imola · monza · paddock', hue: 'leather', no: 'III' },
+      { tag: 'MX', n: 72, desc: 'pistoia · maggiora · faenza', hue: 'brass', no: 'IV' },
+      { tag: 'Ciclismo', n: 134, desc: 'strade bianche · giro u23', hue: 'oxblood', no: 'V' },
+      { tag: 'Maratona', n: 96, desc: 'padova · venezia · ferrara', hue: 'leather', no: 'VI' },
+    ] as Collection[],
+
+    featured: {
+      title: 'Mugello',
+      year: '2025',
+      subtitle: 'MotoGP — Gran Premio d\'Italia',
+      author: 'A. Escobar · Ducati #7',
+      location: 'Autodromo Internazionale del Mugello, Scarperia',
+      date: '08 Giugno 2025',
+      specs: '1/3200s · f/4 · 600mm · ISO 400',
+      body_it:
+        'Il sabato di Mugello è una luce che cambia ogni venti minuti. Ho aspettato la curva di Borgo San Lorenzo per quattro ore — la Ducati di Escobar è passata 38 volte. Lo scatto è il numero 31, il primo in cui la moto è perfettamente parallela alla linea di fondo. Il resto è cronaca.',
+      gallery_count: 124,
+    },
+
+    stories: [
+      { tag: 'WRC', title: 'Sardegna ‘25', when: 'Giugno 2025', desc: 'tre tappe, una notte di rally, polvere ovunque' },
+      { tag: 'F2 · F1', title: 'Imola — il paddock', when: 'Maggio 2025', desc: 'dietro le quinte di un weekend europeo' },
+      { tag: 'Maratona', title: 'Padova ‘25', when: 'Aprile 2025', desc: 'arrivo, sudore, la luce del Prato della Valle' },
+      { tag: 'MX', title: 'Pistoia', when: 'Marzo 2025', desc: 'fango, salti, il rumore che non si fotografa' },
+    ],
+  },
+}
