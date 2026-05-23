@@ -2,13 +2,18 @@
 // Each event lives in `app/public/photos/<id>/` with an `event.json` manifest
 // (imported via glob at build time) and image files served raw by Vite.
 
-const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
+const ROMAN = [
+  'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
+  'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX',
+]
 
 export type Hue = 'oxblood' | 'brass' | 'leather'
 
 export type RawEvent = {
   id: string
-  tag: string
+  // New schema: tags is an array. Legacy: tag is a single string (still supported).
+  tags?: string[]
+  tag?: string
   title: string
   year: string
   subtitle?: string
@@ -31,13 +36,18 @@ export type RawEvent = {
   base_url?: string
 }
 
-export type Event = Required<Pick<RawEvent, 'id' | 'tag' | 'title' | 'year' | 'date'>> &
-  RawEvent & {
-    cover: string
-    photos: string[]
-    hue: Hue
-    no: string
-  }
+export type Event = Omit<RawEvent, 'tag' | 'tags'> & {
+  id: string
+  tags: string[]          // always present, derived from `tags ?? [tag]`
+  tag: string             // primary tag = tags[0] (back-compat)
+  title: string
+  year: string
+  date: string
+  cover: string
+  photos: string[]
+  hue: Hue
+  no: string
+}
 
 export type Collection = {
   tag: string
@@ -65,13 +75,19 @@ function normalize(raw: RawEvent, folderId: string): Event | null {
       `[events] manifest id "${raw.id}" doesn't match folder "${folderId}". Using folder name.`
     )
   }
-  if (!raw.title || !raw.year || !raw.tag || !raw.date) {
-    console.warn(`[events] skipping ${folderId}: missing title/year/tag/date`)
+  const tags = (raw.tags && raw.tags.length > 0)
+    ? raw.tags
+    : (raw.tag ? [raw.tag] : [])
+
+  if (!raw.title || !raw.year || tags.length === 0 || !raw.date) {
+    console.warn(`[events] skipping ${folderId}: missing title/year/tags/date`)
     return null
   }
   return {
     ...raw,
     id: folderId,
+    tags,
+    tag: tags[0],
     cover: raw.cover ?? 'cover.jpg',
     photos: raw.photos ?? [],
     hue: raw.hue ?? 'brass',
@@ -84,16 +100,18 @@ const allEvents: Event[] = Object.entries(manifests)
   .filter((e): e is Event => e !== null)
   .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
 
-// Auto-assign Roman numerals per unique tag (in date-desc order).
+// Auto-assign Roman numerals per unique tag (in date-desc order, by FIRST appearance).
 {
   const seen = new Map<string, string>()
   let idx = 0
   for (const ev of allEvents) {
-    if (!seen.has(ev.tag)) {
-      seen.set(ev.tag, ROMAN[idx] ?? String(idx + 1))
-      idx++
+    for (const tag of ev.tags) {
+      if (!seen.has(tag)) {
+        seen.set(tag, ROMAN[idx] ?? String(idx + 1))
+        idx++
+      }
     }
-    if (!ev.no) ev.no = seen.get(ev.tag)!
+    if (!ev.no) ev.no = seen.get(ev.tags[0])!
   }
 }
 
@@ -105,11 +123,24 @@ export const featuredEvent: Event | undefined =
 export const collections: Collection[] = (() => {
   const byTag = new Map<string, Event[]>()
   for (const ev of events) {
-    const list = byTag.get(ev.tag) ?? []
-    list.push(ev)
-    byTag.set(ev.tag, list)
+    for (const tag of ev.tags) {
+      const list = byTag.get(tag) ?? []
+      list.push(ev)
+      byTag.set(tag, list)
+    }
   }
   const out: Collection[] = []
+  // Track Roman numerals so they match the global assignment.
+  const numerals = new Map<string, string>()
+  let idx = 0
+  for (const ev of events) {
+    for (const tag of ev.tags) {
+      if (!numerals.has(tag)) {
+        numerals.set(tag, ROMAN[idx] ?? String(idx + 1))
+        idx++
+      }
+    }
+  }
   for (const [tag, list] of byTag) {
     const representative = list[0]
     const totalShots = list.reduce(
@@ -125,11 +156,13 @@ export const collections: Collection[] = (() => {
       n: totalShots,
       desc: descParts.join(' · ') || representative.subtitle?.toLowerCase() || '',
       hue: representative.hue,
-      no: representative.no,
+      no: numerals.get(tag) ?? '?',
       representativeId: representative.id,
       links: representative.links,
     })
   }
+  // Sort collections by number of events desc, then alphabetically
+  out.sort((a, b) => (b.n - a.n) || a.tag.localeCompare(b.tag))
   return out
 })()
 
@@ -138,11 +171,11 @@ export function eventById(id: string): Event | undefined {
 }
 
 export function eventsByTag(tag: string): Event[] {
-  return events.filter((e) => e.tag === tag)
+  return events.filter((e) => e.tags.includes(tag))
 }
 
 export function firstEventByTag(tag: string): Event | undefined {
-  return events.find((e) => e.tag === tag)
+  return events.find((e) => e.tags.includes(tag))
 }
 
 export function photoUrl(event: Event, file: string): string {
