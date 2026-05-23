@@ -26,14 +26,6 @@ export type Project = {
   stats?: [string, string][]
 }
 
-export type Collection = {
-  tag: string
-  n: number
-  desc: string
-  hue: 'oxblood' | 'brass' | 'leather'
-  no: string
-}
-
 export const DATA = {
   identity: {
     name: 'Marcello Ronchetti',
@@ -131,43 +123,13 @@ export const DATA = {
     ] as Project[],
   },
 
-  foto: {
+  foto_chapter: {
     title_it: 'Il fotografo',
     title_en: 'The photographer',
     subtitle_it: 'Sport · Motorsport · Reportage',
     intro_it:
       'Sport e motorsport in pista e fuori — un decimo di secondo alla volta. Pista, fango, asfalto, neve, podio.',
-    pull_quote: '"L\'unica differenza tra una fotografia e un ricordo è chi la sta guardando."',
-    shot_count: '12.480',
-    season: '2025 — Q4',
-
-    collections: [
-      { tag: 'MotoGP', n: 124, desc: 'mugello · misano · barcelona', hue: 'oxblood', no: 'I' },
-      { tag: 'WRC', n: 88, desc: 'sardegna · italia · monza', hue: 'brass', no: 'II' },
-      { tag: 'F1 · F2', n: 56, desc: 'imola · monza · paddock', hue: 'leather', no: 'III' },
-      { tag: 'MX', n: 72, desc: 'pistoia · maggiora · faenza', hue: 'brass', no: 'IV' },
-      { tag: 'Ciclismo', n: 134, desc: 'strade bianche · giro u23', hue: 'oxblood', no: 'V' },
-      { tag: 'Maratona', n: 96, desc: 'padova · venezia · ferrara', hue: 'leather', no: 'VI' },
-    ] as Collection[],
-
-    featured: {
-      title: 'Mugello',
-      year: '2025',
-      subtitle: 'MotoGP — Gran Premio d\'Italia',
-      author: 'A. Escobar · Ducati #7',
-      location: 'Autodromo Internazionale del Mugello, Scarperia',
-      date: '08 Giugno 2025',
-      specs: '1/3200s · f/4 · 600mm · ISO 400',
-      body_it:
-        'Il sabato di Mugello è una luce che cambia ogni venti minuti. Ho aspettato la curva di Borgo San Lorenzo per quattro ore — la Ducati di Escobar è passata 38 volte. Lo scatto è il numero 31, il primo in cui la moto è perfettamente parallela alla linea di fondo. Il resto è cronaca.',
-      gallery_count: 124,
-    },
-
-    stories: [
-      { tag: 'WRC', title: 'Sardegna ‘25', when: 'Giugno 2025', desc: 'tre tappe, una notte di rally, polvere ovunque' },
-      { tag: 'F2 · F1', title: 'Imola — il paddock', when: 'Maggio 2025', desc: 'dietro le quinte di un weekend europeo' },
-      { tag: 'Maratona', title: 'Padova ‘25', when: 'Aprile 2025', desc: 'arrivo, sudore, la luce del Prato della Valle' },
-      { tag: 'MX', title: 'Pistoia', when: 'Marzo 2025', desc: 'fango, salti, il rumore che non si fotografa' },
-    ],
+    pull_quote_it: 'L\'unica differenza tra una fotografia e un ricordo è chi la sta guardando.',
+    since: '2019',
   },
 }

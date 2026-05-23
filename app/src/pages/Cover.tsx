@@ -163,7 +163,7 @@ export function Cover({ go }: { go: (next: Route) => void }) {
         <ChapterCard
           no="II"
           subtitle="capitolo secondo"
-          title={DATA.foto.title_it}
+          title={DATA.foto_chapter.title_it}
           kind="dark"
           hint="Sport e motorsport in pista e fuori. Dodicimila scatti, quattro stagioni, una sola luce."
           onEnter={() => go('foto')}

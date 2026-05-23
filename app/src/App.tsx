@@ -40,13 +40,13 @@ function sealForRoute(route: Route): string {
 export default function App() {
   const [route, setRoute] = useState<Route>(() => persistGet('mr.route', 'cover') as Route)
   const [projectId, setProjectId] = useState(() => persistGet('mr.projectId', 'greenhouse-controller'))
-  const [storyTag, setStoryTag] = useState(() => persistGet('mr.storyTag', 'MotoGP'))
+  const [storyId, setStoryId] = useState(() => persistGet('mr.storyId', persistGet('mr.storyTag', 'MotoGP')))
   const [lang, setLang] = useState<'IT' | 'EN'>(() => (persistGet('mr.lang', 'IT') as 'IT' | 'EN'))
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (persistGet('mr.theme', 'light') as 'light' | 'dark'))
 
   useEffect(() => persistSet('mr.route', route), [route])
   useEffect(() => persistSet('mr.projectId', projectId), [projectId])
-  useEffect(() => persistSet('mr.storyTag', storyTag), [storyTag])
+  useEffect(() => persistSet('mr.storyId', storyId), [storyId])
   useEffect(() => persistSet('mr.lang', lang), [lang])
   useEffect(() => {
     persistSet('mr.theme', theme)
@@ -65,7 +65,7 @@ export default function App() {
     const seal = sealForRoute(next)
     await curtain.transition(seal, () => {
       if (next === 'project' && ref) setProjectId(ref)
-      if (next === 'story' && ref) setStoryTag(ref)
+      if (next === 'story' && ref) setStoryId(ref)
       setRoute(next)
       window.scrollTo({ top: 0, behavior: 'instant' })
     })
@@ -101,7 +101,7 @@ export default function App() {
     scrollHint = 'capitolo secondo'
     pager = <span style={{ color: 'var(--brass)' }}>← I  ·  II →</span>
   } else if (route === 'story') {
-    screen = <PhotoStory tag={storyTag} go={(next, ref) => go(next, ref)} />
+    screen = <PhotoStory eventId={storyId} go={(next, ref) => go(next, ref)} />
     pageNum = '22'
     scrollHint = 'foglio contatto'
   } else if (route === 'about' || route === 'contact') {

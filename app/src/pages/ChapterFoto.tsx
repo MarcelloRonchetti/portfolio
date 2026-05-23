@@ -1,10 +1,110 @@
 import { Fragment, useState } from 'react'
-import type { Collection, Route } from '../lib/data'
+import type { Route } from '../lib/data'
 import { DATA } from '../lib/data'
+import type { Event } from '../lib/events'
+import {
+  events,
+  collections,
+  featuredEvent,
+  eventById,
+  firstEventByTag,
+  adjacentEvents,
+  photoUrl,
+} from '../lib/events'
 
 type GoFn = (next: Route, ref?: string) => void
 
-function CollectionCard({ c, onClick }: { c: Collection; onClick: () => void }) {
+function PhotoFrame({
+  event,
+  file,
+  ratio,
+  caption,
+  tag,
+  children,
+}: {
+  event?: Event
+  file?: string
+  ratio: string
+  caption?: { left: string; right: string }
+  tag?: string
+  children?: React.ReactNode
+}) {
+  const [failed, setFailed] = useState(false)
+  const src = event && file ? photoUrl(event, file) : undefined
+
+  return (
+    <div className="frame dark" style={{ aspectRatio: ratio, position: 'relative', overflow: 'hidden' }}>
+      {src && !failed && (
+        <img
+          src={src}
+          alt={caption?.left ?? event?.title ?? ''}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+      )}
+      {tag && <div className="frame-tag">{tag}</div>}
+      {caption && (
+        <div className="frame-caption">
+          <span>{caption.left}</span>
+          <span>{caption.right}</span>
+        </div>
+      )}
+      {children}
+    </div>
+  )
+}
+
+function LinkPill({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-cursor="lg"
+      data-cursor-label="APRI"
+      onClick={(e) => e.stopPropagation()}
+      className="t-meta"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '4px 10px',
+        border: 'var(--hair) solid var(--brass)',
+        color: 'var(--brass)',
+        opacity: 0.85,
+        transition: 'background .3s var(--ease-soft), opacity .3s var(--ease-soft)',
+        textDecoration: 'none',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'rgba(168,133,92,.18)'
+        e.currentTarget.style.opacity = '1'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = ''
+        e.currentTarget.style.opacity = '0.85'
+      }}
+    >
+      {label}
+    </a>
+  )
+}
+
+function CollectionCard({
+  c,
+  onClick,
+}: {
+  c: (typeof collections)[number]
+  onClick: () => void
+}) {
+  const hasLinks = !!(c.links?.instagram_url || c.links?.gallery_url || c.links?.external_url)
+
   return (
     <div
       data-cursor="xl"
@@ -64,13 +164,22 @@ function CollectionCard({ c, onClick }: { c: Collection; onClick: () => void }) 
           <span className="t-italic" style={{ fontSize: 22, color: 'var(--brass)' }}>{c.n} scatti</span>
           <span className="t-meta" style={{ opacity: 0.65 }}>sfoglia →</span>
         </div>
+        {hasLinks && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+            {c.links?.instagram_url && <LinkPill href={c.links.instagram_url} label="IG" />}
+            {c.links?.gallery_url && <LinkPill href={c.links.gallery_url} label="GALLERIA" />}
+            {c.links?.external_url && <LinkPill href={c.links.external_url} label="↗" />}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 export function ChapterFoto({ go }: { go: GoFn }) {
-  const f = DATA.foto.featured
+  const f = featuredEvent
+  const totalShots = events.reduce((acc, e) => acc + e.photos.length + (e.cover ? 1 : 0), 0)
+  const selezioni = events.filter((e) => !f || e.id !== f.id).slice(0, 6)
 
   return (
     <section
@@ -83,118 +192,16 @@ export function ChapterFoto({ go }: { go: GoFn }) {
       }}
     >
       <div style={{ position: 'relative', height: 'min(95vh, 900px)' }}>
-        <div className="frame dark" style={{ position: 'absolute', inset: 0 }}>
-          <div
-            style={{
-              position: 'absolute',
-              left: 'var(--gutter)',
-              top: 200,
-              zIndex: 3,
-              animationName: 'riseFade',
-              animationDuration: '1.2s',
-              animationTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
-              animationFillMode: 'both',
-              animationDelay: '.4s',
-            }}
-          >
-            <div className="t-meta" style={{ color: 'var(--brass)' }}>
-              CAPITOLO SECONDO · IL FOTOGRAFO
-            </div>
-            <div
-              className="t-display"
-              style={{
-                fontSize: 'clamp(80px, 12vw, 220px)',
-                marginTop: 18,
-                color: 'var(--ivory)',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              LA LENTE
-            </div>
-            <div
-              className="t-italic"
-              style={{
-                fontSize: 'clamp(22px, 1.8vw, 28px)',
-                marginTop: 18,
-                opacity: 0.85,
-                maxWidth: '32ch',
-              }}
-            >
-              {DATA.foto.intro_it}
-            </div>
+        {f ? (
+          <PhotoFrame event={f} file={f.cover} ratio="auto">
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,12,9,.42)', zIndex: 2 }} />
+            <HeroOverlay event={f} totalShots={totalShots} />
+          </PhotoFrame>
+        ) : (
+          <div className="frame dark" style={{ position: 'absolute', inset: 0 }}>
+            <HeroOverlay event={undefined} totalShots={totalShots} />
           </div>
-
-          <div
-            style={{
-              position: 'absolute',
-              right: 'var(--gutter)',
-              top: 200,
-              zIndex: 3,
-              textAlign: 'right',
-              animationName: 'riseFade',
-              animationDuration: '1.2s',
-              animationTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
-              animationFillMode: 'both',
-              animationDelay: '.6s',
-            }}
-          >
-            <div className="t-meta" style={{ color: 'var(--brass)' }}>SHOT COUNT</div>
-            <div
-              className="t-display"
-              style={{
-                fontSize: 'clamp(64px, 7vw, 124px)',
-                color: 'var(--ivory)',
-                marginTop: 6,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {DATA.foto.shot_count}
-            </div>
-            <div className="t-italic" style={{ fontSize: 18, opacity: 0.75 }}>
-              dal 2019 — {DATA.identity.year}
-            </div>
-          </div>
-
-          <div
-            style={{
-              position: 'absolute',
-              left: 'var(--gutter)',
-              right: 'var(--gutter)',
-              bottom: 36,
-              zIndex: 3,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-end',
-              gap: 36,
-              animationName: 'riseFade',
-              animationDuration: '1.2s',
-              animationTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
-              animationFillMode: 'both',
-              animationDelay: '.8s',
-            }}
-          >
-            <div>
-              <div className="t-meta" style={{ color: 'var(--brass)', marginBottom: 6 }}>
-                FEATURED · {f.subtitle.toUpperCase()}
-              </div>
-              <div
-                className="t-display"
-                style={{
-                  fontSize: 'clamp(40px, 5vw, 78px)',
-                  color: 'var(--ivory)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {f.title.toUpperCase()} ' {f.year.slice(-2)}
-              </div>
-            </div>
-            <div className="t-italic" style={{ fontSize: 18, opacity: 0.85, textAlign: 'right' }}>
-              {f.author}
-              <br />
-              <span className="t-meta" style={{ opacity: 0.65 }}>{f.specs}</span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       <div
@@ -218,7 +225,7 @@ export function ChapterFoto({ go }: { go: GoFn }) {
               marginTop: -10,
             }}
           >
-            L'unica differenza tra una fotografia e un ricordo è chi la sta guardando.
+            {DATA.foto_chapter.pull_quote_it}
           </div>
           <div className="t-meta" style={{ color: 'var(--brass)', marginTop: 24 }}>
             — M.R., DAL DIARIO DI BORDO
@@ -244,87 +251,260 @@ export function ChapterFoto({ go }: { go: GoFn }) {
             </h2>
           </div>
           <div className="t-italic" style={{ fontSize: 20, opacity: 0.65 }}>
-            sei capitoli, una stagione viva
+            {collections.length === 0 ? 'nessuna raccolta ancora' : `${collections.length} capitoli, una stagione viva`}
           </div>
         </div>
         <hr className="hr-brass" />
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 24,
-            marginTop: 40,
-          }}
-        >
-          {DATA.foto.collections.map((c) => (
-            <CollectionCard key={c.tag} c={c} onClick={() => go('story', c.tag)} />
-          ))}
-        </div>
+        {collections.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 24,
+              marginTop: 40,
+            }}
+          >
+            {collections.map((c) => (
+              <CollectionCard
+                key={c.tag}
+                c={c}
+                onClick={() => go('story', c.representativeId)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      <div style={{ padding: '60px var(--gutter) 80px' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            marginBottom: 28,
-          }}
-        >
-          <div>
-            <div className="t-meta" style={{ color: 'var(--brass)' }}>II·b — STORIE SCELTE</div>
-            <h2 className="t-display" style={{ fontSize: 'clamp(40px, 5vw, 80px)', margin: '8px 0 0' }}>
-              Selezioni
-            </h2>
-          </div>
-        </div>
-        <hr className="hr-brass" />
-
-        <div style={{ marginTop: 28 }}>
-          {DATA.foto.stories.map((s, i) => (
-            <div
-              key={s.title}
-              data-cursor="xl"
-              data-cursor-label="LEGGI"
-              onClick={() => go('story', s.tag)}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '90px 140px 1fr 2fr 60px',
-                padding: '26px 0',
-                alignItems: 'baseline',
-                gap: 24,
-                borderBottom: 'var(--hair) solid rgba(168,133,92,.3)',
-                transition: 'padding-left .4s var(--ease-soft), background .4s var(--ease-soft)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.paddingLeft = '14px'
-                e.currentTarget.style.background = 'rgba(168,133,92,.06)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.paddingLeft = ''
-                e.currentTarget.style.background = ''
-              }}
-            >
-              <span className="t-meta" style={{ opacity: 0.55 }}>0{i + 1}</span>
-              <span className="t-meta" style={{ opacity: 0.8, color: 'var(--brass)' }}>{s.tag}</span>
-              <span className="t-display" style={{ fontSize: 'clamp(28px, 2.4vw, 40px)' }}>{s.title}</span>
-              <span className="t-italic" style={{ fontSize: 18, opacity: 0.8 }}>{s.desc}</span>
-              <span className="t-meta" style={{ opacity: 0.55, textAlign: 'right', color: 'var(--brass)' }}>
-                {s.when.split(' ')[1]?.slice(-2) ?? '25'}
-              </span>
+      {selezioni.length > 0 && (
+        <div style={{ padding: '60px var(--gutter) 80px' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-end',
+              marginBottom: 28,
+            }}
+          >
+            <div>
+              <div className="t-meta" style={{ color: 'var(--brass)' }}>II·b — STORIE SCELTE</div>
+              <h2 className="t-display" style={{ fontSize: 'clamp(40px, 5vw, 80px)', margin: '8px 0 0' }}>
+                Selezioni
+              </h2>
             </div>
-          ))}
+          </div>
+          <hr className="hr-brass" />
+
+          <div style={{ marginTop: 28 }}>
+            {selezioni.map((s, i) => (
+              <div
+                key={s.id}
+                data-cursor="xl"
+                data-cursor-label="LEGGI"
+                onClick={() => go('story', s.id)}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '90px 140px 1fr 2fr 60px',
+                  padding: '26px 0',
+                  alignItems: 'baseline',
+                  gap: 24,
+                  borderBottom: 'var(--hair) solid rgba(168,133,92,.3)',
+                  transition: 'padding-left .4s var(--ease-soft), background .4s var(--ease-soft)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.paddingLeft = '14px'
+                  e.currentTarget.style.background = 'rgba(168,133,92,.06)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.paddingLeft = ''
+                  e.currentTarget.style.background = ''
+                }}
+              >
+                <span className="t-meta" style={{ opacity: 0.55 }}>0{i + 1}</span>
+                <span className="t-meta" style={{ opacity: 0.8, color: 'var(--brass)' }}>{s.tag}</span>
+                <span className="t-display" style={{ fontSize: 'clamp(28px, 2.4vw, 40px)' }}>
+                  {s.title} '{s.year.slice(-2)}
+                </span>
+                <span className="t-italic" style={{ fontSize: 18, opacity: 0.8 }}>
+                  {s.description_it?.split(/[.\n]/)[0] ?? s.subtitle ?? ''}
+                </span>
+                <span className="t-meta" style={{ opacity: 0.55, textAlign: 'right', color: 'var(--brass)' }}>
+                  '{s.year.slice(-2)}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   )
 }
 
-export function PhotoStory({ tag, go }: { tag: string; go: GoFn }) {
-  const collection = DATA.foto.collections.find((c) => c.tag === tag) || DATA.foto.collections[0]
-  const f = DATA.foto.featured
+function HeroOverlay({ event, totalShots }: { event?: Event; totalShots: number }) {
+  return (
+    <>
+      <div
+        style={{
+          position: 'absolute',
+          left: 'var(--gutter)',
+          top: 200,
+          zIndex: 3,
+          animationName: 'riseFade',
+          animationDuration: '1.2s',
+          animationTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
+          animationFillMode: 'both',
+          animationDelay: '.4s',
+        }}
+      >
+        <div className="t-meta" style={{ color: 'var(--brass)' }}>
+          CAPITOLO SECONDO · IL FOTOGRAFO
+        </div>
+        <div
+          className="t-display"
+          style={{
+            fontSize: 'clamp(80px, 12vw, 220px)',
+            marginTop: 18,
+            color: 'var(--ivory)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          LA LENTE
+        </div>
+        <div
+          className="t-italic"
+          style={{
+            fontSize: 'clamp(22px, 1.8vw, 28px)',
+            marginTop: 18,
+            opacity: 0.85,
+            maxWidth: '32ch',
+          }}
+        >
+          {DATA.foto_chapter.intro_it}
+        </div>
+      </div>
+
+      <div
+        style={{
+          position: 'absolute',
+          right: 'var(--gutter)',
+          top: 200,
+          zIndex: 3,
+          textAlign: 'right',
+          animationName: 'riseFade',
+          animationDuration: '1.2s',
+          animationTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
+          animationFillMode: 'both',
+          animationDelay: '.6s',
+        }}
+      >
+        <div className="t-meta" style={{ color: 'var(--brass)' }}>SHOT COUNT</div>
+        <div
+          className="t-display"
+          style={{
+            fontSize: 'clamp(64px, 7vw, 124px)',
+            color: 'var(--ivory)',
+            marginTop: 6,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {totalShots.toLocaleString('it-IT')}
+        </div>
+        <div className="t-italic" style={{ fontSize: 18, opacity: 0.75 }}>
+          dal 2019 — {DATA.identity.year}
+        </div>
+      </div>
+
+      {event && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 'var(--gutter)',
+            right: 'var(--gutter)',
+            bottom: 36,
+            zIndex: 3,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            gap: 36,
+            animationName: 'riseFade',
+            animationDuration: '1.2s',
+            animationTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
+            animationFillMode: 'both',
+            animationDelay: '.8s',
+          }}
+        >
+          <div>
+            <div className="t-meta" style={{ color: 'var(--brass)', marginBottom: 6 }}>
+              FEATURED · {(event.subtitle ?? '').toUpperCase()}
+            </div>
+            <div
+              className="t-display"
+              style={{
+                fontSize: 'clamp(40px, 5vw, 78px)',
+                color: 'var(--ivory)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {event.title.toUpperCase()} '{event.year.slice(-2)}
+            </div>
+          </div>
+          <div className="t-italic" style={{ fontSize: 18, opacity: 0.85, textAlign: 'right' }}>
+            {event.location ?? ''}
+            {event.specs && (
+              <>
+                <br />
+                <span className="t-meta" style={{ opacity: 0.65 }}>{event.specs}</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function EmptyState() {
+  return (
+    <div
+      style={{
+        padding: '60px 0',
+        textAlign: 'center',
+        opacity: 0.5,
+      }}
+      className="t-italic"
+    >
+      Nessun evento ancora caricato. Lancia <code style={{ color: 'var(--brass)' }}>/foto-new-event</code> per crearne uno.
+    </div>
+  )
+}
+
+export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
+  const direct = eventById(eventId)
+  const fallback = firstEventByTag(eventId)
+  const f = direct ?? fallback ?? events[0]
   const [activeIdx, setActiveIdx] = useState(0)
+
+  if (!f) {
+    return (
+      <section
+        className="page dark-grain"
+        style={{ background: 'var(--ink-deep)', color: 'var(--ivory)', minHeight: '100vh', padding: '120px var(--gutter)' }}
+      >
+        <div className="t-italic" style={{ fontSize: 24, opacity: 0.7 }}>
+          Nessun evento disponibile.{' '}
+          <button data-cursor="lg" onClick={() => go('foto')} style={{ color: 'var(--brass)' }}>
+            ← Torna al capitolo
+          </button>
+        </div>
+      </section>
+    )
+  }
+
+  const { prev, next } = adjacentEvents(f.id)
+  const contactSheet = f.photos.slice(0, 16)
+  const activeFile = contactSheet[activeIdx] ?? f.cover
 
   return (
     <section
@@ -342,16 +522,18 @@ export function PhotoStory({ tag, go }: { tag: string; go: GoFn }) {
             CAPITOLO II · LA LENTE
           </button>
           <span style={{ opacity: 0.4, margin: '0 14px' }}>/</span>
-          <span style={{ color: 'var(--brass)' }}>{collection.tag.toUpperCase()}</span>
+          <span style={{ color: 'var(--brass)' }}>{f.tag.toUpperCase()}</span>
           <span style={{ opacity: 0.4, margin: '0 14px' }}>/</span>
           <span style={{ color: 'var(--brass)' }}>
-            {f.title.toUpperCase()} ' {f.year.slice(-2)}
+            {f.title.toUpperCase()} '{f.year.slice(-2)}
           </span>
         </div>
       </div>
 
       <div className="stagger" style={{ padding: '36px var(--gutter) 0' }}>
-        <div className="t-italic" style={{ fontSize: 26, opacity: 0.75 }}>{f.subtitle}</div>
+        <div className="t-italic" style={{ fontSize: 26, opacity: 0.75 }}>
+          {f.subtitle ?? ''}
+        </div>
         <h1
           className="t-display"
           style={{ fontSize: 'clamp(72px, 11vw, 200px)', margin: '12px 0', lineHeight: 0.82 }}
@@ -359,15 +541,31 @@ export function PhotoStory({ tag, go }: { tag: string; go: GoFn }) {
           {f.title.toUpperCase()}
         </h1>
         <div
-          style={{ display: 'flex', alignItems: 'baseline', gap: 24, color: 'var(--brass)' }}
+          style={{ display: 'flex', alignItems: 'baseline', gap: 24, color: 'var(--brass)', flexWrap: 'wrap' }}
           className="t-meta"
         >
-          <span>{f.date.toUpperCase()}</span>
-          <span style={{ opacity: 0.4 }}>·</span>
-          <span>{f.location.toUpperCase()}</span>
-          <span style={{ opacity: 0.4 }}>·</span>
-          <span>{f.specs}</span>
+          <span>{formatDate(f.date)}</span>
+          {f.location && (
+            <>
+              <span style={{ opacity: 0.4 }}>·</span>
+              <span>{f.location.toUpperCase()}</span>
+            </>
+          )}
+          {f.specs && (
+            <>
+              <span style={{ opacity: 0.4 }}>·</span>
+              <span>{f.specs}</span>
+            </>
+          )}
         </div>
+
+        {f.links && (
+          <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+            {f.links.instagram_url && <LinkPill href={f.links.instagram_url} label="INSTAGRAM ↗" />}
+            {f.links.gallery_url && <LinkPill href={f.links.gallery_url} label="GALLERIA COMPLETA ↗" />}
+            {f.links.external_url && <LinkPill href={f.links.external_url} label="ALTRO ↗" />}
+          </div>
+        )}
       </div>
 
       <div
@@ -378,7 +576,15 @@ export function PhotoStory({ tag, go }: { tag: string; go: GoFn }) {
           gap: 48,
         }}
       >
-        <div className="frame dark" style={{ aspectRatio: '3 / 2' }}>
+        <PhotoFrame
+          event={f}
+          file={activeFile}
+          ratio="3 / 2"
+          caption={{
+            left: `HERO · ${(f.subtitle ?? '').toUpperCase()}`,
+            right: `${activeIdx + 1} / ${Math.max(1, contactSheet.length)}`,
+          }}
+        >
           <div
             style={{
               position: 'absolute',
@@ -389,39 +595,32 @@ export function PhotoStory({ tag, go }: { tag: string; go: GoFn }) {
               letterSpacing: '.12em',
               color: 'var(--brass)',
               opacity: 0.5,
+              zIndex: 2,
             }}
           >
             FIG. 01
           </div>
-          <div className="frame-caption">
-            <span>HERO · {f.author.toUpperCase()}</span>
-            <span>
-              {activeIdx + 1} / {f.gallery_count}
-            </span>
-          </div>
-        </div>
+        </PhotoFrame>
 
         <div>
           <div className="t-meta" style={{ color: 'var(--brass)' }}>DIARIO DI BORDO</div>
           <hr className="hr-brass" style={{ margin: '10px 0 18px' }} />
-          <p className="t-serif" style={{ fontSize: 19, lineHeight: 1.6, opacity: 0.9, margin: 0 }}>
-            {f.body_it}
+          <p className="t-serif" style={{ fontSize: 19, lineHeight: 1.6, opacity: 0.9, margin: 0, whiteSpace: 'pre-wrap' }}>
+            {f.description_it ?? '—'}
           </p>
 
           <div style={{ marginTop: 30 }}>
             <div className="t-meta" style={{ color: 'var(--brass)' }}>SCHEDA</div>
             <hr className="hr-brass" style={{ margin: '10px 0 14px' }} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', rowGap: 8, fontSize: 15 }}>
-              {(
-                [
-                  ['LOCATION', f.location],
-                  ['DATA', f.date],
-                  ['SOGGETTO', f.author],
-                  ['OTTICA', '600mm f/4 IS USM'],
-                  ['CORPO', 'Canon R5'],
-                  ['EXPO', f.specs],
-                ] as [string, string][]
-              ).map(([k, v]) => (
+              {([
+                ['LOCATION', f.location ?? '—'],
+                ['DATA', formatDate(f.date)],
+                ['SOGGETTO', f.subtitle ?? '—'],
+                f.gear?.lens ? ['OTTICA', f.gear.lens] : null,
+                f.gear?.body ? ['CORPO', f.gear.body] : null,
+                f.specs ? ['EXPO', f.specs] : null,
+              ].filter(Boolean) as [string, string][]).map(([k, v]) => (
                 <Fragment key={k}>
                   <span className="t-meta" style={{ opacity: 0.55 }}>{k}</span>
                   <span className="t-italic" style={{ opacity: 0.85 }}>{v}</span>
@@ -432,97 +631,60 @@ export function PhotoStory({ tag, go }: { tag: string; go: GoFn }) {
         </div>
       </div>
 
-      <div style={{ padding: '60px var(--gutter) 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <h3 className="t-italic" style={{ fontSize: 30, margin: 0 }}>Foglio contatto</h3>
-          <div className="t-meta" style={{ opacity: 0.65 }}>
-            {f.gallery_count} SCATTI · SELEZIONE
+      {contactSheet.length > 0 && (
+        <div style={{ padding: '60px var(--gutter) 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <h3 className="t-italic" style={{ fontSize: 30, margin: 0 }}>Foglio contatto</h3>
+            <div className="t-meta" style={{ opacity: 0.65 }}>
+              {contactSheet.length} SCATTI · SELEZIONE
+            </div>
           </div>
-        </div>
-        <hr className="hr-brass" style={{ marginTop: 12 }} />
+          <hr className="hr-brass" style={{ marginTop: 12 }} />
 
-        <div
-          style={{
-            marginTop: 24,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(8, 1fr)',
-            gap: 8,
-          }}
-        >
-          {Array.from({ length: 16 }).map((_, i) => (
-            <div
-              key={i}
-              data-cursor="xl"
-              data-cursor-label="VEDI"
-              onClick={() => setActiveIdx(i)}
-              className="frame dark"
-              style={{
-                aspectRatio: '3 / 2',
-                outline: activeIdx === i ? '1px solid var(--brass)' : 'none',
-                outlineOffset: 1,
-                cursor: 'pointer',
-                transition: 'transform .35s var(--ease-soft)',
-                transform: activeIdx === i ? 'scale(0.97)' : 'scale(1)',
-              }}
-            >
+          <div
+            style={{
+              marginTop: 24,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(8, 1fr)',
+              gap: 8,
+            }}
+          >
+            {contactSheet.map((file, i) => (
               <div
+                key={file}
+                data-cursor="xl"
+                data-cursor-label="VEDI"
+                onClick={() => setActiveIdx(i)}
                 style={{
-                  position: 'absolute',
-                  top: 6,
-                  left: 8,
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: 9,
-                  color: 'var(--brass)',
-                  opacity: 0.75,
-                  letterSpacing: '.15em',
+                  outline: activeIdx === i ? '1px solid var(--brass)' : 'none',
+                  outlineOffset: 1,
+                  cursor: 'pointer',
+                  transition: 'transform .35s var(--ease-soft)',
+                  transform: activeIdx === i ? 'scale(0.97)' : 'scale(1)',
                 }}
               >
-                {String(i + 1).padStart(3, '0')}
+                <PhotoFrame event={f} file={file} ratio="3 / 2">
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 6,
+                      left: 8,
+                      fontFamily: 'JetBrains Mono, monospace',
+                      fontSize: 9,
+                      color: 'var(--brass)',
+                      opacity: 0.75,
+                      letterSpacing: '.15em',
+                      zIndex: 2,
+                    }}
+                  >
+                    {String(i + 1).padStart(3, '0')}
+                  </div>
+                </PhotoFrame>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div
-        style={{
-          padding: '80px var(--gutter) 0',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 24,
-        }}
-      >
-        <div className="frame dark" style={{ aspectRatio: '4 / 5' }}>
-          <div className="frame-tag">FIG. 02</div>
-          <div className="frame-caption">
-            <span>PADDOCK · ALBA</span>
-            <span>1/800 · f/2.8</span>
+            ))}
           </div>
         </div>
-        <div className="frame dark" style={{ aspectRatio: '4 / 5' }}>
-          <div className="frame-tag">FIG. 03</div>
-          <div className="frame-caption">
-            <span>SCARPERIA · CURVA BORGO</span>
-            <span>1/3200 · f/4</span>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ padding: '100px var(--gutter) 0', maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
-        <span className="t-display" style={{ fontSize: 56, color: 'var(--brass)' }}>—</span>
-        <div
-          className="t-italic"
-          style={{
-            fontSize: 'clamp(26px, 2.6vw, 38px)',
-            lineHeight: 1.35,
-            marginTop: 8,
-            color: 'var(--ivory)',
-          }}
-        >
-          "Lo scatto è il numero 31, il primo in cui la moto è perfettamente parallela alla linea di fondo. Il resto è
-          cronaca."
-        </div>
-      </div>
+      )}
 
       <div
         style={{
@@ -536,22 +698,36 @@ export function PhotoStory({ tag, go }: { tag: string; go: GoFn }) {
       >
         <button
           data-cursor="lg"
-          onClick={() => go('foto')}
+          onClick={() => (prev ? go('story', prev.id) : go('foto'))}
           className="t-italic"
-          style={{ fontSize: 20, color: 'var(--ivory)', textAlign: 'left' }}
+          style={{ fontSize: 20, color: 'var(--ivory)', textAlign: 'left', opacity: prev ? 1 : 0.5 }}
+          disabled={!prev}
         >
-          ← Sardegna ' 25
+          {prev ? `← ${prev.title} '${prev.year.slice(-2)}` : '← Torna al capitolo'}
         </button>
         <div className="t-meta" style={{ color: 'var(--brass)' }}>—  PAG. 22  —</div>
         <button
           data-cursor="lg"
-          onClick={() => go('foto')}
+          onClick={() => (next ? go('story', next.id) : go('foto'))}
           className="t-italic"
-          style={{ fontSize: 20, color: 'var(--ivory)', textAlign: 'right' }}
+          style={{ fontSize: 20, color: 'var(--ivory)', textAlign: 'right', opacity: next ? 1 : 0.5 }}
+          disabled={!next}
         >
-          Imola — il paddock →
+          {next ? `${next.title} '${next.year.slice(-2)} →` : 'Torna al capitolo →'}
         </button>
       </div>
     </section>
   )
+}
+
+function formatDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  if (!m) return iso
+  const months = [
+    '', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
+  ]
+  const day = parseInt(m[3], 10)
+  const month = months[parseInt(m[2], 10)] ?? ''
+  return `${day} ${month} ${m[1]}`
 }

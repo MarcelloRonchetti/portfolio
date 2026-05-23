@@ -1,0 +1,23 @@
+{
+  "id": "mugello-2025-motogp",
+  "tag": "MotoGP",
+  "title": "Mugello",
+  "year": "2025",
+  "subtitle": "MotoGP — Gran Premio d'Italia",
+  "location": "Autodromo Internazionale del Mugello, Scarperia",
+  "date": "2025-06-08",
+  "hue": "oxblood",
+  "description_it": "Il sabato di Mugello è una luce che cambia ogni venti minuti. Ho aspettato la curva di Borgo San Lorenzo per quattro ore — la Ducati di Escobar è passata 38 volte. Lo scatto è il numero 31, il primo in cui la moto è perfettamente parallela alla linea di fondo. Il resto è cronaca.",
+  "specs": "1/3200s · f/4 · 600mm · ISO 400",
+  "gear": {
+    "body": "Canon R5",
+    "lens": "600mm f/4 IS USM"
+  },
+  "cover": "cover.jpg",
+  "photos": [],
+  "links": {
+    "instagram_url": "",
+    "gallery_url": ""
+  },
+  "featured": true
+}
