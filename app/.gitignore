@@ -78,3 +78,5 @@ test-results/
 .turbo/
 .eslintcache
 .stylelintcache
+
+.env # Environment variables file, should not be committed to version control
