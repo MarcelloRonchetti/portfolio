@@ -26,7 +26,7 @@ export default function Placeholder({ route, go }: { route: Route; go: (next: Ro
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 60, marginTop: 50 }}>
           <div className="t-serif" style={{ fontSize: 19, lineHeight: 1.6, opacity: 0.9 }}>
             <p style={{ fontSize: 24, fontStyle: 'italic', opacity: 0.9, marginTop: 0 }}>
-              Sono nato a Padova nel 2001. Lavoro nel firmware e nella fotografia di motorsport. Le due cose non si
+              Sono nato a Carpi nel 2007. Lavoro nel firmware e nella fotografia di motorsport. Le due cose non si
               parlano, ma vivono accanto.
             </p>
             <p>

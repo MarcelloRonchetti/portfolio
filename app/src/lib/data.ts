@@ -30,7 +30,7 @@ export const DATA = {
   identity: {
     name: 'Marcello Ronchetti',
     initials: 'MR',
-    location: 'Padova, IT',
+    location: 'Modena, IT',
     year: '2026',
     volume: 'VOLUME II',
     tagline_it: 'Una mano scrive codice.\nL\'altra alza la macchina.',

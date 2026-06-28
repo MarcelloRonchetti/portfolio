@@ -234,7 +234,7 @@ export function Preface({ go }: { go: (next: Route) => void }) {
           <div style={{ marginTop: 40, display: 'flex', alignItems: 'baseline', gap: 14 }}>
             <span style={{ flex: 1, height: 0, borderTop: 'var(--hair) solid var(--brass)' }} />
             <span className="t-italic" style={{ fontSize: 22, color: 'var(--leather)' }}>
-              — m.r., padova ' 26
+              — m.r., Modena ' 26
             </span>
           </div>
         </div>
