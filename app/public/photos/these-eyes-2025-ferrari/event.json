@@ -4,13 +4,13 @@
     "Ferrari",
     "Dallara"
   ],
-  "title": "these eyes 👀",
+  "title": "These eyes",
   "year": "2025",
-  "subtitle": "",
+  "subtitle": "Ferrari · Dallara",
   "location": "",
   "date": "2025-11-23",
   "hue": "oxblood",
-  "description_it": "these eyes 👀",
+  "description_it": "",
   "cover": "cover.jpg",
   "photos": [
     "01.jpg",
@@ -26,5 +26,5 @@
   "links": {
     "instagram_url": "https://www.instagram.com/p/DRaL3IGjEZJ/"
   },
-  "featured": false
+  "featured": true
 }
