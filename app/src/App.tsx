@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { Route } from './lib/data'
-import { ROUTE_META } from './lib/data'
+import { DATA } from './lib/data'
 import TopBar from './components/TopBar'
-import BottomBar from './components/BottomBar'
-import CustomCursor from './components/CustomCursor'
-import { Curtain } from './components/Curtain'
-import { useCurtain } from './components/useCurtain'
-import { Cover, Preface } from './pages/Cover'
-import { ChapterFoto, PhotoStory } from './pages/ChapterFoto'
-import Placeholder from './pages/Placeholder'
+import { Cover } from './pages/Cover'
+import { Gallery, PhotoStory } from './pages/Gallery'
+import Contact from './pages/Contact'
+
+const ROUTES: Route[] = ['cover', 'gallery', 'story', 'contact']
 
 function persistGet(k: string, fallback: string): string {
   try {
@@ -26,13 +24,18 @@ function persistSet(k: string, v: string) {
 }
 
 // Deep links: 404.html redirects unknown paths to /?p=<path>; restore the route once.
-// Persisted routes are validated too — a stale value (e.g. a removed route) must
-// never render an empty book.
+// "story/<event-id>" deep-links a single event. Persisted routes are validated —
+// a stale value must never render an empty page.
 function initialRoute(): Route {
-  const ROUTES: Route[] = ['cover', 'foto', 'story', 'about', 'contact']
   try {
-    const p = new URLSearchParams(window.location.search).get('p')
-    const path = (p ?? '').replace(/\/+$/, '').replace(/^\//, '')
+    const p = new URLSearchParams(window.location.search).get('p') ?? ''
+    const storyMatch = p.match(/^story\/([\w-]+)\/?$/)
+    if (storyMatch) {
+      persistSet('mr.storyId', storyMatch[1])
+      window.history.replaceState(null, '', window.location.pathname)
+      return 'story'
+    }
+    const path = p.replace(/\/+$/, '').replace(/^\//, '')
     if (ROUTES.includes(path as Route)) {
       window.history.replaceState(null, '', window.location.pathname)
       return path as Route
@@ -47,64 +50,44 @@ function initialRoute(): Route {
 export default function App() {
   const [route, setRoute] = useState<Route>(initialRoute)
   const [storyId, setStoryId] = useState(() => persistGet('mr.storyId', ''))
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => (persistGet('mr.theme', 'light') as 'light' | 'dark'))
 
   useEffect(() => persistSet('mr.route', route), [route])
   useEffect(() => persistSet('mr.storyId', storyId), [storyId])
-  useEffect(() => {
-    persistSet('mr.theme', theme)
-    document.documentElement.setAttribute('data-theme', theme)
-  }, [theme])
 
   useEffect(() => {
-    const dark = route === 'foto' || route === 'story'
+    const dark = route === 'gallery' || route === 'story'
     document.body.setAttribute('data-section', dark ? 'dark' : 'light')
   }, [route])
 
-  const curtain = useCurtain()
-
-  const go = async (next: Route, ref?: string) => {
+  const go = (next: Route, ref?: string) => {
     if (next === route && !ref) return
-    await curtain.transition(ROUTE_META[next].seal, () => {
-      if (next === 'story' && ref) setStoryId(ref)
-      setRoute(next)
-      window.scrollTo({ top: 0, behavior: 'instant' })
-    })
+    if (next === 'story' && ref) setStoryId(ref)
+    setRoute(next)
+    window.scrollTo({ top: 0, behavior: 'instant' })
   }
 
   let screen: React.ReactNode = null
-  const scrollHint = ROUTE_META[route].hint
-
   if (route === 'cover') {
-    screen = (
-      <>
-        <Cover go={(next) => go(next)} />
-        <Preface go={(next) => go(next)} />
-      </>
-    )
-  } else if (route === 'foto') {
-    screen = <ChapterFoto go={(next, ref) => go(next, ref)} />
+    screen = <Cover go={go} />
+  } else if (route === 'gallery') {
+    screen = <Gallery go={go} />
   } else if (route === 'story') {
-    screen = <PhotoStory eventId={storyId} go={(next, ref) => go(next, ref)} />
-  } else if (route === 'about' || route === 'contact') {
-    screen = <Placeholder route={route} go={(next) => go(next)} />
+    screen = <PhotoStory eventId={storyId} go={go} />
+  } else if (route === 'contact') {
+    screen = <Contact />
   }
 
   return (
     <>
-      <TopBar
-        route={route}
-        onNavigate={(next) => go(next)}
-        theme={theme}
-        setTheme={setTheme}
-      />
-
-      {screen}
-
-      <BottomBar page={ROUTE_META[route].page} hint={scrollHint} />
-
-      <Curtain state={curtain.state} seal={curtain.seal} />
-      <CustomCursor />
+      <TopBar route={route} onNavigate={go} />
+      <div key={route} className="page-fade">
+        {screen}
+      </div>
+      <footer className="site-footer">
+        <span>© {new Date().getFullYear()} {DATA.identity.name}</span>
+        <span>{DATA.identity.location}</span>
+        <a className="link-ext" href={`mailto:${DATA.identity.email}`}>Email</a>
+      </footer>
     </>
   )
 }

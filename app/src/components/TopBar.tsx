@@ -1,41 +1,32 @@
 import type { Route } from '../lib/data'
+import { DATA } from '../lib/data'
 
 type Props = {
   route: Route
-  onNavigate: (next: Route) => void
-  theme: 'light' | 'dark'
-  setTheme: (v: 'light' | 'dark') => void
+  onNavigate: (next: Route, ref?: string) => void
 }
 
 const ITEMS: { id: Route; label: string }[] = [
   { id: 'cover', label: 'home' },
-  { id: 'foto', label: 'la lente' },
-  { id: 'about', label: 'about' },
+  { id: 'gallery', label: 'galleria' },
   { id: 'contact', label: 'contatti' },
 ]
 
-export default function TopBar({ route, onNavigate, theme, setTheme }: Props) {
+export default function TopBar({ route, onNavigate }: Props) {
   return (
-    <div className="chrome-top">
-      <div className="brand">
-        <span>M</span>
-        <span style={{ opacity: 0.35, letterSpacing: 0 }}>—</span>
-        <span>R</span>
-        <span className="brand-sub" style={{ marginLeft: 14 }}>
-          Marcello Ronchetti
-        </span>
-      </div>
-
+    <header className="site-header">
+      <button className="brand" onClick={() => onNavigate('cover')}>
+        {DATA.identity.name}
+      </button>
       <nav>
         {ITEMS.map((it) => {
           const active =
             route === it.id ||
-            (route === 'story' && it.id === 'foto')
+            (route === 'story' && it.id === 'gallery')
           return (
             <button
               key={it.id}
               data-active={active || undefined}
-              data-cursor="lg"
               onClick={() => onNavigate(it.id)}
             >
               {it.label}
@@ -43,18 +34,6 @@ export default function TopBar({ route, onNavigate, theme, setTheme }: Props) {
           )
         })}
       </nav>
-
-      <div className="controls">
-        <div className="seg">
-          <button className={theme === 'light' ? 'on' : ''} onClick={() => setTheme('light')} data-cursor="lg">
-            ☀
-          </button>
-          <span className="div">·</span>
-          <button className={theme === 'dark' ? 'on' : ''} onClick={() => setTheme('dark')} data-cursor="lg">
-            ☾
-          </button>
-        </div>
-      </div>
-    </div>
+    </header>
   )
 }

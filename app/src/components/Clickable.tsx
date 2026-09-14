@@ -2,18 +2,14 @@ import type { HTMLAttributes, ReactNode } from 'react'
 
 type ClickableProps = {
   onClick?: () => void
-  cursor?: string
-  cursorLabel?: string
   className?: string
   style?: React.CSSProperties
   children?: ReactNode
 } & Omit<HTMLAttributes<HTMLDivElement>, 'onClick'>
 
-// Div that behaves like a button when clickable: keyboard activation + cursor hints.
+// Div that behaves like a button when clickable: role, tabIndex, keyboard activation.
 export default function Clickable({
   onClick,
-  cursor,
-  cursorLabel,
   className,
   style,
   children,
@@ -34,8 +30,6 @@ export default function Clickable({
             }
           : undefined
       }
-      data-cursor={cursor}
-      data-cursor-label={cursorLabel}
       className={className}
       style={style}
       {...rest}
