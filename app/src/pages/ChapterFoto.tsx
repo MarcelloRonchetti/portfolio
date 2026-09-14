@@ -141,6 +141,7 @@ export function ChapterFoto({ go }: { go: GoFn }) {
         )}
       </div>
 
+
       <div
         style={{
           padding: '80px var(--gutter)',
@@ -197,12 +198,8 @@ export function ChapterFoto({ go }: { go: GoFn }) {
           <EmptyState />
         ) : (
           <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 24,
-              marginTop: 40,
-            }}
+            className="grid-collections"
+            style={{ gap: 24, marginTop: 40 }}
           >
             {collections.map((c) => (
               <CollectionCard
@@ -241,22 +238,14 @@ export function ChapterFoto({ go }: { go: GoFn }) {
                 onClick={() => go('story', s.id)}
                 cursor="xl"
                 cursorLabel="LEGGI"
-                className="hover-row"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '90px 140px 1fr 2fr 60px',
-                  padding: '26px 0',
-                  alignItems: 'baseline',
-                  gap: 24,
-                  borderBottom: 'var(--hair) solid var(--brass-a30)',
-                }}
+                className="hover-row row-selezioni"
               >
                 <span className="t-meta" style={{ opacity: 0.55 }}>0{i + 1}</span>
-                <span className="t-meta" style={{ opacity: 0.8, color: 'var(--brass)' }}>{s.tag}</span>
+                <span className="t-meta cell-tag" style={{ opacity: 0.8, color: 'var(--brass)' }}>{s.tag}</span>
                 <span className="t-display" style={{ fontSize: 'clamp(28px, 2.4vw, 40px)' }}>
                   {s.title} '{s.year.slice(-2)}
                 </span>
-                <span className="t-italic" style={{ fontSize: 18, opacity: 0.8 }}>
+                <span className="t-italic cell-teaser" style={{ fontSize: 18, opacity: 0.8 }}>
                   {teaser(s)}
                 </span>
                 <span className="t-meta" style={{ opacity: 0.55, textAlign: 'right', color: 'var(--brass)' }}>
@@ -274,31 +263,11 @@ export function ChapterFoto({ go }: { go: GoFn }) {
 function HeroOverlay({ event, totalShots }: { event?: Event; totalShots: number }) {
   return (
     <>
-      <div
-        style={{
-          position: 'absolute',
-          left: 'var(--gutter)',
-          top: 200,
-          zIndex: 3,
-          animationName: 'riseFade',
-          animationDuration: '1.2s',
-          animationTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
-          animationFillMode: 'both',
-          animationDelay: '.4s',
-        }}
-      >
+      <div className="hero-left">
         <div className="t-meta" style={{ color: 'var(--brass)' }}>
           CAPITOLO SECONDO · IL FOTOGRAFO
         </div>
-        <div
-          className="t-display"
-          style={{
-            fontSize: 'clamp(80px, 12vw, 220px)',
-            marginTop: 18,
-            color: 'var(--ivory)',
-            whiteSpace: 'nowrap',
-          }}
-        >
+        <div className="t-display t-hero" style={{ marginTop: 18, color: 'var(--ivory)' }}>
           LA LENTE
         </div>
         <div
@@ -314,20 +283,7 @@ function HeroOverlay({ event, totalShots }: { event?: Event; totalShots: number 
         </div>
       </div>
 
-      <div
-        style={{
-          position: 'absolute',
-          right: 'var(--gutter)',
-          top: 200,
-          zIndex: 3,
-          textAlign: 'right',
-          animationName: 'riseFade',
-          animationDuration: '1.2s',
-          animationTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
-          animationFillMode: 'both',
-          animationDelay: '.6s',
-        }}
-      >
+      <div className="hero-right">
         <div className="t-meta" style={{ color: 'var(--brass)' }}>SHOT COUNT</div>
         <div
           className="t-display"
@@ -346,36 +302,12 @@ function HeroOverlay({ event, totalShots }: { event?: Event; totalShots: number 
       </div>
 
       {event && (
-        <div
-          style={{
-            position: 'absolute',
-            left: 'var(--gutter)',
-            right: 'var(--gutter)',
-            bottom: 36,
-            zIndex: 3,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            gap: 36,
-            animationName: 'riseFade',
-            animationDuration: '1.2s',
-            animationTimingFunction: 'cubic-bezier(.22,.61,.36,1)',
-            animationFillMode: 'both',
-            animationDelay: '.8s',
-          }}
-        >
+        <div className="hero-bottom">
           <div>
             <div className="t-meta" style={{ color: 'var(--brass)', marginBottom: 6 }}>
               {event.subtitle ? `FEATURED · ${event.subtitle.toUpperCase()}` : 'FEATURED'}
             </div>
-            <div
-              className="t-display"
-              style={{
-                fontSize: 'clamp(40px, 5vw, 78px)',
-                color: 'var(--ivory)',
-                whiteSpace: 'nowrap',
-              }}
-            >
+            <div className="t-display t-hero-sm" style={{ color: 'var(--ivory)' }}>
               {event.title.toUpperCase()} '{event.year.slice(-2)}
             </div>
           </div>
@@ -472,8 +404,8 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
           {f.subtitle ?? ''}
         </div>
         <h1
-          className="t-display"
-          style={{ fontSize: 'clamp(72px, 11vw, 200px)', margin: '12px 0', lineHeight: 0.82 }}
+          className="t-display t-story"
+          style={{ margin: '12px 0', lineHeight: 0.82 }}
         >
           {f.title.toUpperCase()}
         </h1>
@@ -506,10 +438,9 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
       </div>
 
       <div
+        className="grid-story"
         style={{
           padding: '60px var(--gutter) 0',
-          display: 'grid',
-          gridTemplateColumns: '1.7fr 1fr',
           gap: 48,
         }}
       >
@@ -579,12 +510,8 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
           <hr className="hr-brass" style={{ marginTop: 12 }} />
 
           <div
-            style={{
-              marginTop: 24,
-              display: 'grid',
-              gridTemplateColumns: 'repeat(8, 1fr)',
-              gap: 8,
-            }}
+            className="grid-contact"
+            style={{ marginTop: 24, gap: 8 }}
           >
             {contactSheet.map((file, i) => (
               <Clickable

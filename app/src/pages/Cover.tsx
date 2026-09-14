@@ -26,13 +26,12 @@ function ChapterCard({
       onClick={onEnter}
       cursor="xl"
       cursorLabel="ENTRA"
-      className="hover-rise"
+      className="hover-rise chapter-card"
       style={{
         position: 'relative',
         background: isDark ? 'var(--ink-deep)' : 'var(--ivory)',
         color: isDark ? 'var(--ivory)' : 'var(--ink)',
         padding: '40px 36px',
-        minHeight: 460,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -58,7 +57,7 @@ function ChapterCard({
         <div className="t-italic" style={{ fontSize: 24, opacity: 0.7, lineHeight: 1, marginBottom: 6 }}>
           {subtitle}
         </div>
-        <div className="t-display" style={{ fontSize: 'clamp(56px, 6.5vw, 92px)' }}>
+        <div className="t-display t-chapter">
           {title}
         </div>
       </div>
@@ -88,11 +87,8 @@ export function Cover({ go }: { go: (next: Route) => void }) {
       }}
     >
       <div
-        className="t-meta"
+        className="t-meta grid-meta3"
         style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto 1fr',
-          alignItems: 'center',
           gap: 24,
           opacity: 0.55,
           color: 'var(--ink)',
@@ -133,10 +129,9 @@ export function Cover({ go }: { go: (next: Route) => void }) {
       </div>
 
       <div
+        className="grid-chapters"
         style={{
           marginTop: 'clamp(60px, 8vh, 100px)',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
           gap: 'clamp(24px, 3vw, 48px)',
           animationName: 'riseFade',
           animationDuration: '1.2s',
@@ -193,8 +188,8 @@ export function Preface({ go }: { go: (next: Route) => void }) {
       </div>
 
       <div
-        className="t-display"
-        style={{ fontSize: 'clamp(52px, 6.5vw, 96px)', marginTop: 12, maxWidth: '14ch', color: 'var(--ink)' }}
+        className="t-display t-preface"
+        style={{ marginTop: 12, maxWidth: '14ch', color: 'var(--ink)' }}
       >
         {DATA.identity.tagline.split('\n').map((line, i) => (
           <Fragment key={i}>
@@ -204,14 +199,7 @@ export function Preface({ go }: { go: (next: Route) => void }) {
         ))}
       </div>
 
-      <div
-        style={{
-          marginTop: 60,
-          display: 'grid',
-          gridTemplateColumns: '1.4fr 1fr',
-          gap: 80,
-        }}
-      >
+      <div className="grid-preface" style={{ marginTop: 60, gap: 80 }}>
         <div className="t-serif" style={{ fontSize: 19, lineHeight: 1.6, color: 'var(--ink)', maxWidth: 620 }}>
           <p style={{ marginTop: 0, fontSize: 22, fontStyle: 'italic', opacity: 0.85 }}>
             Ho cominciato con un Arduino e una reflex usata. A distanza di anni, le due cose non si sono mai parlate{' '}

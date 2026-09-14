@@ -11,23 +11,15 @@ function ProjectRow({ p, onClick }: { p: Project; onClick: () => void }) {
       onClick={onClick}
       cursor="xl"
       cursorLabel="APRI"
-      className="hover-row"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '60px 110px 1fr 1.4fr 90px',
-        padding: '24px 0',
-        borderBottom: 'var(--hair) solid var(--leather-a20)',
-        alignItems: 'baseline',
-        gap: 18,
-      }}
+      className="hover-row row-project"
     >
       <span className="t-meta" style={{ opacity: 0.55 }}>'{p.year.slice(-2)}</span>
-      <span className="t-meta" style={{ opacity: 0.75 }}>{p.kind}</span>
+      <span className="t-meta cell-kind" style={{ opacity: 0.75 }}>{p.kind}</span>
       <div>
         <div className="t-display" style={{ fontSize: 32, lineHeight: 1 }}>{p.title}</div>
         <div className="t-italic" style={{ fontSize: 18, opacity: 0.75, marginTop: 2 }}>{p.tagline}</div>
       </div>
-      <div className="t-serif" style={{ fontSize: 16, opacity: 0.8, lineHeight: 1.4 }}>
+      <div className="t-serif cell-summary" style={{ fontSize: 16, opacity: 0.8, lineHeight: 1.4 }}>
         {p.summary}
       </div>
       <div className="t-meta" style={{ opacity: 0.65, textAlign: 'right', color: 'var(--oxblood)' }}>
@@ -58,19 +50,11 @@ export function ChapterTech({ go }: { go: GoFn }) {
         </div>
 
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr auto',
-            alignItems: 'flex-end',
-            gap: 36,
-            marginTop: 14,
-          }}
+          className="grid-tech-head"
+          style={{ gap: 36, marginTop: 14 }}
         >
           <div>
-            <h1
-              className="t-display"
-              style={{ fontSize: 'clamp(72px, 9.5vw, 168px)', margin: 0, lineHeight: 0.82 }}
-            >
+            <h1 className="t-display t-lab" style={{ margin: 0, lineHeight: 0.82 }}>
               IL LAB
             </h1>
             <div
@@ -99,13 +83,8 @@ export function ChapterTech({ go }: { go: GoFn }) {
       </div>
 
       <div
-        style={{
-          marginTop: 60,
-          display: 'grid',
-          gridTemplateColumns: '1.45fr 1fr',
-          gap: 48,
-          alignItems: 'stretch',
-        }}
+        className="grid-featured"
+        style={{ marginTop: 60, gap: 48 }}
       >
         <PhotoFrame
           tag="IN PRIMO PIANO · 2026"
@@ -200,7 +179,7 @@ export function ChapterTech({ go }: { go: GoFn }) {
           SKILLS
         </h3>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 36 }}>
+        <div className="grid-skills" style={{ gap: 36 }}>
           {Object.entries({
             linguaggi: DATA.tech.skills.languages,
             embedded: DATA.tech.skills.embedded,
@@ -301,10 +280,7 @@ export function ProjectDetail({ projectId, go }: { projectId: string; go: GoFn }
 
       <div className="stagger" style={{ marginTop: 28 }}>
         <div className="t-italic" style={{ fontSize: 26, opacity: 0.75 }}>{p.tagline}</div>
-        <h1
-          className="t-display"
-          style={{ fontSize: 'clamp(64px, 8.5vw, 148px)', margin: '12px 0 0', lineHeight: 0.85 }}
-        >
+        <h1 className="t-display t-detail" style={{ margin: '12px 0 0', lineHeight: 0.85 }}>
           {p.title}
         </h1>
         <div className="t-meta" style={{ marginTop: 14, color: 'var(--brass)' }}>
@@ -313,12 +289,8 @@ export function ProjectDetail({ projectId, go }: { projectId: string; go: GoFn }
       </div>
 
       <div
-        style={{
-          marginTop: 50,
-          display: 'grid',
-          gridTemplateColumns: '1.5fr 1fr',
-          gap: 48,
-        }}
+        className="grid-detail"
+        style={{ marginTop: 50, gap: 48 }}
       >
         <PhotoFrame
           tag="FIG. 01 — BANCO DI PROVA"
@@ -365,7 +337,7 @@ export function ProjectDetail({ projectId, go }: { projectId: string; go: GoFn }
         </div>
       </div>
 
-      <div style={{ marginTop: 100, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 48 }}>
+      <div className="grid-case" style={{ marginTop: 100, gap: 48 }}>
         {(
           [
             { roman: 'I', t: 'il problema', body: p.problem },
