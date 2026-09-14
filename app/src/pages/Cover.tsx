@@ -247,7 +247,7 @@ export function Preface({ go }: { go: (next: Route) => void }) {
               >
                 <span className="t-meta" style={{ opacity: 0.65 }}>{n}</span>
                 <span className="t-italic" style={{ fontSize: 19 }}>{t}</span>
-                <span className="t-meta" style={{ opacity: 0.55, textAlign: 'right' }}>p. {p}</span>
+                <span className="t-meta" style={{ opacity: 0.55, textAlign: 'right', whiteSpace: 'nowrap' }}>p. {p}</span>
               </Clickable>
             ))}
           </div>

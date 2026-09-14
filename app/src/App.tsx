@@ -26,6 +26,8 @@ function persistSet(k: string, v: string) {
 }
 
 // Deep links: 404.html redirects unknown paths to /?p=<path>; restore the route once.
+// Persisted routes are validated too — a stale value (e.g. a removed route) must
+// never render an empty book.
 function initialRoute(): Route {
   const ROUTES: Route[] = ['cover', 'foto', 'story', 'about', 'contact']
   try {
@@ -38,7 +40,8 @@ function initialRoute(): Route {
   } catch {
     /* ignore */
   }
-  return persistGet('mr.route', 'cover') as Route
+  const stored = persistGet('mr.route', 'cover') as Route
+  return ROUTES.includes(stored) ? stored : 'cover'
 }
 
 export default function App() {
