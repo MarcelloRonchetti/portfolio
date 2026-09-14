@@ -37,6 +37,15 @@
   /* book-like values */
   --hair: 0.6px;
 
+  /* alpha tints of the palette (single source for hover/tint literals) */
+  --brass-a04:  rgba(168,133,92,.04);
+  --brass-a06:  rgba(168,133,92,.06);
+  --brass-a12:  rgba(168,133,92,.12);
+  --brass-a18:  rgba(168,133,92,.18);
+  --brass-a30:  rgba(168,133,92,.3);
+  --leather-a20: rgba(74,42,28,.2);
+  --leather-a25: rgba(74,42,28,.25);
+
   /* easings */
   --ease-soft:  cubic-bezier(.22,.61,.36,1);
   --ease-spr:   cubic-bezier(.34,1.56,.64,1);
@@ -335,6 +344,42 @@ button { border: 0; background: transparent; color: inherit; font: inherit; curs
 /* utility */
 .center-x { left: 50%; transform: translateX(-50%); }
 .full-bleed { width: 100vw; margin-left: calc(-50vw + 50%); }
+
+/* shared hover behaviors — replace per-component JS handlers */
+.hover-rise {
+  transition: transform .55s var(--ease-soft), box-shadow .55s var(--ease-soft);
+}
+.hover-rise:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 30px 60px -30px rgba(20,12,8,.4);
+}
+.hover-card {
+  background: var(--brass-a04);
+  transition: background .4s var(--ease-soft), transform .4s var(--ease-soft), box-shadow .4s var(--ease-soft);
+}
+.hover-card:hover {
+  background: var(--brass-a12);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px -28px rgba(20,12,8,.35);
+}
+.hover-row {
+  transition: padding-left .4s var(--ease-soft), background .4s var(--ease-soft);
+}
+.hover-row:hover {
+  padding-left: 12px;
+  background: var(--brass-a06);
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  border: var(--hair) solid var(--brass);
+  color: var(--brass);
+  opacity: .85;
+  transition: background .3s var(--ease-soft), opacity .3s var(--ease-soft);
+}
+.pill:hover { background: var(--brass-a18); opacity: 1; }
+
+:focus-visible { outline: 1px solid var(--brass); outline-offset: 3px; }
 
 /* page background — soft warm gradient */
 body {

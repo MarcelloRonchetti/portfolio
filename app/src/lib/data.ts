@@ -1,4 +1,4 @@
-// Portfolio data — Italian primary, English alternatives where useful.
+// Portfolio data — Italian.
 // Placeholder text — real content fills in over time.
 
 export type Route =
@@ -9,6 +9,17 @@ export type Route =
   | 'story'
   | 'about'
   | 'contact'
+
+// Single source for the per-route book chrome: page number, curtain seal, scroll hint.
+export const ROUTE_META: Record<Route, { page: string; seal: string; hint: string }> = {
+  cover: { page: '01', seal: 'MR', hint: 'sfoglia la prefazione' },
+  tech: { page: '04', seal: 'I', hint: 'capitolo primo' },
+  project: { page: '06', seal: 'I·a', hint: 'caso studio' },
+  foto: { page: '18', seal: 'II', hint: 'capitolo secondo' },
+  story: { page: '22', seal: 'II·a', hint: 'foglio contatto' },
+  about: { page: '30', seal: 'III', hint: 'about' },
+  contact: { page: '38', seal: 'V', hint: 'contatti' },
+}
 
 export type Project = {
   id: string
@@ -33,15 +44,13 @@ export const DATA = {
     location: 'Modena, IT',
     year: '2026',
     volume: 'VOLUME II',
-    tagline_it: 'Una mano scrive codice.\nL\'altra alza la macchina.',
-    tagline_en: 'One hand writes code.\nThe other lifts the camera.',
+    tagline: 'Una mano scrive codice.\nL\'altra alza la macchina.',
   },
 
   tech: {
-    title_it: 'L\'ingegnere',
-    title_en: 'The engineer',
-    subtitle_it: 'Embedded systems · IoT · Intelligenza artificiale · Cybersecurity',
-    intro_it:
+    title: 'L\'ingegnere',
+    subtitle: 'Embedded systems · IoT · Intelligenza artificiale · Cybersecurity',
+    intro:
       'Costruisco cose che ascoltano, decidono e parlano. Quando la realtà non basta, la riscrivo in firmware.',
 
     skills: {
@@ -124,12 +133,11 @@ export const DATA = {
   },
 
   foto_chapter: {
-    title_it: 'Il fotografo',
-    title_en: 'The photographer',
-    subtitle_it: 'Sport · Motorsport · Reportage',
-    intro_it:
+    title: 'Il fotografo',
+    subtitle: 'Sport · Motorsport · Reportage',
+    intro:
       'Sport e motorsport in pista e fuori — un decimo di secondo alla volta. Pista, fango, asfalto, neve, podio.',
-    pull_quote_it: 'L\'unica differenza tra una fotografia e un ricordo è chi la sta guardando.',
+    pull_quote: 'L\'unica differenza tra una fotografia e un ricordo è chi la sta guardando.',
     since: '2019',
   },
 }

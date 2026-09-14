@@ -1,7 +1,9 @@
+import { Fragment } from 'react'
 import type { Route } from '../lib/data'
 import { DATA } from '../lib/data'
 import NameReveal from '../components/NameReveal'
 import Typewriter from '../components/Typewriter'
+import Clickable from '../components/Clickable'
 
 function ChapterCard({
   no,
@@ -20,11 +22,11 @@ function ChapterCard({
 }) {
   const isDark = kind === 'dark'
   return (
-    <div
-      className={isDark ? 'dark-grain' : 'paper-grain'}
-      data-cursor="xl"
-      data-cursor-label="ENTRA"
+    <Clickable
       onClick={onEnter}
+      cursor="xl"
+      cursorLabel="ENTRA"
+      className="hover-rise"
       style={{
         position: 'relative',
         background: isDark ? 'var(--ink-deep)' : 'var(--ivory)',
@@ -36,15 +38,6 @@ function ChapterCard({
         justifyContent: 'space-between',
         border: `var(--hair) solid ${isDark ? 'var(--brass)' : 'var(--leather)'}`,
         overflow: 'hidden',
-        transition: 'transform .55s var(--ease-soft), box-shadow .55s var(--ease-soft)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-8px)'
-        e.currentTarget.style.boxShadow = '0 30px 60px -30px rgba(20,12,8,.4)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = ''
-        e.currentTarget.style.boxShadow = ''
       }}
     >
       <span
@@ -79,7 +72,7 @@ function ChapterCard({
           <div className="t-micro" style={{ color: 'var(--brass)' }}>entra →</div>
         </div>
       </div>
-    </div>
+    </Clickable>
   )
 }
 
@@ -131,7 +124,7 @@ export function Cover({ go }: { go: (next: Route) => void }) {
 
       <div style={{ textAlign: 'center', marginTop: 36, minHeight: 70 }}>
         <Typewriter
-          text={DATA.identity.tagline_it}
+          text={DATA.identity.tagline}
           delay={1700}
           speed={32}
           className="t-italic"
@@ -155,7 +148,7 @@ export function Cover({ go }: { go: (next: Route) => void }) {
         <ChapterCard
           no="I"
           subtitle="capitolo primo"
-          title={DATA.tech.title_it}
+          title={DATA.tech.title}
           kind="light"
           hint="Embedded, IoT, AI, cybersecurity. Sei anni di firmware, banchi di lavoro, terminali aperti."
           onEnter={() => go('tech')}
@@ -163,7 +156,7 @@ export function Cover({ go }: { go: (next: Route) => void }) {
         <ChapterCard
           no="II"
           subtitle="capitolo secondo"
-          title={DATA.foto_chapter.title_it}
+          title={DATA.foto_chapter.title}
           kind="dark"
           hint="Sport e motorsport in pista e fuori. Dodicimila scatti, quattro stagioni, una sola luce."
           onEnter={() => go('foto')}
@@ -203,11 +196,12 @@ export function Preface({ go }: { go: (next: Route) => void }) {
         className="t-display"
         style={{ fontSize: 'clamp(52px, 6.5vw, 96px)', marginTop: 12, maxWidth: '14ch', color: 'var(--ink)' }}
       >
-        Una mano scrive
-        <br />
-        codice. L'altra
-        <br />
-        alza la macchina.
+        {DATA.identity.tagline.split('\n').map((line, i) => (
+          <Fragment key={i}>
+            {i > 0 && <br />}
+            {line}
+          </Fragment>
+        ))}
       </div>
 
       <div
@@ -254,29 +248,23 @@ export function Preface({ go }: { go: (next: Route) => void }) {
                 ['V', 'contatti', '38', 'contact'],
               ] as [string, string, string, Route][]
             ).map(([n, t, p, r]) => (
-              <div
+              <Clickable
                 key={n}
-                data-cursor="lg"
                 onClick={() => go(r)}
+                cursor="lg"
+                className="hover-row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '54px 1fr 40px',
                   alignItems: 'baseline',
                   padding: '14px 0',
-                  borderBottom: 'var(--hair) solid rgba(74,42,28,.25)',
-                  transition: 'padding-left .3s var(--ease-soft)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.paddingLeft = '8px'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.paddingLeft = ''
+                  borderBottom: 'var(--hair) solid var(--leather-a25)',
                 }}
               >
                 <span className="t-meta" style={{ opacity: 0.65 }}>{n}</span>
                 <span className="t-italic" style={{ fontSize: 19 }}>{t}</span>
                 <span className="t-meta" style={{ opacity: 0.55, textAlign: 'right' }}>p. {p}</span>
-              </div>
+              </Clickable>
             ))}
           </div>
         </div>

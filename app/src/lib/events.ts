@@ -22,7 +22,6 @@ export type RawEvent = {
   hue?: Hue
   no?: string
   description_it?: string
-  description_en?: string
   specs?: string
   gear?: { body?: string; lens?: string }
   cover?: string
@@ -101,17 +100,18 @@ const allEvents: Event[] = Object.entries(manifests)
   .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
 
 // Auto-assign Roman numerals per unique tag (in date-desc order, by FIRST appearance).
+// Single pass — collections and events must agree, so there is exactly one map.
+const tagNumerals = new Map<string, string>()
 {
-  const seen = new Map<string, string>()
   let idx = 0
   for (const ev of allEvents) {
     for (const tag of ev.tags) {
-      if (!seen.has(tag)) {
-        seen.set(tag, ROMAN[idx] ?? String(idx + 1))
+      if (!tagNumerals.has(tag)) {
+        tagNumerals.set(tag, ROMAN[idx] ?? String(idx + 1))
         idx++
       }
     }
-    if (!ev.no) ev.no = seen.get(ev.tags[0])!
+    if (!ev.no) ev.no = tagNumerals.get(ev.tags[0])!
   }
 }
 
@@ -130,17 +130,6 @@ export const collections: Collection[] = (() => {
     }
   }
   const out: Collection[] = []
-  // Track Roman numerals so they match the global assignment.
-  const numerals = new Map<string, string>()
-  let idx = 0
-  for (const ev of events) {
-    for (const tag of ev.tags) {
-      if (!numerals.has(tag)) {
-        numerals.set(tag, ROMAN[idx] ?? String(idx + 1))
-        idx++
-      }
-    }
-  }
   for (const [tag, list] of byTag) {
     const representative = list[0]
     const totalShots = list.reduce(
@@ -156,7 +145,7 @@ export const collections: Collection[] = (() => {
       n: totalShots,
       desc: descParts.join(' · ') || representative.subtitle?.toLowerCase() || '',
       hue: representative.hue,
-      no: numerals.get(tag) ?? '?',
+      no: tagNumerals.get(tag) ?? '?',
       representativeId: representative.id,
       links: representative.links,
     })

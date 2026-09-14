@@ -1,31 +1,24 @@
 import type { Project, Route } from '../lib/data'
-import { DATA } from '../lib/data'
-import FramePhoto from '../components/FramePhoto'
+import { DATA, ROUTE_META } from '../lib/data'
+import PhotoFrame from '../components/PhotoFrame'
+import Clickable from '../components/Clickable'
 
 type GoFn = (next: Route, ref?: string) => void
 
 function ProjectRow({ p, onClick }: { p: Project; onClick: () => void }) {
   return (
-    <div
+    <Clickable
       onClick={onClick}
-      data-cursor="xl"
-      data-cursor-label="APRI"
+      cursor="xl"
+      cursorLabel="APRI"
+      className="hover-row"
       style={{
         display: 'grid',
         gridTemplateColumns: '60px 110px 1fr 1.4fr 90px',
         padding: '24px 0',
-        borderBottom: 'var(--hair) solid rgba(74,42,28,.2)',
+        borderBottom: 'var(--hair) solid var(--leather-a20)',
         alignItems: 'baseline',
         gap: 18,
-        transition: 'padding-left .35s var(--ease-soft), background .35s var(--ease-soft)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.paddingLeft = '12px'
-        e.currentTarget.style.background = 'rgba(168,133,92,.06)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.paddingLeft = ''
-        e.currentTarget.style.background = ''
       }}
     >
       <span className="t-meta" style={{ opacity: 0.55 }}>'{p.year.slice(-2)}</span>
@@ -40,13 +33,14 @@ function ProjectRow({ p, onClick }: { p: Project; onClick: () => void }) {
       <div className="t-meta" style={{ opacity: 0.65, textAlign: 'right', color: 'var(--oxblood)' }}>
         leggi →
       </div>
-    </div>
+    </Clickable>
   )
 }
 
 export function ChapterTech({ go }: { go: GoFn }) {
   const featured = DATA.tech.projects.find((p) => p.featured) || DATA.tech.projects[0]
-  const others = DATA.tech.projects.filter((p) => !p.featured).slice(0, 5)
+  const others = DATA.tech.projects.filter((p) => !p.featured)
+  const otherYears = others.map((p) => Number(p.year))
 
   return (
     <section
@@ -88,53 +82,20 @@ export function ChapterTech({ go }: { go: GoFn }) {
                 maxWidth: '50ch',
               }}
             >
-              {DATA.tech.intro_it}
+              {DATA.tech.intro}
             </div>
           </div>
 
           <div style={{ textAlign: 'right' }}>
             <div className="t-meta" style={{ opacity: 0.55 }}>PROGETTI</div>
             <div className="t-display" style={{ fontSize: 'clamp(48px, 5vw, 80px)', color: 'var(--oxblood)' }}>
-              17
+              {DATA.tech.projects.length}
             </div>
             <div className="t-italic" style={{ fontSize: 16, opacity: 0.65 }}>2020 — 2026</div>
           </div>
         </div>
 
         <hr className="hr-brass" style={{ marginTop: 36 }} />
-
-        <nav
-          style={{
-            marginTop: 18,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 24,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div style={{ display: 'flex', gap: 28 }}>
-            {['progetti', 'skills', 'esperienza', 'certificazioni', 'playground'].map((s, i) => (
-              <button
-                key={s}
-                className="t-italic"
-                data-cursor="lg"
-                style={{
-                  fontSize: 19,
-                  color: i === 0 ? 'var(--oxblood)' : 'var(--ink)',
-                  opacity: i === 0 ? 1 : 0.6,
-                  borderBottom: `var(--hair) solid ${i === 0 ? 'var(--oxblood)' : 'transparent'}`,
-                  paddingBottom: 4,
-                }}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-          <div className="t-meta" style={{ opacity: 0.55 }}>
-            FILTRA · EMBEDDED · IoT · AI · SEC · ALTRO
-          </div>
-        </nav>
       </div>
 
       <div
@@ -146,10 +107,9 @@ export function ChapterTech({ go }: { go: GoFn }) {
           alignItems: 'stretch',
         }}
       >
-        <FramePhoto
+        <PhotoFrame
           tag="IN PRIMO PIANO · 2026"
-          label="HERO · GREENHOUSE-CONTROLLER · PCB REV.3"
-          code="01 / 06"
+          caption={{ left: `${featured.title.toUpperCase()} · BANCO DI PROVA`, right: `01 / ${String(DATA.tech.projects.length).padStart(2, '0')}` }}
           style={{ minHeight: 480 }}
           onClick={() => go('project', featured.id)}
         >
@@ -166,9 +126,9 @@ export function ChapterTech({ go }: { go: GoFn }) {
               opacity: 0.8,
             }}
           >
-            GREENHOUSE
+            {featured.title.split('-')[0].toUpperCase()}
           </div>
-        </FramePhoto>
+        </PhotoFrame>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="t-meta" style={{ opacity: 0.55 }}>IN PRIMO PIANO — {featured.year}</div>
@@ -201,15 +161,7 @@ export function ChapterTech({ go }: { go: GoFn }) {
             ))}
           </div>
 
-          <div
-            style={{
-              marginTop: 'auto',
-              paddingTop: 28,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 18,
-            }}
-          >
+          <div style={{ marginTop: 'auto', paddingTop: 28 }}>
             <button
               data-cursor="xl"
               data-cursor-label="LEGGI"
@@ -224,7 +176,6 @@ export function ChapterTech({ go }: { go: GoFn }) {
             >
               LEGGI IL CASO STUDIO →
             </button>
-            <span className="t-italic" style={{ fontSize: 15, opacity: 0.55 }}>· 8 minuti</span>
           </div>
         </div>
       </div>
@@ -232,7 +183,9 @@ export function ChapterTech({ go }: { go: GoFn }) {
       <div style={{ marginTop: 80 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <h3 className="t-italic" style={{ fontSize: 32, margin: 0 }}>altri lavori</h3>
-          <div className="t-meta" style={{ opacity: 0.55 }}>2024 — 2025 · 16 ALTRI</div>
+          <div className="t-meta" style={{ opacity: 0.55 }}>
+            {Math.min(...otherYears)} — {Math.max(...otherYears)} · {others.length} ALTRI
+          </div>
         </div>
         <hr className="hr-ink" style={{ marginTop: 14 }} />
 
@@ -288,7 +241,7 @@ export function ChapterTech({ go }: { go: GoFn }) {
                 display: 'grid',
                 gridTemplateColumns: '70px 1fr auto',
                 padding: '14px 0',
-                borderBottom: 'var(--hair) solid rgba(74,42,28,.18)',
+                borderBottom: 'var(--hair) solid var(--leather-a20)',
                 alignItems: 'baseline',
               }}
             >
@@ -303,10 +256,30 @@ export function ChapterTech({ go }: { go: GoFn }) {
   )
 }
 
+// FIG. 02 — firmware excerpt, specific to the greenhouse case study.
+const FIRMWARE_EXCERPT = `// task: lettura sensori e pubblicazione MQTT
+void sensor_task(void *arg) {
+    sensor_data_t d;
+    while (true) {
+        if (sht41_read(&hum, &temp) == ESP_OK) {
+            d.temperature = temp;
+            d.humidity    = hum;
+            d.soil        = soil_capacitive_read();
+            d.lux         = bh1750_read();
+            d.timestamp   = esp_timer_get_time();
+            xQueueSend(mqtt_queue, &d, pdMS_TO_TICKS(200));
+        }
+        vTaskDelay(pdMS_TO_TICKS(CFG_SAMPLE_MS));
+    }
+}`
+
 export function ProjectDetail({ projectId, go }: { projectId: string; go: GoFn }) {
-  const p = DATA.tech.projects.find((x) => x.id === projectId) || DATA.tech.projects[0]
-  const stats: [string, string][] =
-    p.stats || ([['—', 'tempo'], ['solo', 'team'], ['MIT', 'licenza'], ['live', 'stato']] as [string, string][])
+  const projects = DATA.tech.projects
+  const idx = Math.max(0, projects.findIndex((x) => x.id === projectId))
+  const p = projects[idx] || projects[0]
+  const prev = idx > 0 ? projects[idx - 1] : undefined
+  const next = idx < projects.length - 1 ? projects[idx + 1] : undefined
+  const stats: [string, string][] = p.stats ?? []
 
   return (
     <section
@@ -347,31 +320,32 @@ export function ProjectDetail({ projectId, go }: { projectId: string; go: GoFn }
           gap: 48,
         }}
       >
-        <FramePhoto
+        <PhotoFrame
           tag="FIG. 01 — BANCO DI PROVA"
-          label="GREENHOUSE-CONTROLLER · PCB REV.3 · MASTER + SATELLITE"
-          code="01 / 04"
+          caption={{ left: p.title.toUpperCase(), right: `01 / ${String(projects.length).padStart(2, '0')}` }}
           style={{ minHeight: 480 }}
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div className="t-meta" style={{ color: 'var(--brass)' }}>SCHEDA TECNICA</div>
-            <hr className="hr-ink" style={{ marginTop: 8, marginBottom: 18 }} />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
-              {stats.map(([v, k]) => (
-                <div key={k}>
-                  <div
-                    className="t-display"
-                    style={{ fontSize: 'clamp(28px, 3vw, 44px)', color: 'var(--oxblood)' }}
-                  >
-                    {v}
+          {stats.length > 0 && (
+            <div>
+              <div className="t-meta" style={{ color: 'var(--brass)' }}>SCHEDA TECNICA</div>
+              <hr className="hr-ink" style={{ marginTop: 8, marginBottom: 18 }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
+                {stats.map(([v, k]) => (
+                  <div key={k}>
+                    <div
+                      className="t-display"
+                      style={{ fontSize: 'clamp(28px, 3vw, 44px)', color: 'var(--oxblood)' }}
+                    >
+                      {v}
+                    </div>
+                    <div className="t-meta" style={{ opacity: 0.55, marginTop: 2 }}>{k}</div>
                   </div>
-                  <div className="t-meta" style={{ opacity: 0.55, marginTop: 2 }}>{k}</div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div style={{ marginTop: 30 }}>
             <div className="t-meta" style={{ color: 'var(--brass)' }}>STACK</div>
@@ -388,85 +362,60 @@ export function ProjectDetail({ projectId, go }: { projectId: string; go: GoFn }
               ))}
             </div>
           </div>
-
-          <div style={{ marginTop: 30 }}>
-            <div className="t-meta" style={{ color: 'var(--brass)' }}>LINK</div>
-            <hr className="hr-ink" style={{ marginTop: 8, marginBottom: 12 }} />
-            <div style={{ display: 'flex', gap: 24, fontSize: 16 }} className="t-italic">
-              <a data-cursor="lg" href="#" style={{ borderBottom: 'var(--hair) solid var(--oxblood)', paddingBottom: 2 }}>
-                repository ↗
-              </a>
-              <a data-cursor="lg" href="#" style={{ borderBottom: 'var(--hair) solid var(--oxblood)', paddingBottom: 2 }}>
-                demo live ↗
-              </a>
-              <a data-cursor="lg" href="#" style={{ borderBottom: 'var(--hair) solid var(--oxblood)', paddingBottom: 2 }}>
-                documentazione ↗
-              </a>
-            </div>
-          </div>
         </div>
       </div>
 
       <div style={{ marginTop: 100, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 48 }}>
         {(
           [
-            { roman: 'I', t: 'il problema', body: p.problem || 'Lorem ipsum problema da sostituire con contenuto reale.' },
-            { roman: 'II', t: "l'approccio", body: p.approach || 'Lorem ipsum approccio.' },
-            { roman: 'III', t: "l'esito", body: p.outcome || 'Lorem ipsum esito.' },
-          ] as { roman: string; t: string; body: string }[]
-        ).map((s) => (
-          <div key={s.roman}>
-            <div className="t-italic" style={{ fontSize: 18, color: 'var(--brass)' }}>— {s.roman}</div>
-            <h3 className="t-italic" style={{ fontSize: 30, margin: '4px 0 14px' }}>{s.t}</h3>
-            <hr className="hr-ink" style={{ marginBottom: 14 }} />
-            <p className="t-serif" style={{ fontSize: 17, lineHeight: 1.55, margin: 0 }}>{s.body}</p>
-          </div>
-        ))}
+            { roman: 'I', t: 'il problema', body: p.problem },
+            { roman: 'II', t: "l'approccio", body: p.approach },
+            { roman: 'III', t: "l'esito", body: p.outcome },
+          ] as { roman: string; t: string; body?: string }[]
+        )
+          .filter((s) => s.body)
+          .map((s) => (
+            <div key={s.roman}>
+              <div className="t-italic" style={{ fontSize: 18, color: 'var(--brass)' }}>— {s.roman}</div>
+              <h3 className="t-italic" style={{ fontSize: 30, margin: '4px 0 14px' }}>{s.t}</h3>
+              <hr className="hr-ink" style={{ marginBottom: 14 }} />
+              <p className="t-serif" style={{ fontSize: 17, lineHeight: 1.55, margin: 0 }}>{s.body}</p>
+            </div>
+          ))}
       </div>
 
-      <div style={{ marginTop: 100 }}>
-        <div className="t-meta" style={{ color: 'var(--brass)' }}>FIG. 02 — ESTRATTO DI CODICE</div>
-        <hr className="hr-brass" style={{ marginTop: 8, marginBottom: 24 }} />
+      {p.id === 'greenhouse-controller' && (
+        <div style={{ marginTop: 100 }}>
+          <div className="t-meta" style={{ color: 'var(--brass)' }}>FIG. 02 — ESTRATTO DI CODICE</div>
+          <hr className="hr-brass" style={{ marginTop: 8, marginBottom: 24 }} />
 
-        <div
-          className="dark-grain"
-          style={{
-            background: 'var(--ink-deep)',
-            color: 'var(--ivory)',
-            padding: '28px 36px',
-            fontFamily: '"JetBrains Mono", monospace',
-            fontSize: 13.5,
-            lineHeight: 1.7,
-          }}
-        >
           <div
+            className="dark-grain"
             style={{
-              color: 'var(--brass)',
-              opacity: 0.8,
-              marginBottom: 14,
-              fontSize: 11,
-              letterSpacing: '.25em',
+              background: 'var(--ink-deep)',
+              color: 'var(--ivory)',
+              padding: '28px 36px',
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: 13.5,
+              lineHeight: 1.7,
+              overflowX: 'auto',
             }}
           >
-            FIRMWARE/MAIN.C · L. 142 — 168
+            <div
+              style={{
+                color: 'var(--brass)',
+                opacity: 0.8,
+                marginBottom: 14,
+                fontSize: 11,
+                letterSpacing: '.25em',
+              }}
+            >
+              FIRMWARE/MAIN.C · L. 142 — 168
+            </div>
+            <pre style={{ margin: 0, whiteSpace: 'pre' }}>{FIRMWARE_EXCERPT}</pre>
           </div>
-          <pre style={{ margin: 0, whiteSpace: 'pre' }}>{`// task: lettura sensori e pubblicazione MQTT
-void sensor_task(void *arg) {
-    sensor_data_t d;
-    while (true) {
-        if (sht41_read(&hum, &temp) == ESP_OK) {
-            d.temperature = temp;
-            d.humidity    = hum;
-            d.soil        = soil_capacitive_read();
-            d.lux         = bh1750_read();
-            d.timestamp   = esp_timer_get_time();
-            xQueueSend(mqtt_queue, &d, pdMS_TO_TICKS(200));
-        }
-        vTaskDelay(pdMS_TO_TICKS(CFG_SAMPLE_MS));
-    }
-}`}</pre>
         </div>
-      </div>
+      )}
 
       <div
         style={{
@@ -480,12 +429,22 @@ void sensor_task(void *arg) {
           fontStyle: 'italic',
         }}
       >
-        <button data-cursor="lg" onClick={() => go('tech')} style={{ fontSize: 19, color: 'var(--ink)', textAlign: 'left' }}>
-          ← rtos-audio-synth
+        <button
+          data-cursor="lg"
+          onClick={() => (prev ? go('project', prev.id) : go('tech'))}
+          style={{ fontSize: 19, color: 'var(--ink)', textAlign: 'left', opacity: prev ? 1 : 0.5 }}
+        >
+          {prev ? `← ${prev.title}` : '← Torna al capitolo'}
         </button>
-        <div className="t-meta" style={{ color: 'var(--brass)' }}>—  PAG. 06  —</div>
-        <button data-cursor="lg" onClick={() => go('tech')} style={{ fontSize: 19, color: 'var(--ink)', textAlign: 'right' }}>
-          pose-bike-fitter →
+        <div className="t-meta" style={{ color: 'var(--brass)' }}>
+          —  PAG. {ROUTE_META.project.page}  —
+        </div>
+        <button
+          data-cursor="lg"
+          onClick={() => (next ? go('project', next.id) : go('tech'))}
+          style={{ fontSize: 19, color: 'var(--ink)', textAlign: 'right', opacity: next ? 1 : 0.5 }}
+        >
+          {next ? `${next.title} →` : 'Torna al capitolo →'}
         </button>
       </div>
     </section>

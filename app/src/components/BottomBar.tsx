@@ -1,13 +1,9 @@
-import type { ReactNode } from 'react'
-
 export default function BottomBar({
   page,
   hint,
-  pager,
 }: {
   page: string
   hint: string
-  pager?: ReactNode
 }) {
   return (
     <div className="chrome-bottom">
@@ -20,9 +16,6 @@ export default function BottomBar({
       </div>
       <div className="scroll-hint">
         <span className="line" /> {hint} <span className="line" />
-      </div>
-      <div className="page-num" style={{ justifyContent: 'flex-end' }}>
-        {pager}
       </div>
     </div>
   )

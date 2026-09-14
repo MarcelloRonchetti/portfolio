@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react'
 import type { Route } from '../lib/data'
-import { DATA } from '../lib/data'
+import { DATA, ROUTE_META } from '../lib/data'
 import type { Event } from '../lib/events'
 import {
   events,
@@ -9,57 +9,11 @@ import {
   eventById,
   firstEventByTag,
   adjacentEvents,
-  photoUrl,
 } from '../lib/events'
+import PhotoFrame from '../components/PhotoFrame'
+import Clickable from '../components/Clickable'
 
 type GoFn = (next: Route, ref?: string) => void
-
-function PhotoFrame({
-  event,
-  file,
-  ratio,
-  caption,
-  tag,
-  children,
-}: {
-  event?: Event
-  file?: string
-  ratio: string
-  caption?: { left: string; right: string }
-  tag?: string
-  children?: React.ReactNode
-}) {
-  const [failed, setFailed] = useState(false)
-  const src = event && file ? photoUrl(event, file) : undefined
-
-  return (
-    <div className="frame dark" style={{ aspectRatio: ratio, position: 'relative', overflow: 'hidden' }}>
-      {src && !failed && (
-        <img
-          src={src}
-          alt={caption?.left ?? event?.title ?? ''}
-          loading="lazy"
-          onError={() => setFailed(true)}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-          }}
-        />
-      )}
-      {tag && <div className="frame-tag">{tag}</div>}
-      {caption && (
-        <div className="frame-caption">
-          <span>{caption.left}</span>
-          <span>{caption.right}</span>
-        </div>
-      )}
-      {children}
-    </div>
-  )
-}
 
 function LinkPill({ href, label }: { href: string; label: string }) {
   return (
@@ -70,26 +24,7 @@ function LinkPill({ href, label }: { href: string; label: string }) {
       data-cursor="lg"
       data-cursor-label="APRI"
       onClick={(e) => e.stopPropagation()}
-      className="t-meta"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '4px 10px',
-        border: 'var(--hair) solid var(--brass)',
-        color: 'var(--brass)',
-        opacity: 0.85,
-        transition: 'background .3s var(--ease-soft), opacity .3s var(--ease-soft)',
-        textDecoration: 'none',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(168,133,92,.18)'
-        e.currentTarget.style.opacity = '1'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = ''
-        e.currentTarget.style.opacity = '0.85'
-      }}
+      className="t-meta pill"
     >
       {label}
     </a>
@@ -106,10 +41,11 @@ function CollectionCard({
   const hasLinks = !!(c.links?.instagram_url || c.links?.gallery_url || c.links?.external_url)
 
   return (
-    <div
-      data-cursor="xl"
-      data-cursor-label="APRI"
+    <Clickable
       onClick={onClick}
+      cursor="xl"
+      cursorLabel="APRI"
+      className="hover-card"
       style={{
         position: 'relative',
         border: 'var(--hair) solid var(--brass)',
@@ -118,17 +54,7 @@ function CollectionCard({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        background: 'rgba(168,133,92,.04)',
         overflow: 'hidden',
-        transition: 'background .4s var(--ease-soft), transform .4s var(--ease-soft)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(168,133,92,.12)'
-        e.currentTarget.style.transform = 'translateY(-4px)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(168,133,92,.04)'
-        e.currentTarget.style.transform = ''
       }}
     >
       <span
@@ -172,13 +98,24 @@ function CollectionCard({
           </div>
         )}
       </div>
-    </div>
+    </Clickable>
   )
+}
+
+// Teaser for the Selezioni list: first caption sentence, mentions stripped,
+// falling back to the location.
+function teaser(e: Event): string {
+  const first = e.description_it
+    ?.split(/[.\n]/)[0]
+    ?.replace(/@[\w.]+/g, '')
+    .replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}]/gu, '')
+    .trim()
+  return first || e.location || ''
 }
 
 export function ChapterFoto({ go }: { go: GoFn }) {
   const f = featuredEvent
-  const totalShots = events.reduce((acc, e) => acc + e.photos.length + (e.cover ? 1 : 0), 0)
+  const totalShots = events.reduce((acc, e) => acc + e.photos.length + 1, 0)
   const selezioni = events.filter((e) => !f || e.id !== f.id).slice(0, 6)
 
   return (
@@ -193,7 +130,7 @@ export function ChapterFoto({ go }: { go: GoFn }) {
     >
       <div style={{ position: 'relative', height: 'min(95vh, 900px)' }}>
         {f ? (
-          <PhotoFrame event={f} file={f.cover} ratio="auto">
+          <PhotoFrame event={f} file={f.cover} ratio="auto" dark>
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,12,9,.42)', zIndex: 2 }} />
             <HeroOverlay event={f} totalShots={totalShots} />
           </PhotoFrame>
@@ -225,7 +162,7 @@ export function ChapterFoto({ go }: { go: GoFn }) {
               marginTop: -10,
             }}
           >
-            {DATA.foto_chapter.pull_quote_it}
+            {DATA.foto_chapter.pull_quote}
           </div>
           <div className="t-meta" style={{ color: 'var(--brass)', marginTop: 24 }}>
             — M.R., DAL DIARIO DI BORDO
@@ -299,27 +236,19 @@ export function ChapterFoto({ go }: { go: GoFn }) {
 
           <div style={{ marginTop: 28 }}>
             {selezioni.map((s, i) => (
-              <div
+              <Clickable
                 key={s.id}
-                data-cursor="xl"
-                data-cursor-label="LEGGI"
                 onClick={() => go('story', s.id)}
+                cursor="xl"
+                cursorLabel="LEGGI"
+                className="hover-row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '90px 140px 1fr 2fr 60px',
                   padding: '26px 0',
                   alignItems: 'baseline',
                   gap: 24,
-                  borderBottom: 'var(--hair) solid rgba(168,133,92,.3)',
-                  transition: 'padding-left .4s var(--ease-soft), background .4s var(--ease-soft)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.paddingLeft = '14px'
-                  e.currentTarget.style.background = 'rgba(168,133,92,.06)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.paddingLeft = ''
-                  e.currentTarget.style.background = ''
+                  borderBottom: 'var(--hair) solid var(--brass-a30)',
                 }}
               >
                 <span className="t-meta" style={{ opacity: 0.55 }}>0{i + 1}</span>
@@ -328,12 +257,12 @@ export function ChapterFoto({ go }: { go: GoFn }) {
                   {s.title} '{s.year.slice(-2)}
                 </span>
                 <span className="t-italic" style={{ fontSize: 18, opacity: 0.8 }}>
-                  {s.description_it?.split(/[.\n]/)[0] ?? s.subtitle ?? ''}
+                  {teaser(s)}
                 </span>
                 <span className="t-meta" style={{ opacity: 0.55, textAlign: 'right', color: 'var(--brass)' }}>
                   '{s.year.slice(-2)}
                 </span>
-              </div>
+              </Clickable>
             ))}
           </div>
         </div>
@@ -381,7 +310,7 @@ function HeroOverlay({ event, totalShots }: { event?: Event; totalShots: number 
             maxWidth: '32ch',
           }}
         >
-          {DATA.foto_chapter.intro_it}
+          {DATA.foto_chapter.intro}
         </div>
       </div>
 
@@ -412,7 +341,7 @@ function HeroOverlay({ event, totalShots }: { event?: Event; totalShots: number 
           {totalShots.toLocaleString('it-IT')}
         </div>
         <div className="t-italic" style={{ fontSize: 18, opacity: 0.75 }}>
-          dal 2019 — {DATA.identity.year}
+          dal {DATA.foto_chapter.since} — {DATA.identity.year}
         </div>
       </div>
 
@@ -437,7 +366,7 @@ function HeroOverlay({ event, totalShots }: { event?: Event; totalShots: number 
         >
           <div>
             <div className="t-meta" style={{ color: 'var(--brass)', marginBottom: 6 }}>
-              FEATURED · {(event.subtitle ?? '').toUpperCase()}
+              {event.subtitle ? `FEATURED · ${event.subtitle.toUpperCase()}` : 'FEATURED'}
             </div>
             <div
               className="t-display"
@@ -450,15 +379,15 @@ function HeroOverlay({ event, totalShots }: { event?: Event; totalShots: number 
               {event.title.toUpperCase()} '{event.year.slice(-2)}
             </div>
           </div>
-          <div className="t-italic" style={{ fontSize: 18, opacity: 0.85, textAlign: 'right' }}>
-            {event.location ?? ''}
-            {event.specs && (
-              <>
-                <br />
+          {(event.location || event.specs) && (
+            <div className="t-italic" style={{ fontSize: 18, opacity: 0.85, textAlign: 'right' }}>
+              {event.location}
+              {event.location && event.specs && <br />}
+              {event.specs && (
                 <span className="t-meta" style={{ opacity: 0.65 }}>{event.specs}</span>
-              </>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </>
@@ -475,7 +404,7 @@ function EmptyState() {
       }}
       className="t-italic"
     >
-      Nessun evento ancora caricato. Lancia <code style={{ color: 'var(--brass)' }}>/foto-new-event</code> per crearne uno.
+      Nessun evento ancora caricato.
     </div>
   )
 }
@@ -505,6 +434,14 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
   const { prev, next } = adjacentEvents(f.id)
   const contactSheet = f.photos.slice(0, 16)
   const activeFile = contactSheet[activeIdx] ?? f.cover
+  const scheda: [string, string][] = [
+    ['DATA', formatDate(f.date)],
+    ...(f.location ? [['LOCATION', f.location] as [string, string]] : []),
+    ...(f.subtitle ? [['SOGGETTO', f.subtitle] as [string, string]] : []),
+    ...(f.gear?.lens ? [['OTTICA', f.gear.lens] as [string, string]] : []),
+    ...(f.gear?.body ? [['CORPO', f.gear.body] as [string, string]] : []),
+    ...(f.specs ? [['EXPO', f.specs] as [string, string]] : []),
+  ]
 
   return (
     <section
@@ -580,6 +517,7 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
           event={f}
           file={activeFile}
           ratio="3 / 2"
+          dark
           caption={{
             left: `HERO · ${(f.subtitle ?? '').toUpperCase()}`,
             right: `${activeIdx + 1} / ${Math.max(1, contactSheet.length)}`,
@@ -603,31 +541,30 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
         </PhotoFrame>
 
         <div>
-          <div className="t-meta" style={{ color: 'var(--brass)' }}>DIARIO DI BORDO</div>
-          <hr className="hr-brass" style={{ margin: '10px 0 18px' }} />
-          <p className="t-serif" style={{ fontSize: 19, lineHeight: 1.6, opacity: 0.9, margin: 0, whiteSpace: 'pre-wrap' }}>
-            {f.description_it ?? '—'}
-          </p>
-
-          <div style={{ marginTop: 30 }}>
-            <div className="t-meta" style={{ color: 'var(--brass)' }}>SCHEDA</div>
-            <hr className="hr-brass" style={{ margin: '10px 0 14px' }} />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', rowGap: 8, fontSize: 15 }}>
-              {([
-                ['LOCATION', f.location ?? '—'],
-                ['DATA', formatDate(f.date)],
-                ['SOGGETTO', f.subtitle ?? '—'],
-                f.gear?.lens ? ['OTTICA', f.gear.lens] : null,
-                f.gear?.body ? ['CORPO', f.gear.body] : null,
-                f.specs ? ['EXPO', f.specs] : null,
-              ].filter(Boolean) as [string, string][]).map(([k, v]) => (
-                <Fragment key={k}>
-                  <span className="t-meta" style={{ opacity: 0.55 }}>{k}</span>
-                  <span className="t-italic" style={{ opacity: 0.85 }}>{v}</span>
-                </Fragment>
-              ))}
+          {f.description_it && (
+            <div style={{ marginBottom: 30 }}>
+              <div className="t-meta" style={{ color: 'var(--brass)' }}>DIARIO DI BORDO</div>
+              <hr className="hr-brass" style={{ margin: '10px 0 18px' }} />
+              <p className="t-serif" style={{ fontSize: 19, lineHeight: 1.6, opacity: 0.9, margin: 0, whiteSpace: 'pre-wrap' }}>
+                {f.description_it}
+              </p>
             </div>
-          </div>
+          )}
+
+          {scheda.length > 0 && (
+            <div>
+              <div className="t-meta" style={{ color: 'var(--brass)' }}>SCHEDA</div>
+              <hr className="hr-brass" style={{ margin: '10px 0 14px' }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', rowGap: 8, fontSize: 15 }}>
+                {scheda.map(([k, v]) => (
+                  <Fragment key={k}>
+                    <span className="t-meta" style={{ opacity: 0.55 }}>{k}</span>
+                    <span className="t-italic" style={{ opacity: 0.85 }}>{v}</span>
+                  </Fragment>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -650,20 +587,19 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
             }}
           >
             {contactSheet.map((file, i) => (
-              <div
+              <Clickable
                 key={file}
-                data-cursor="xl"
-                data-cursor-label="VEDI"
                 onClick={() => setActiveIdx(i)}
+                cursor="xl"
+                cursorLabel="VEDI"
                 style={{
                   outline: activeIdx === i ? '1px solid var(--brass)' : 'none',
                   outlineOffset: 1,
-                  cursor: 'pointer',
                   transition: 'transform .35s var(--ease-soft)',
                   transform: activeIdx === i ? 'scale(0.97)' : 'scale(1)',
                 }}
               >
-                <PhotoFrame event={f} file={file} ratio="3 / 2">
+                <PhotoFrame event={f} file={file} ratio="3 / 2" dark>
                   <div
                     style={{
                       position: 'absolute',
@@ -680,7 +616,7 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
                     {String(i + 1).padStart(3, '0')}
                   </div>
                 </PhotoFrame>
-              </div>
+              </Clickable>
             ))}
           </div>
         </div>
@@ -705,7 +641,9 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
         >
           {prev ? `← ${prev.title} '${prev.year.slice(-2)}` : '← Torna al capitolo'}
         </button>
-        <div className="t-meta" style={{ color: 'var(--brass)' }}>—  PAG. 22  —</div>
+        <div className="t-meta" style={{ color: 'var(--brass)' }}>
+          —  PAG. {ROUTE_META.story.page}  —
+        </div>
         <button
           data-cursor="lg"
           onClick={() => (next ? go('story', next.id) : go('foto'))}

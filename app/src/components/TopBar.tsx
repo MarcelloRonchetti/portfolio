@@ -3,8 +3,6 @@ import type { Route } from '../lib/data'
 type Props = {
   route: Route
   onNavigate: (next: Route) => void
-  lang: 'IT' | 'EN'
-  setLang: (v: 'IT' | 'EN') => void
   theme: 'light' | 'dark'
   setTheme: (v: 'light' | 'dark') => void
 }
@@ -17,7 +15,7 @@ const ITEMS: { id: Route; label: string }[] = [
   { id: 'contact', label: 'contatti' },
 ]
 
-export default function TopBar({ route, onNavigate, lang, setLang, theme, setTheme }: Props) {
+export default function TopBar({ route, onNavigate, theme, setTheme }: Props) {
   return (
     <div className="chrome-top">
       <div className="brand">
@@ -49,15 +47,6 @@ export default function TopBar({ route, onNavigate, lang, setLang, theme, setThe
       </nav>
 
       <div className="controls">
-        <div className="seg">
-          <button className={lang === 'IT' ? 'on' : ''} onClick={() => setLang('IT')} data-cursor="lg">
-            IT
-          </button>
-          <span className="div">·</span>
-          <button className={lang === 'EN' ? 'on' : ''} onClick={() => setLang('EN')} data-cursor="lg">
-            EN
-          </button>
-        </div>
         <div className="seg">
           <button className={theme === 'light' ? 'on' : ''} onClick={() => setTheme('light')} data-cursor="lg">
             ☀

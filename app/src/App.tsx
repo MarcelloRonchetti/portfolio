@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Route } from './lib/data'
+import { ROUTE_META } from './lib/data'
 import TopBar from './components/TopBar'
 import BottomBar from './components/BottomBar'
 import CustomCursor from './components/CustomCursor'
@@ -25,30 +26,31 @@ function persistSet(k: string, v: string) {
   }
 }
 
-function sealForRoute(route: Route): string {
-  switch (route) {
-    case 'cover': return 'MR'
-    case 'tech': return 'I'
-    case 'project': return 'I·a'
-    case 'foto': return 'II'
-    case 'story': return 'II·a'
-    case 'about': return 'III'
-    case 'contact': return 'V'
-    default: return 'MR'
+// Deep links: 404.html redirects unknown paths to /?p=<path>; restore the route once.
+function initialRoute(): Route {
+  const ROUTES: Route[] = ['cover', 'tech', 'project', 'foto', 'story', 'about', 'contact']
+  try {
+    const p = new URLSearchParams(window.location.search).get('p')
+    const path = (p ?? '').replace(/\/+$/, '').replace(/^\//, '')
+    if (ROUTES.includes(path as Route)) {
+      window.history.replaceState(null, '', window.location.pathname)
+      return path as Route
+    }
+  } catch {
+    /* ignore */
   }
+  return persistGet('mr.route', 'cover') as Route
 }
 
 export default function App() {
-  const [route, setRoute] = useState<Route>(() => persistGet('mr.route', 'cover') as Route)
+  const [route, setRoute] = useState<Route>(initialRoute)
   const [projectId, setProjectId] = useState(() => persistGet('mr.projectId', 'greenhouse-controller'))
   const [storyId, setStoryId] = useState(() => persistGet('mr.storyId', persistGet('mr.storyTag', 'MotoGP')))
-  const [lang, setLang] = useState<'IT' | 'EN'>(() => (persistGet('mr.lang', 'IT') as 'IT' | 'EN'))
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (persistGet('mr.theme', 'light') as 'light' | 'dark'))
 
   useEffect(() => persistSet('mr.route', route), [route])
   useEffect(() => persistSet('mr.projectId', projectId), [projectId])
   useEffect(() => persistSet('mr.storyId', storyId), [storyId])
-  useEffect(() => persistSet('mr.lang', lang), [lang])
   useEffect(() => {
     persistSet('mr.theme', theme)
     document.documentElement.setAttribute('data-theme', theme)
@@ -63,8 +65,7 @@ export default function App() {
 
   const go = async (next: Route, ref?: string) => {
     if (next === route && !ref) return
-    const seal = sealForRoute(next)
-    await curtain.transition(seal, () => {
+    await curtain.transition(ROUTE_META[next].seal, () => {
       if (next === 'project' && ref) setProjectId(ref)
       if (next === 'story' && ref) setStoryId(ref)
       setRoute(next)
@@ -73,9 +74,7 @@ export default function App() {
   }
 
   let screen: React.ReactNode = null
-  let pageNum = '01'
-  let scrollHint = 'sfoglia'
-  let pager: React.ReactNode = null
+  const scrollHint = ROUTE_META[route].hint
 
   if (route === 'cover') {
     screen = (
@@ -84,31 +83,16 @@ export default function App() {
         <Preface go={(next) => go(next)} />
       </>
     )
-    pageNum = '01'
-    scrollHint = 'sfoglia la prefazione'
-    pager = <span style={{ color: 'var(--brass)' }}>I · II · III →</span>
   } else if (route === 'tech') {
     screen = <ChapterTech go={(next, ref) => go(next, ref)} />
-    pageNum = '04'
-    scrollHint = 'capitolo primo'
-    pager = <span style={{ color: 'var(--brass)' }}>← I  ·  II →</span>
   } else if (route === 'project') {
     screen = <ProjectDetail projectId={projectId} go={(next, ref) => go(next, ref)} />
-    pageNum = '06'
-    scrollHint = 'caso studio'
   } else if (route === 'foto') {
     screen = <ChapterFoto go={(next, ref) => go(next, ref)} />
-    pageNum = '18'
-    scrollHint = 'capitolo secondo'
-    pager = <span style={{ color: 'var(--brass)' }}>← I  ·  II →</span>
   } else if (route === 'story') {
     screen = <PhotoStory eventId={storyId} go={(next, ref) => go(next, ref)} />
-    pageNum = '22'
-    scrollHint = 'foglio contatto'
   } else if (route === 'about' || route === 'contact') {
     screen = <Placeholder route={route} go={(next) => go(next)} />
-    pageNum = route === 'about' ? '30' : '38'
-    scrollHint = route
   }
 
   return (
@@ -116,15 +100,13 @@ export default function App() {
       <TopBar
         route={route}
         onNavigate={(next) => go(next)}
-        lang={lang}
-        setLang={setLang}
         theme={theme}
         setTheme={setTheme}
       />
 
       {screen}
 
-      <BottomBar page={pageNum} hint={scrollHint} pager={pager} />
+      <BottomBar page={ROUTE_META[route].page} hint={scrollHint} />
 
       <Curtain state={curtain.state} seal={curtain.seal} />
       <CustomCursor />
