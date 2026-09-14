@@ -2,6 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 
 type Variant = 'default' | 'lg' | 'xl' | 'text'
 
+// The lerp cursor is a desktop nicety: skip it on touch devices and for
+// reduced-motion users (native cursor stays visible in both cases).
+const enabled =
+  typeof window !== 'undefined' &&
+  window.matchMedia('(pointer: fine)').matches &&
+  !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
 export default function CustomCursor() {
   const ref = useRef<HTMLDivElement | null>(null)
   const [variant, setVariant] = useState<Variant>('default')
@@ -11,6 +18,8 @@ export default function CustomCursor() {
   const target = useRef({ x: -100, y: -100 })
 
   useEffect(() => {
+    if (!enabled) return
+
     document.body.classList.add('has-custom-cursor')
 
     const onMove = (e: MouseEvent) => {
@@ -62,6 +71,7 @@ export default function CustomCursor() {
   }, [])
 
   const cls = ['cursor', variant !== 'default' ? variant : ''].filter(Boolean).join(' ')
+  if (!enabled) return null
   return (
     <div ref={ref} className={cls} style={{ opacity: visible ? 1 : 0 }}>
       {variant === 'xl' && label}

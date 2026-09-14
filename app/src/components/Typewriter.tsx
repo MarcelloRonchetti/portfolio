@@ -16,6 +16,10 @@ export default function Typewriter({
   const [shown, setShown] = useState('')
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShown(text)
+      return
+    }
     let i = 0
     let to: number | undefined
     const start = window.setTimeout(() => {

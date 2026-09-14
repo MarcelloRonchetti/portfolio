@@ -52,16 +52,18 @@
   --ease-cin:   cubic-bezier(.65,0,.35,1);
 }
 
-/* dark theme (cover / preface only — chapters fix their own bg) */
+/* dark theme (cover / preface only — chapters fix their own bg).
+   --ink-deep stays dark in both themes: the photo chapters, curtain panels
+   and code excerpt paint it as their background. */
 [data-theme="dark"] {
   --bone:        #14110d;
   --bone-deep:   #0e0a07;
   --ivory:       #1c1812;
   --paper:       #0e0a07;
   --ink:         #ede4cf;
-  --ink-deep:    #f4ecd6;
   --ink-soft:    #d0c4a4;
   --oxblood:     #c44a5e;
+  --leather:     #8a6d49;
 }
 
 * { box-sizing: border-box; }
@@ -128,6 +130,10 @@ button { border: 0; background: transparent; color: inherit; font: inherit; curs
   background: linear-gradient(180deg, rgba(14,10,7,.78) 0%, rgba(14,10,7,.55) 60%, rgba(14,10,7,0) 100%);
   color: var(--ivory);
 }
+[data-theme="dark"] .chrome-top {
+  background: linear-gradient(180deg, rgba(20,17,13,.78) 0%, rgba(20,17,13,.55) 60%, rgba(20,17,13,0) 100%);
+  color: var(--ivory);
+}
 .chrome-top > * { pointer-events: auto; }
 
 .chrome-top .brand {
@@ -190,6 +196,10 @@ button { border: 0; background: transparent; color: inherit; font: inherit; curs
 }
 [data-section="dark"] .chrome-bottom {
   background: linear-gradient(0deg, rgba(14,10,7,.85) 0%, rgba(14,10,7,.5) 60%, rgba(14,10,7,0) 100%);
+  color: var(--ivory);
+}
+[data-theme="dark"] .chrome-bottom {
+  background: linear-gradient(0deg, rgba(20,17,13,.85) 0%, rgba(20,17,13,.5) 60%, rgba(20,17,13,0) 100%);
   color: var(--ivory);
 }
 .chrome-bottom > * { pointer-events: auto; }
@@ -380,6 +390,29 @@ button { border: 0; background: transparent; color: inherit; font: inherit; curs
 .pill:hover { background: var(--brass-a18); opacity: 1; }
 
 :focus-visible { outline: 1px solid var(--brass); outline-offset: 3px; }
+
+/* custom cursor only makes sense with a fine pointer */
+@media (pointer: coarse) {
+  body.has-custom-cursor,
+  body.has-custom-cursor * { cursor: auto !important; }
+}
+
+/* reduced motion: content appears immediately, transitions drop out */
+@media (prefers-reduced-motion: reduce) {
+  .anim-rise,
+  .stagger > * {
+    animation: none !important;
+  }
+  .curtain .panel,
+  .curtain .seal,
+  .cursor,
+  .hover-rise,
+  .hover-card,
+  .hover-row,
+  .pill {
+    transition: none !important;
+  }
+}
 
 /* page background — soft warm gradient */
 body {
