@@ -1,0 +1,35 @@
+{
+  "id": "instagram-17941138395231001",
+  "tags": [
+    "Ferrari"
+  ],
+  "title": "The Ferrari 849 Testarossa has a 4-liter twin-turbo V8 with an output of 1050 CV with elec",
+  "year": "2026",
+  "subtitle": "Ferrari",
+  "location": "",
+  "date": "2026-06-08",
+  "description_it": "The ferrari 849 Testarossa has a 4-liter twin-turbo V8 with an output of 1050 CV with electric motors.\nTop speed 330 km/h\n0-100 km/h in under 2.3 seconds",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg",
+    "07.jpg",
+    "08.jpg",
+    "09.jpg",
+    "10.jpg",
+    "11.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DZSPcpqjBaR/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "17941138395231001",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

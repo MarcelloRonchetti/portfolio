@@ -1,0 +1,43 @@
+{
+  "id": "instagram-18101633096032005",
+  "tags": [
+    "Maserati"
+  ],
+  "title": "La Maserati GT2 Stradale è un'edizione limitata a 914 esemplari che porta in strada le tec",
+  "year": "2026",
+  "subtitle": "Maserati",
+  "location": "",
+  "date": "2026-06-01",
+  "description_it": "La Maserati GT2 Stradale è un'edizione limitata a 914 esemplari che porta in strada le tecnologie della versione da corsa. Derivata dalla MC20, pesa 1.415 kg (-60 kg) grazie alla monoscocca in carbonio e genera 500 kg di carico aerodinamico. Il V6 Nettuno 3.0 biturbo eroga 640 CV, consentendo lo scatto 0-100 km/h in 2,8 s e una velocità di 324 km/h. L'abitacolo, con sedili in carbonio e volante con indicatori LED, mantiene sospensioni tarate per l'uso stradale",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg",
+    "07.jpg",
+    "08.jpg",
+    "09.jpg",
+    "10.jpg",
+    "11.jpg",
+    "12.jpg",
+    "13.jpg",
+    "14.jpg",
+    "15.jpg",
+    "16.jpg",
+    "17.jpg",
+    "18.jpg",
+    "19.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DZCZcg3jOHz/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18101633096032005",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

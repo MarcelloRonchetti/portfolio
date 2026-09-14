@@ -18,7 +18,6 @@ const DRY = process.argv.includes('--dry-run')
 // near-duplicate second post of the #50 Ferrari WEC pair (merged into its twin).
 const REMOVE = ['mugello-2025-motogp', 'sardegna-2025-wrc', '50-wec-ferrari-2025-ferrari']
 const MERGE_INTO = { '50-wec-ferrari-2025-ferrari': { into: '50-ferrari-wec-2024-2025-ferrari' } }
-const SET_FEATURED = 'these-eyes-2025-ferrari'
 
 const PLACES = { imola: 'Imola', modena: 'Modena', mugello: 'Mugello' }
 const BRANDS = [
@@ -185,7 +184,6 @@ for (const id of dirs) {
   if (!out.subtitle) out.subtitle = (out.tags ?? []).join(' · ')
   const norm = (s) => fold(s).replace(/\.+$/, '')
   if (norm(desc) && norm(desc) === norm(title)) out.description_it = ''
-  if (id === SET_FEATURED) out.featured = true
 
   const changed =
     out.title !== ev.title ||

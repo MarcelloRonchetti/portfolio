@@ -1,0 +1,30 @@
+{
+  "id": "instagram-17884795254667329",
+  "tags": [
+    "Ferrari"
+  ],
+  "title": "The Ferrari 12 Cilindri has a 6.5L naturally aspirated V12, 830 hp, 0-100 km/h in 2.9 seco",
+  "year": "2026",
+  "subtitle": "Ferrari",
+  "location": "Modena",
+  "date": "2026-07-07",
+  "description_it": "the Ferrari 12 Cilindri has a 6.5L naturally aspirated V12, 830 hp, 0-100 km/h in 2.9 seconds and a top speed of over 340 km/h",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/Daf0vjUjBZj/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "17884795254667329",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

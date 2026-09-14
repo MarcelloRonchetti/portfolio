@@ -1,0 +1,33 @@
+{
+  "id": "instagram-18111359569789876",
+  "tags": [
+    "Maserati"
+  ],
+  "title": "Maserati Trofeo, one of the cleanest car I've ever seen",
+  "year": "2026",
+  "subtitle": "Maserati",
+  "location": "",
+  "date": "2026-08-11",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg",
+    "07.jpg",
+    "08.jpg",
+    "09.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/Db6JmS4jKXp/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18111359569789876",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "instagram-18107452948887691",
+  "tags": [
+    "Maserati"
+  ],
+  "title": "Maserati GT2 Stradale",
+  "year": "2026",
+  "subtitle": "Maserati",
+  "location": "",
+  "date": "2026-08-29",
+  "description_it": "post 2/2",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DcnbbaSDOUW/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18107452948887691",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

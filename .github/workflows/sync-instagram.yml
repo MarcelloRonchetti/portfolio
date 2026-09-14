@@ -1,0 +1,28 @@
+name: Import Instagram media
+on:
+  schedule:
+    - cron: '17 04 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: instagram-import
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node scripts/sync-instagram.mjs
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+      - run: |
+          git diff --quiet || (
+            git config user.name 'portfolio-sync[bot]'
+            git config user.email 'portfolio-sync[bot]@users.noreply.github.com'
+            git add app/public/photos
+            git commit -m 'chore: import Instagram media'
+            git push
+          )

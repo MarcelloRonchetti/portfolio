@@ -1,0 +1,29 @@
+{
+  "id": "instagram-17916038955186196",
+  "tags": [
+    "WRC"
+  ],
+  "title": "Lancia delta integrale 16 valvole - Group A 1990",
+  "year": "2026",
+  "subtitle": "WRC",
+  "location": "",
+  "date": "2026-05-31",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DZAcKJsDOOy/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "17916038955186196",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

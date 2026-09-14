@@ -1,0 +1,25 @@
+{
+  "id": "instagram-18388681405189742",
+  "tags": [
+    "Ferrari"
+  ],
+  "title": "WEC Ferrari",
+  "year": "2025",
+  "subtitle": "Ferrari",
+  "location": "",
+  "date": "2025-06-28",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DLdXJ-VMLwN/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18388681405189742",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "instagram-18066986426438234",
+  "tags": [
+    "Ferrari"
+  ],
+  "title": "Ferrari 296 GTS SILVER-PURPLE",
+  "year": "2026",
+  "subtitle": "Ferrari",
+  "location": "",
+  "date": "2026-06-13",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg",
+    "07.jpg",
+    "08.jpg",
+    "09.jpg",
+    "10.jpg",
+    "11.jpg",
+    "12.jpg",
+    "13.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DZhmexejPPq/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18066986426438234",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "instagram-18118257931904503",
+  "tags": [
+    "Ferrari"
+  ],
+  "title": "Ferrari",
+  "year": "2026",
+  "subtitle": "Ferrari",
+  "location": "",
+  "date": "2026-08-15",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [],
+  "links": {
+    "instagram_url": "https://www.instagram.com/reel/DcErpNUMfxF/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18118257931904503",
+    "media_type": "VIDEO"
+  }
+}

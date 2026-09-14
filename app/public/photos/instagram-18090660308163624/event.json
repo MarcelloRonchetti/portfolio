@@ -1,0 +1,27 @@
+{
+  "id": "instagram-18090660308163624",
+  "tags": [
+    "Ferrari"
+  ],
+  "title": "Ferrari Modena",
+  "year": "2026",
+  "subtitle": "Ferrari",
+  "location": "",
+  "date": "2026-09-07",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/Dc-hoDZDH4R/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18090660308163624",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "id": "instagram-18106230719102928",
+  "tags": [
+    "Ferrari"
+  ],
+  "title": "Ferrari 275 GTB4 V12 from the greatest hit series",
+  "year": "2026",
+  "subtitle": "Ferrari",
+  "location": "Modena",
+  "date": "2026-06-22",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg",
+    "07.jpg",
+    "08.jpg",
+    "09.jpg",
+    "10.jpg",
+    "11.jpg",
+    "12.jpg",
+    "13.jpg",
+    "14.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DZ4_-U3DB-A/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18106230719102928",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

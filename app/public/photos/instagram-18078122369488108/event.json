@@ -1,0 +1,23 @@
+{
+  "id": "instagram-18078122369488108",
+  "tags": [
+    "BMW"
+  ],
+  "title": "Bi-Color BMW",
+  "year": "2026",
+  "subtitle": "BMW",
+  "location": "",
+  "date": "2026-07-18",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [],
+  "links": {
+    "instagram_url": "https://www.instagram.com/reel/Da8jQpKsnrc/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18078122369488108",
+    "media_type": "VIDEO"
+  }
+}

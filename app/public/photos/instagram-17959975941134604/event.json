@@ -1,0 +1,38 @@
+{
+  "id": "instagram-17959975941134604",
+  "tags": [
+    "Dallara"
+  ],
+  "title": "Dallara Stradale has wings",
+  "year": "2026",
+  "subtitle": "Dallara",
+  "location": "",
+  "date": "2026-06-16",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg",
+    "07.jpg",
+    "08.jpg",
+    "09.jpg",
+    "10.jpg",
+    "11.jpg",
+    "12.jpg",
+    "13.jpg",
+    "14.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DZpdXh2jPgR/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "17959975941134604",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

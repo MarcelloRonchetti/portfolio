@@ -1,0 +1,31 @@
+{
+  "id": "instagram-18168051046416024",
+  "tags": [
+    "Maserati"
+  ],
+  "title": "Maserati showroom in Modena",
+  "year": "2026",
+  "subtitle": "Maserati",
+  "location": "Modena",
+  "date": "2026-09-05",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg",
+    "07.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/Dc5e4-9jFYc/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18168051046416024",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

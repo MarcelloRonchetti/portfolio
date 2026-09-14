@@ -1,0 +1,28 @@
+{
+  "id": "instagram-18089849957376404",
+  "tags": [
+    "Ferrari"
+  ],
+  "title": "Spotting ferraris in the mountains",
+  "year": "2026",
+  "subtitle": "Ferrari",
+  "location": "",
+  "date": "2026-06-20",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DZ0t7BojGhD/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18089849957376404",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}
