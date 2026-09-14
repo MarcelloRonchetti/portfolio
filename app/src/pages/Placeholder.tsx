@@ -13,7 +13,7 @@ export default function Placeholder({ route, go }: { route: Route; go: (next: Ro
       }}
     >
       <div className="t-meta" style={{ color: 'var(--brass)' }}>
-        {isAbout ? 'CAPITOLO III · ABOUT' : 'CAPITOLO V · CONTATTI'}
+        {isAbout ? 'CAPITOLO II · ABOUT' : 'CAPITOLO III · CONTATTI'}
       </div>
       <h1 className="t-display t-detail" style={{ margin: '12px 0', lineHeight: 0.85 }}>
         {isAbout ? "L'AUTORE" : 'SCRIVIMI'}
@@ -23,8 +23,8 @@ export default function Placeholder({ route, go }: { route: Route; go: (next: Ro
         <div className="grid-detail" style={{ gap: 60, marginTop: 50 }}>
           <div className="t-serif" style={{ fontSize: 19, lineHeight: 1.6, opacity: 0.9 }}>
             <p style={{ fontSize: 24, fontStyle: 'italic', opacity: 0.9, marginTop: 0 }}>
-              Sono nato a Carpi nel 2007. Lavoro nel firmware e nella fotografia di motorsport. Le due cose non si
-              parlano, ma vivono accanto.
+              Sono nato a Carpi nel 2007. Fotografio sport e motorsport — in pista e fuori, un decimo di secondo alla
+              volta.
             </p>
             <p>
               Pagina in costruzione — racconto completo in arrivo. Per ora, l'indice principale è il modo migliore di

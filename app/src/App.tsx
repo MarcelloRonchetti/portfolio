@@ -7,7 +7,6 @@ import CustomCursor from './components/CustomCursor'
 import { Curtain } from './components/Curtain'
 import { useCurtain } from './components/useCurtain'
 import { Cover, Preface } from './pages/Cover'
-import { ChapterTech, ProjectDetail } from './pages/ChapterTech'
 import { ChapterFoto, PhotoStory } from './pages/ChapterFoto'
 import Placeholder from './pages/Placeholder'
 
@@ -28,7 +27,7 @@ function persistSet(k: string, v: string) {
 
 // Deep links: 404.html redirects unknown paths to /?p=<path>; restore the route once.
 function initialRoute(): Route {
-  const ROUTES: Route[] = ['cover', 'tech', 'project', 'foto', 'story', 'about', 'contact']
+  const ROUTES: Route[] = ['cover', 'foto', 'story', 'about', 'contact']
   try {
     const p = new URLSearchParams(window.location.search).get('p')
     const path = (p ?? '').replace(/\/+$/, '').replace(/^\//, '')
@@ -44,12 +43,10 @@ function initialRoute(): Route {
 
 export default function App() {
   const [route, setRoute] = useState<Route>(initialRoute)
-  const [projectId, setProjectId] = useState(() => persistGet('mr.projectId', 'greenhouse-controller'))
-  const [storyId, setStoryId] = useState(() => persistGet('mr.storyId', persistGet('mr.storyTag', 'MotoGP')))
+  const [storyId, setStoryId] = useState(() => persistGet('mr.storyId', ''))
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (persistGet('mr.theme', 'light') as 'light' | 'dark'))
 
   useEffect(() => persistSet('mr.route', route), [route])
-  useEffect(() => persistSet('mr.projectId', projectId), [projectId])
   useEffect(() => persistSet('mr.storyId', storyId), [storyId])
   useEffect(() => {
     persistSet('mr.theme', theme)
@@ -66,7 +63,6 @@ export default function App() {
   const go = async (next: Route, ref?: string) => {
     if (next === route && !ref) return
     await curtain.transition(ROUTE_META[next].seal, () => {
-      if (next === 'project' && ref) setProjectId(ref)
       if (next === 'story' && ref) setStoryId(ref)
       setRoute(next)
       window.scrollTo({ top: 0, behavior: 'instant' })
@@ -83,10 +79,6 @@ export default function App() {
         <Preface go={(next) => go(next)} />
       </>
     )
-  } else if (route === 'tech') {
-    screen = <ChapterTech go={(next, ref) => go(next, ref)} />
-  } else if (route === 'project') {
-    screen = <ProjectDetail projectId={projectId} go={(next, ref) => go(next, ref)} />
   } else if (route === 'foto') {
     screen = <ChapterFoto go={(next, ref) => go(next, ref)} />
   } else if (route === 'story') {

@@ -130,7 +130,7 @@ export function ChapterFoto({ go }: { go: GoFn }) {
     >
       <div style={{ position: 'relative', height: 'min(95vh, 900px)' }}>
         {f ? (
-          <PhotoFrame event={f} file={f.cover} ratio="auto" dark>
+          <PhotoFrame event={f} file={f.cover} ratio="auto" dark style={{ position: 'absolute', inset: 0 }}>
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,12,9,.42)', zIndex: 2 }} />
             <HeroOverlay event={f} totalShots={totalShots} />
           </PhotoFrame>
@@ -183,7 +183,7 @@ export function ChapterFoto({ go }: { go: GoFn }) {
           }}
         >
           <div>
-            <div className="t-meta" style={{ color: 'var(--brass)' }}>II — RACCOLTE</div>
+            <div className="t-meta" style={{ color: 'var(--brass)' }}>I — RACCOLTE</div>
             <h2 className="t-display" style={{ fontSize: 'clamp(40px, 5vw, 80px)', margin: '8px 0 0' }}>
               Le stagioni
             </h2>
@@ -223,7 +223,7 @@ export function ChapterFoto({ go }: { go: GoFn }) {
             }}
           >
             <div>
-              <div className="t-meta" style={{ color: 'var(--brass)' }}>II·b — STORIE SCELTE</div>
+              <div className="t-meta" style={{ color: 'var(--brass)' }}>I·b — STORIE SCELTE</div>
               <h2 className="t-display" style={{ fontSize: 'clamp(40px, 5vw, 80px)', margin: '8px 0 0' }}>
                 Selezioni
               </h2>
@@ -265,7 +265,7 @@ function HeroOverlay({ event, totalShots }: { event?: Event; totalShots: number 
     <>
       <div className="hero-left">
         <div className="t-meta" style={{ color: 'var(--brass)' }}>
-          CAPITOLO SECONDO · IL FOTOGRAFO
+          CAPITOLO PRIMO · IL FOTOGRAFO
         </div>
         <div className="t-display t-hero" style={{ marginTop: 18, color: 'var(--ivory)' }}>
           LA LENTE
@@ -388,7 +388,7 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
       <div style={{ padding: '110px var(--gutter) 0' }}>
         <div className="t-meta" style={{ opacity: 0.75 }}>
           <button onClick={() => go('foto')} data-cursor="lg" style={{ color: 'inherit' }}>
-            CAPITOLO II · LA LENTE
+            CAPITOLO I · LA LENTE
           </button>
           <span style={{ opacity: 0.4, margin: '0 14px' }}>/</span>
           <span style={{ color: 'var(--brass)' }}>{f.tag.toUpperCase()}</span>

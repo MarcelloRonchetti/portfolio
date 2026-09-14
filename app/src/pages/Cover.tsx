@@ -143,18 +143,18 @@ export function Cover({ go }: { go: (next: Route) => void }) {
         <ChapterCard
           no="I"
           subtitle="capitolo primo"
-          title={DATA.tech.title}
-          kind="light"
-          hint="Embedded, IoT, AI, cybersecurity. Sei anni di firmware, banchi di lavoro, terminali aperti."
-          onEnter={() => go('tech')}
-        />
-        <ChapterCard
-          no="II"
-          subtitle="capitolo secondo"
           title={DATA.foto_chapter.title}
           kind="dark"
           hint="Sport e motorsport in pista e fuori. Dodicimila scatti, quattro stagioni, una sola luce."
           onEnter={() => go('foto')}
+        />
+        <ChapterCard
+          no="II"
+          subtitle="interludio"
+          title="L'autore"
+          kind="light"
+          hint="Chi c'è dietro l'obiettivo. Bio, contatti e tutto quello che non sta in una didascalia."
+          onEnter={() => go('about')}
         />
       </div>
 
@@ -202,16 +202,15 @@ export function Preface({ go }: { go: (next: Route) => void }) {
       <div className="grid-preface" style={{ marginTop: 60, gap: 80 }}>
         <div className="t-serif" style={{ fontSize: 19, lineHeight: 1.6, color: 'var(--ink)', maxWidth: 620 }}>
           <p style={{ marginTop: 0, fontSize: 22, fontStyle: 'italic', opacity: 0.85 }}>
-            Ho cominciato con un Arduino e una reflex usata. A distanza di anni, le due cose non si sono mai parlate{' '}
-            <em>davvero</em>, ma vivono accanto nello stesso laboratorio.
+            Ho cominciato con una reflex usata e un'ossessione: i decimi di secondo che nessun occhio riesce a
+            tenere. Da lì, piste, fango, podi e ore di attesa per una luce che dura un istante.
           </p>
           <p>
-            Questo sito è il loro indice. Non scegli un lato — scegli da dove vuoi cominciare. Il{' '}
-            <span className="t-italic">capitolo primo</span> raccoglie i progetti che ho costruito: firmware, reti,
-            modelli, exploit. Il <span className="t-italic">capitolo secondo</span> raccoglie quello che ho visto:
-            piste, podi, pioggia, polvere.
+            Questo sito raccoglie quello che ho visto. Il <span className="t-italic">capitolo primo</span> è fatto di
+            raccolte — le stagioni, i circuiti, le marche — e di storie scelte: un evento, un foglio di contatto, la
+            cronaca di una giornata.
           </p>
-          <p>Hanno lo stesso autore, lo stesso paio di mani, due lingue diverse. Sfoglia con calma.</p>
+          <p>Stessa mano, stessa macchina, uno sguardo solo. Sfoglia con calma.</p>
 
           <div style={{ marginTop: 40, display: 'flex', alignItems: 'baseline', gap: 14 }}>
             <span style={{ flex: 1, height: 0, borderTop: 'var(--hair) solid var(--brass)' }} />
@@ -227,13 +226,10 @@ export function Preface({ go }: { go: (next: Route) => void }) {
           <div style={{ marginTop: 18 }}>
             {(
               [
-                ['I', "L'ingegnere — progetti", '04', 'tech'],
-                ['I·b', 'skills · cv · certificazioni', '12', 'tech'],
-                ['II', 'Il fotografo — galleria', '18', 'foto'],
-                ['II·b', 'collaborazioni · esperienze', '26', 'foto'],
-                ['III', 'about', '30', 'about'],
-                ['IV', 'playground', '34', 'tech'],
-                ['V', 'contatti', '38', 'contact'],
+                ['I', 'Il fotografo — raccolte', '04', 'foto'],
+                ['I·b', 'storie scelte — fogli di contatto', '12', 'foto'],
+                ['II', "l'autore", '24', 'about'],
+                ['III', 'contatti', '32', 'contact'],
               ] as [string, string, string, Route][]
             ).map(([n, t, p, r]) => (
               <Clickable

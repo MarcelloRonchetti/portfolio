@@ -9,7 +9,6 @@ type Props = {
 
 const ITEMS: { id: Route; label: string }[] = [
   { id: 'cover', label: 'home' },
-  { id: 'tech', label: 'il lab' },
   { id: 'foto', label: 'la lente' },
   { id: 'about', label: 'about' },
   { id: 'contact', label: 'contatti' },
@@ -31,7 +30,6 @@ export default function TopBar({ route, onNavigate, theme, setTheme }: Props) {
         {ITEMS.map((it) => {
           const active =
             route === it.id ||
-            (route === 'project' && it.id === 'tech') ||
             (route === 'story' && it.id === 'foto')
           return (
             <button

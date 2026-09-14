@@ -136,10 +136,13 @@ export const collections: Collection[] = (() => {
       (acc, e) => acc + (e.photos?.length ?? 0) + (e.cover ? 1 : 0),
       0
     )
-    const descParts = list
-      .map((e) => e.location?.split(',')[0]?.trim().toLowerCase())
-      .filter(Boolean)
-      .slice(0, 3)
+    const descParts = [
+      ...new Set(
+        list
+          .map((e) => e.location?.split(',')[0]?.trim().toLowerCase())
+          .filter(Boolean)
+      ),
+    ].slice(0, 3)
     out.push({
       tag,
       n: totalShots,
