@@ -30,8 +30,8 @@ export default function PhotoFrame({
   return (
     <Clickable
       onClick={onClick}
-      className="frame"
-      style={{ aspectRatio: ratio, ...style }}
+      className={ratio ? 'frame' : 'frame frame-natural'}
+      style={ratio ? { aspectRatio: ratio, ...style } : style}
     >
       {src && !failed && (
         <img

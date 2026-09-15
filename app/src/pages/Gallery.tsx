@@ -170,7 +170,6 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
         <PhotoFrame
           event={f}
           file={activeFile}
-          ratio="3 / 2"
           alt={f.title}
           caption={{ right: `${String(Math.min(activeIdx, photos.length - 1) + 1).padStart(2, '0')} / ${String(photos.length).padStart(2, '0')}` }}
         />

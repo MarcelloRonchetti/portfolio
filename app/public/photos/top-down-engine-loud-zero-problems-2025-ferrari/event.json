@@ -11,7 +11,9 @@
   "hue": "oxblood",
   "description_it": "",
   "cover": "cover.jpg",
-  "photos": [],
+  "photos": [
+    "cover.jpg"
+  ],
   "links": {
     "instagram_url": "https://www.instagram.com/p/DMNNmujM62Y/"
   },

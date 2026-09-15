@@ -42,7 +42,7 @@ export function expandMedia(media) {
     return [{ kind: 'image', url: media.media_url }]
   }
   if (media.media_type === 'VIDEO' && media.thumbnail_url) {
-    return [{ kind: 'thumbnail', url: media.thumbnail_url }]
+    return []
   }
   return []
 }

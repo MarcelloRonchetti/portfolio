@@ -231,12 +231,16 @@ button {
 .section-dark .section-head { border-bottom-color: var(--hair-inverse); }
 
 /* ─── cards (raccolte) ─── */
+/* Flex instead of grid so the last, partially-filled row is centered. */
 .grid-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 22px;
 }
 .card {
+  flex: 1 1 270px;
+  max-width: 340px;
   border: var(--line) solid var(--hair);
   background: #fff;
   overflow: hidden;
@@ -298,6 +302,19 @@ button {
   height: 100%;
   object-fit: cover;
 }
+/* Natural-ratio mode: no fixed aspect box — the image keeps its own shape,
+   fills the column width and is capped so a portrait doesn't run for pages. */
+.frame.frame-natural {
+  display: flex;
+  justify-content: center;
+}
+.frame.frame-natural img {
+  position: static;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(78vh, 1100px);
+}
 .frame .frame-caption {
   position: absolute;
   left: 0; right: 0; bottom: 0;
@@ -316,13 +333,16 @@ button {
 }
 
 /* ─── thumbnails ─── */
+/* Fixed-size thumbs, centered: a short strip doesn't strand on the left. */
 .thumbstrip {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
 }
 .thumbstrip .thumb {
   position: relative;
+  flex: 0 0 120px;
   aspect-ratio: 3 / 2;
   cursor: pointer;
   outline: 1px solid transparent;
