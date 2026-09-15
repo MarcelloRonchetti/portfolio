@@ -102,6 +102,7 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
   const fallback = firstEventByTag(eventId)
   const f: Event | undefined = direct ?? fallback ?? events[0]
   const [activeIdx, setActiveIdx] = useState(0)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   if (!f) {
     return (
@@ -172,7 +173,35 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
           file={activeFile}
           alt={f.title}
           caption={{ right: `${String(Math.min(activeIdx, photos.length - 1) + 1).padStart(2, '0')} / ${String(photos.length).padStart(2, '0')}` }}
+          onClick={() => setIsExpanded(true)}
+          style={{ cursor: 'zoom-in' }}
         />
+
+        {isExpanded && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 100,
+              backgroundColor: 'rgba(10, 9, 7, 0.95)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'zoom-out'
+            }}
+            onClick={() => setIsExpanded(false)}
+          >
+            <img
+              src={photoUrl(f, activeFile)}
+              alt={f.title}
+              style={{
+                maxWidth: '95vw',
+                maxHeight: '95vh',
+                objectFit: 'contain'
+              }}
+            />
+          </div>
+        )}
 
         {photos.length > 1 && (
           <div className="thumbstrip" style={{ marginTop: 12 }}>
