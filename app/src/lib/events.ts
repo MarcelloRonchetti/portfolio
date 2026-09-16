@@ -25,6 +25,7 @@ export type RawEvent = {
   featured?: boolean
   base_url?: string
   category?: string
+  source?: { provider?: string; media_id?: string; media_type?: string }
 }
 
 export type Event = Omit<RawEvent, 'tag' | 'tags' | 'category'> & {
@@ -90,8 +91,14 @@ const allEvents: Event[] = Object.entries(manifests)
 
 export const events: Event[] = allEvents
 
+// The landing hero is always the latest Instagram post (reels are never
+// imported as events, but guard against VIDEO anyway); manual folders and the
+// legacy `featured` flag never take the hero. Falls back to the newest event
+// only when no Instagram post exists at all.
 export const featuredEvent: Event | undefined =
-  events.find((e) => e.featured) ?? events[0]
+  events.find(
+    (e) => e.source?.provider === 'instagram' && e.source?.media_type !== 'VIDEO'
+  ) ?? events[0]
 
 export const collections: Collection[] = (() => {
   const byTag = new Map<string, Event[]>()
