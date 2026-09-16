@@ -332,6 +332,17 @@ button {
   text-shadow: 0 1px 8px rgba(10, 9, 7, .8);
 }
 
+/* ─── gallery category nav ─── */
+/* Horizontally scrollable on narrow screens, but without the native scrollbar. */
+.catnav {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 40px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.catnav::-webkit-scrollbar { display: none; }
+
 /* ─── thumbnails ─── */
 /* Fixed-size thumbs, centered: a short strip doesn't strand on the left. */
 .thumbstrip {

@@ -1,10 +1,11 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { Route } from '../lib/data'
 import { DATA } from '../lib/data'
 import type { Collection, Event } from '../lib/events'
 import {
   events,
   collections,
+  categories,
   eventById,
   firstEventByTag,
   adjacentEvents,
@@ -13,14 +14,14 @@ import {
 import PhotoFrame from '../components/PhotoFrame'
 import Clickable from '../components/Clickable'
 
-type GoFn = (next: Route, ref?: string) => void
+type GoFn = (next: Route, ref?: string, tag?: string) => void
 
 function CollectionCard({ c, go }: { c: Collection; go: GoFn }) {
   const rep = eventById(c.representativeId)
 
   return (
     <Clickable
-      onClick={() => go('story', c.representativeId)}
+      onClick={() => go('story', c.representativeId, c.tag)}
       className="card"
     >
       <div className="card-photo">
@@ -46,8 +47,31 @@ function CollectionCard({ c, go }: { c: Collection; go: GoFn }) {
   )
 }
 
-export function Gallery({ go }: { go: GoFn }) {
-  const totalPhotos = events.reduce((acc, e) => acc + Math.max(1, e.photos.length), 0)
+export function Gallery({
+  go,
+  category,
+  onCategory,
+}: {
+  go: GoFn
+  category: string
+  onCategory: (c: string) => void
+}) {
+  // App owns the active category (persisted, deep-linkable); Gallery renders it.
+  const activeCategory = category
+  const catnavRef = useRef<HTMLDivElement>(null)
+
+  // Keep the active tab inside the scrollable row — on mobile it is clipped
+  // off-screen otherwise, and the hidden scrollbar gives no hint it exists.
+  useEffect(() => {
+    catnavRef.current
+      ?.querySelector<HTMLButtonElement>('[data-active="true"]')
+      ?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
+  }, [activeCategory])
+
+  const filteredCollections = collections.filter(c => c.category === activeCategory)
+  const totalPhotos = events
+    .filter(e => e.category === activeCategory)
+    .reduce((acc, e) => acc + Math.max(1, e.photos.length), 0)
 
   return (
     <main className="section section-dark" style={{ paddingTop: 120, paddingBottom: 90 }}>
@@ -60,17 +84,38 @@ export function Gallery({ go }: { go: GoFn }) {
             </p>
           </div>
           <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>
-            {totalPhotos} foto · {collections.length} raccolte
+            {totalPhotos} foto · {filteredCollections.length} {filteredCollections.length === 1 ? 'raccolta' : 'raccolte'}
           </div>
         </div>
 
-        {collections.length === 0 ? (
+        <div className="catnav" ref={catnavRef}>
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => onCategory(cat)}
+              className="t-meta"
+              data-active={activeCategory === cat || undefined}
+              aria-current={activeCategory === cat ? 'page' : undefined}
+              style={{
+                color: activeCategory === cat ? 'var(--accent-inverse)' : 'var(--muted-inverse)',
+                borderBottom: activeCategory === cat ? '1px solid var(--accent-inverse)' : '1px solid transparent',
+                paddingBottom: '4px',
+                transition: 'color 0.2s, border-color 0.2s',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {filteredCollections.length === 0 ? (
           <p className="t-italic" style={{ color: 'var(--muted-inverse)' }}>
-            Nessuna raccolta ancora pubblicata.
+            Nessuna raccolta ancora pubblicata in questa categoria.
           </p>
         ) : (
           <div className="grid-cards">
-            {collections.map((c) => (
+            {filteredCollections.map((c) => (
               <CollectionCard key={c.tag} c={c} go={go} />
             ))}
           </div>
@@ -97,12 +142,27 @@ function DisplayTitle({ title }: { title: string }) {
   )
 }
 
-export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
+export function PhotoStory({
+  eventId,
+  tag,
+  go,
+}: {
+  eventId: string
+  tag?: string
+  go: GoFn
+}) {
   const direct = eventById(eventId)
   const fallback = firstEventByTag(eventId)
   const f: Event | undefined = direct ?? fallback ?? events[0]
   const [activeIdx, setActiveIdx] = useState(0)
   const [isExpanded, setIsExpanded] = useState(false)
+
+  // Pager hops swap the event without remounting (route stays 'story'); a
+  // stale photo index or open lightbox must not carry into the next event.
+  useEffect(() => {
+    setActiveIdx(0)
+    setIsExpanded(false)
+  }, [eventId])
 
   if (!f) {
     return (
@@ -119,7 +179,10 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
     )
   }
 
-  const { prev, next } = adjacentEvents(f.id)
+  // Prev/next follow the collection the visitor clicked into; entries without
+  // a matching tag context (deep links, hero) fall back to the category pool.
+  const ctxTag = tag && f.tags.includes(tag) ? tag : undefined
+  const { prev, next } = adjacentEvents(f.id, { tag: ctxTag, category: f.category })
   const photos = f.photos.length > 0 ? f.photos : [f.cover]
   const activeFile = photos[Math.min(activeIdx, photos.length - 1)]
 
@@ -127,7 +190,7 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
     <main className="section section-dark" style={{ paddingTop: 120, paddingBottom: 90 }}>
       <div className="container">
         <button
-          onClick={() => go('gallery')}
+          onClick={() => go('gallery', f.category)}
           className="t-meta"
           style={{ color: 'var(--muted-inverse)', marginBottom: 26 }}
         >
@@ -221,8 +284,7 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
 
         <div className="pager">
           <button
-            onClick={() => (prev ? go('story', prev.id) : go('gallery'))}
-            disabled={!prev}
+            onClick={() => (prev ? go('story', prev.id, ctxTag) : go('gallery', f.category))}
           >
             {prev ? `← ${prev.title}` : '← Galleria'}
           </button>
@@ -230,8 +292,7 @@ export function PhotoStory({ eventId, go }: { eventId: string; go: GoFn }) {
             {photos.length} foto
           </span>
           <button
-            onClick={() => (next ? go('story', next.id) : go('gallery'))}
-            disabled={!next}
+            onClick={() => (next ? go('story', next.id, ctxTag) : go('gallery', f.category))}
           >
             {next ? `${next.title} →` : 'Galleria →'}
           </button>

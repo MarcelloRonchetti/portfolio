@@ -24,9 +24,10 @@ export type RawEvent = {
   }
   featured?: boolean
   base_url?: string
+  category?: string
 }
 
-export type Event = Omit<RawEvent, 'tag' | 'tags'> & {
+export type Event = Omit<RawEvent, 'tag' | 'tags' | 'category'> & {
   id: string
   tags: string[]          // always present, derived from `tags ?? [tag]`
   tag: string             // primary tag = tags[0] (back-compat)
@@ -35,6 +36,7 @@ export type Event = Omit<RawEvent, 'tag' | 'tags'> & {
   date: string
   cover: string
   photos: string[]
+  category: string
 }
 
 export type Collection = {
@@ -43,6 +45,7 @@ export type Collection = {
   desc: string
   representativeId: string
   links?: RawEvent['links']
+  category: string
 }
 
 const manifests = import.meta.glob<{ default: RawEvent }>(
@@ -76,6 +79,7 @@ function normalize(raw: RawEvent, folderId: string): Event | null {
     tag: tags[0],
     cover: raw.cover ?? 'cover.jpg',
     photos: raw.photos ?? [],
+    category: raw.category || 'Motorsport',
   }
 }
 
@@ -107,12 +111,27 @@ export const collections: Collection[] = (() => {
       desc: [...new Set(list.map((e) => e.year))].sort().join(' · '),
       representativeId: representative.id,
       links: representative.links,
+      category: representative.category,
     })
   }
   // Sort collections by number of events desc, then alphabetically
   out.sort((a, b) => (b.n - a.n) || a.tag.localeCompare(b.tag))
   return out
 })()
+
+// Gallery pages: Motorsport first (the site's core), the rest alphabetical.
+// Derived from the manifests, so a new category folder shows up on its own.
+export const categories: string[] = (() => {
+  const set = new Set(events.map((e) => e.category))
+  const rest = [...set]
+    .filter((c) => c !== 'Motorsport')
+    .sort((a, b) => a.localeCompare(b))
+  return set.has('Motorsport') ? ['Motorsport', ...rest] : rest
+})()
+
+export function categoryFromSlug(slug: string): string | undefined {
+  return categories.find((c) => c.toLowerCase() === slug.toLowerCase())
+}
 
 export function eventById(id: string): Event | undefined {
   return events.find((e) => e.id === id)
@@ -134,11 +153,23 @@ export function photoUrl(event: Event, file: string): string {
   return `${base}/photos/${event.id}/${file}`
 }
 
-export function adjacentEvents(id: string): { prev?: Event; next?: Event } {
-  const i = events.findIndex((e) => e.id === id)
-  if (i === -1) return {}
+// Prev/next stay inside what the visitor is browsing: the collection tag when
+// they arrived from a collection card, else the gallery category — never
+// jumping across categories by date. Wraps at the ends so even a small
+// collection never dead-ends.
+export function adjacentEvents(
+  id: string,
+  opts?: { tag?: string; category?: string }
+): { prev?: Event; next?: Event } {
+  const pool = opts?.tag
+    ? eventsByTag(opts.tag)
+    : opts?.category
+      ? events.filter((e) => e.category === opts.category)
+      : events
+  const i = pool.findIndex((e) => e.id === id)
+  if (i === -1 || pool.length < 2) return {}
   return {
-    prev: i > 0 ? events[i - 1] : undefined,
-    next: i < events.length - 1 ? events[i + 1] : undefined,
+    prev: pool[(i - 1 + pool.length) % pool.length],
+    next: pool[(i + 1) % pool.length],
   }
 }

@@ -18,6 +18,6 @@ export const DATA = {
 
   gallery: {
     title: 'Galleria',
-    intro: 'Sport e motorsport. Raccolte da circuiti ed eventi.',
+    intro: 'Raccolte da circuiti, eventi e viaggi.',
   },
 }
