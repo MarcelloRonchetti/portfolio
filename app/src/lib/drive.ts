@@ -6,13 +6,16 @@
 //   video/*.mp4 (loose → 'Varie') and video/<categoria>/*.mp4
 //   cv/ (folder) or a CV*.pdf / Curriculum*.pdf in root
 //
-// Media endpoints (empirically verified, see drive research report):
+// Media endpoints (re-verified 2026-10-27 after a Google behavior change):
 //   - Images/posters: lh3.googleusercontent.com/d/<id>=<size> — CDN-resized,
 //     stable, CORS *.
-//   - Blob downloads (video stream, CV): drive.usercontent.google.com/download
-//     ?id=<id>&export=download&confirm=t — 206 + Accept-Ranges (video seek) and
-//     no virus-scan interstitial even above 100 MB. `confirm=t` bypasses the
-//     warning page that plain alt=media returns for large files.
+//   - Video streams: www.googleapis.com/drive/v3/files/<id>?alt=media&key=…
+//     — 206 + content-range (seek), CORS echoes the origin, no CORP header.
+//     The old drive.usercontent.google.com/download?…&confirm=t endpoint now
+//     serves the "virus scan warning" HTML interstitial for files >100 MB as
+//     soon as the request carries a Referer — i.e. from any real web page —
+//     so it can no longer back a <video> element. It stays only for the CV
+//     blob download (a PDF is never near 100 MB).
 import { DRIVE_CONFIG, driveApiKey } from './driveConfig'
 import { categories } from './events'
 
@@ -113,6 +116,10 @@ function downloadUrl(fileId: string): string {
   return `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`
 }
 
+function streamUrl(fileId: string): string {
+  return `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&key=${encodeURIComponent(driveApiKey())}`
+}
+
 function lhUrl(fileId: string, size: string): string {
   return `https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}=${size}`
 }
@@ -181,7 +188,7 @@ function toVideo(f: DriveFile, category: string): DriveVideo {
     createdTime: f.createdTime,
     posterUrl: lhUrl(f.id, 'w800'),
     posterLg: lhUrl(f.id, 'w1280'),
-    streamUrl: downloadUrl(f.id),
+    streamUrl: streamUrl(f.id),
     qualityLabel: short ? (short >= 2160 ? '4K' : short >= 1440 ? '1440p' : `${short}p`) : 'HD',
   }
 }
@@ -336,8 +343,10 @@ type CacheShape = { content: DriveContent; fetchedAt: number }
 
 // Media hosts the app itself builds URLs from; anything else in a cached entry
 // means the cache was tampered with (the github.io origin is shared across
-// projects) or written by an older schema — drop it wholesale.
-const URL_HOSTS = ['https://lh3.googleusercontent.com/', 'https://drive.usercontent.google.com/']
+// projects) or written by an older schema — drop it wholesale. Dropping
+// drive.usercontent.google.com from this list is what invalidates caches
+// written before the 2026-10-27 stream fix (their stream URLs are dead).
+const URL_HOSTS = ['https://lh3.googleusercontent.com/', 'https://www.googleapis.com/drive/v3/files/']
 const isMediaUrl = (u: unknown): u is string =>
   typeof u === 'string' && URL_HOSTS.some((h) => u.startsWith(h))
 const isStr = (v: unknown): v is string => typeof v === 'string' && v.length > 0

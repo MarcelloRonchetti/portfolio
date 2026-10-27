@@ -44,6 +44,7 @@ export default function Videos() {
   const { configured, content, loading, error, refresh } = useDriveContent()
   const [activeCategory, setActiveCategory] = useState(ALL)
   const [playing, setPlaying] = useState<DriveVideo | null>(null)
+  const [playError, setPlayError] = useState(false)
   const catnavRef = useRef<HTMLDivElement>(null)
 
   const videos = content?.videos ?? []
@@ -53,6 +54,10 @@ export default function Videos() {
   const filtered =
     activeCategory === ALL ? videos : videos.filter((v) => v.category === activeCategory)
 
+  const openPlayer = (v: DriveVideo) => {
+    setPlaying(v)
+    setPlayError(false)
+  }
   const close = () => setPlaying(null)
 
   // Keep the active tab inside the scrollable row — same as Gallery, on mobile
@@ -92,10 +97,29 @@ export default function Videos() {
               Momentum in movimento — i filmati dell'archivio, in qualità HD.
             </p>
           </div>
-          <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>
-            {content
-              ? `${filtered.length} video · qualità min. ${DRIVE_CONFIG.minVideoHeight}p`
-              : `qualità min. ${DRIVE_CONFIG.minVideoHeight}p`}
+          <div className="stack" style={{ gap: 4, alignItems: 'flex-end' }}>
+            <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>
+              {content
+                ? `${filtered.length} video · qualità min. ${DRIVE_CONFIG.minVideoHeight}p`
+                : `qualità min. ${DRIVE_CONFIG.minVideoHeight}p`}
+            </div>
+            {content && (
+              <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>
+                aggiornato alle{' '}
+                {new Date(content.fetchedAt).toLocaleTimeString('it-IT', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}{' '}
+                ·{' '}
+                <button
+                  className="t-meta"
+                  style={{ color: 'var(--accent-inverse)' }}
+                  onClick={refresh}
+                >
+                  Aggiorna
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -132,7 +156,7 @@ export default function Videos() {
               </div>
             ))}
           </div>
-        ) : error ? (
+        ) : error && !content ? (
           <p className="t-italic" style={{ color: 'var(--muted-inverse)' }}>
             {error}
             <button
@@ -143,16 +167,30 @@ export default function Videos() {
               Riprova
             </button>
           </p>
-        ) : filtered.length === 0 ? (
+        ) : filtered.length === 0 && !error ? (
           <p className="t-italic" style={{ color: 'var(--muted-inverse)' }}>
             Nessun video in questa categoria.
           </p>
         ) : (
-          <div className="grid-cards">
-            {filtered.map((v) => (
-              <VideoCard key={v.id} v={v} onPlay={setPlaying} />
-            ))}
-          </div>
+          <>
+            {error && content && (
+              <p className="t-meta" style={{ color: 'var(--muted-inverse)', marginBottom: 18 }}>
+                {error}{' '}
+                <button
+                  className="t-meta"
+                  style={{ color: 'var(--accent-inverse)' }}
+                  onClick={refresh}
+                >
+                  Riprova
+                </button>
+              </p>
+            )}
+            <div className="grid-cards">
+              {filtered.map((v) => (
+                <VideoCard key={v.id} v={v} onPlay={openPlayer} />
+              ))}
+            </div>
+          </>
         )}
 
         {playing && (
@@ -170,14 +208,32 @@ export default function Videos() {
               <div className="t-meta" style={{ color: 'var(--ink-inverse)', marginBottom: 12 }}>
                 {playing.title} · {playing.qualityLabel}
               </div>
-              <video
-                controls
-                autoPlay
-                playsInline
-                preload="metadata"
-                poster={playing.posterLg}
-                src={playing.streamUrl}
-              />
+              {playError ? (
+                <p className="t-italic" style={{ color: 'var(--ink-inverse)' }}>
+                  Questo video non è più disponibile nell'archivio (forse è stato rimosso o
+                  sostituito).{' '}
+                  <button
+                    className="t-meta"
+                    style={{ color: 'var(--accent-inverse)' }}
+                    onClick={() => {
+                      close()
+                      refresh()
+                    }}
+                  >
+                    Aggiorna l'elenco
+                  </button>
+                </p>
+              ) : (
+                <video
+                  controls
+                  autoPlay
+                  playsInline
+                  preload="metadata"
+                  poster={playing.posterLg}
+                  src={playing.streamUrl}
+                  onError={() => setPlayError(true)}
+                />
+              )}
             </div>
           </div>
         )}

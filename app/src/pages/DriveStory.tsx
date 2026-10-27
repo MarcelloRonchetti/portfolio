@@ -57,7 +57,7 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
     )
   }
 
-  if (error) {
+  if (error && !content) {
     return (
       <main className="section section-dark" style={{ paddingTop: 140, minHeight: '70vh' }}>
         <div className="container">

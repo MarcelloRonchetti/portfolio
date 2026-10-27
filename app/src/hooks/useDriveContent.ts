@@ -39,7 +39,15 @@ export function useDriveContent(): DriveState & { refresh: () => void } {
       inError.current = true
       const msg =
         e instanceof DriveError ? e.message : 'Errore di rete verso Google Drive.'
-      setState({ configured: true, content: null, loading: false, error: msg })
+      // Keep a previously loaded listing on screen: a failed refresh (network
+      // hiccup, quota) must never blank a page that already had content —
+      // the error is surfaced alongside it by the views.
+      setState((prev) => ({
+        configured: true,
+        content: prev.content,
+        loading: false,
+        error: msg,
+      }))
     } finally {
       inFlight.current = false
     }
