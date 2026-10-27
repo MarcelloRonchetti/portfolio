@@ -26,14 +26,17 @@ export function useDriveContent(): DriveState & { refresh: () => void } {
   })
   const inFlight = useRef(false)
   const lastRefreshAt = useRef(0)
+  const inError = useRef(false)
 
   const run = useCallback(async (force: boolean) => {
     if (inFlight.current) return
     inFlight.current = true
     try {
       const content = await loadDriveContent({ force })
+      inError.current = false
       setState({ configured: true, content, loading: false, error: null })
     } catch (e) {
+      inError.current = true
       const msg =
         e instanceof DriveError ? e.message : 'Errore di rete verso Google Drive.'
       setState({ configured: true, content: null, loading: false, error: msg })
@@ -50,8 +53,10 @@ export function useDriveContent(): DriveState & { refresh: () => void } {
   const refresh = useCallback(() => {
     // Cooldown: a full archive walk costs a dozen of API calls — don't let
     // repeated clicks burn the (shared, referrer-restricted) API key quota.
+    // Bypassed while in error state: "Riprova" is the only recovery path and
+    // must never be a silent no-op.
     const now = Date.now()
-    if (now - lastRefreshAt.current < 30_000) return
+    if (!inError.current && now - lastRefreshAt.current < 30_000) return
     lastRefreshAt.current = now
     clearDriveCache()
     void run(true)

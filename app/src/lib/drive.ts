@@ -363,6 +363,9 @@ function validCollection(c: unknown): c is DrivePhotoCollection {
     isStr(x?.category) &&
     isMediaUrl(x?.cover) &&
     Array.isArray(x?.photos) &&
+    // Empty collections are never produced by the walk — an empty array in the
+    // cache means tampering, and would crash the story view downstream.
+    x.photos.length > 0 &&
     x.photos.every((p) => {
       const ph = p as DrivePhoto
       return isStr(ph?.id) && isMediaUrl(ph?.fullUrl) && isMediaUrl(ph?.thumbUrl)

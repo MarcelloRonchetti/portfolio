@@ -88,8 +88,8 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
     )
   }
 
-  // Listed but not present (deleted folder, stale link) → back to the gallery.
-  if (!c) return <Navigate to="/gallery" replace />
+  // Listed but not present or empty (deleted folder, stale link) → gallery.
+  if (!c || c.photos.length === 0) return <Navigate to="/gallery" replace />
 
   // Related rail mirrors PhotoStory's: newest-first, same category, current
   // excluded, capped like relatedEvents does for local events.

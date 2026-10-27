@@ -238,7 +238,7 @@ function AppShell() {
         <a className="link-ext" href={`mailto:${DATA.identity.email}`}>Email</a>
         <span
           className="t-meta"
-          style={{ flexBasis: '100%', color: 'var(--muted)', fontSize: 10 }}
+          style={{ flexBasis: '100%', fontSize: 10 }}
         >
           Nessun cookie, nessun tracciamento · foto e video dell'archivio serviti dai CDN di Google Drive
         </span>

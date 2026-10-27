@@ -182,7 +182,7 @@ const slugOf = (cat) => encodeURIComponent(cat.toLowerCase())
 // ── 1. Prerendered story pages ───────────────────────────────────────────────
 // Events with no photos have no gallery to show: prerendering them would put
 // indexable junk pages (numberOfItems: 0) into the sitemap. They stay reachable
-// through the app's ?p= deep links.
+// through the app's /story/<id> route once the visitor gets there by tag.
 const prunable = events.filter((e) => e.nPhotos > 0)
 for (const e of prunable) {
   const description =

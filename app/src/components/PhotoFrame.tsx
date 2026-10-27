@@ -27,8 +27,11 @@ export default function PhotoFrame({
   children?: ReactNode
   alt?: string
 }) {
-  const [failed, setFailed] = useState(false)
+  // Tracks WHICH src failed, so a new src implicitly gets a fresh chance: a
+  // transient CDN hiccup must not pin the placeholder for the next photo.
+  const [failedSrc, setFailedSrc] = useState<string | undefined>()
   const src = srcOverride ?? (event && file ? photoUrl(event, file) : undefined)
+  const failed = failedSrc !== undefined && failedSrc === src
 
   return (
     <Clickable
@@ -41,7 +44,7 @@ export default function PhotoFrame({
           src={src}
           alt={alt ?? caption?.left ?? event?.title ?? ''}
           loading="lazy"
-          onError={() => setFailed(true)}
+          onError={() => setFailedSrc(src)}
         />
       )}
       {children}
