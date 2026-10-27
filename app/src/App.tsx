@@ -31,14 +31,16 @@ function persistSet(k: string, v: string) {
 function initialRoute(): Route {
   try {
     const p = new URLSearchParams(window.location.search).get('p') ?? ''
-    const storyMatch = p.match(/^story\/([\w-]+)\/?$/)
+    // The 404.html bridge passes the raw path ("/story/<id>/") — tolerate a
+    // leading slash so paths bounced through 404 restore the right route.
+    const storyMatch = p.match(/^\/?story\/([\w-]+)\/?$/)
     if (storyMatch) {
       persistSet('mr.storyId', storyMatch[1])
       persistSet('mr.storyTag', '') // deep links carry no collection context
       window.history.replaceState(null, '', window.location.pathname)
       return 'story'
     }
-    const galleryMatch = p.match(/^gallery\/([\w-]+)\/?$/)
+    const galleryMatch = p.match(/^\/?gallery\/([\w-]+)\/?$/)
     if (galleryMatch) {
       const cat = categoryFromSlug(galleryMatch[1])
       if (cat) persistSet('mr.galleryCat', cat)

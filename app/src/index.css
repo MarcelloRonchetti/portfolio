@@ -44,6 +44,22 @@ html, body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* background-color follows the section change on route swap (see
+     body[data-section="dark"] below); .45s matches .page-fade so the colour
+     crossfades with the incoming screen instead of flipping in one frame. */
+  transition: background-color .45s var(--ease), color .3s var(--ease);
+}
+
+/* The dark gallery/story sections painted over a body that stayed light —
+   every navigation flashed the opposite background at full brightness. Let the
+   body follow the section so the swap reads as a crossfade, not a flashbang.
+   html follows too: the overscroll canvas must not stay light behind a dark
+   section. */
+body[data-section="dark"] {
+  background: var(--bg-dark);
+}
+html:has(body[data-section="dark"]) {
+  background: var(--bg-dark);
 }
 
 img { display: block; }
@@ -95,7 +111,7 @@ button {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-bottom: var(--line) solid var(--hair);
-  transition: background .3s var(--ease), border-color .3s var(--ease);
+  transition: background .3s var(--ease), border-color .3s var(--ease), color .3s var(--ease);
 }
 [data-section="dark"] .site-header {
   background: rgba(20, 18, 15, .92);
@@ -428,6 +444,11 @@ button {
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--muted);
+  transition: border-color .45s var(--ease), color .45s var(--ease);
+}
+[data-section="dark"] .site-footer {
+  border-top-color: var(--hair-inverse);
+  color: var(--muted-inverse);
 }
 
 /* ─── layout helpers ─── */
@@ -458,4 +479,5 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .page-fade { animation: none; }
   .card, .btn, .link-ext, .contact-row, .pager button { transition: none; }
+  html, body, .site-header, .site-footer { transition: none; }
 }

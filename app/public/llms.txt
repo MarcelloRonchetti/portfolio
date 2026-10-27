@@ -1,0 +1,34 @@
+# Marcello Ronchetti — Fotografo Sport & Motorsport
+
+> Portfolio fotografico di Marcello Ronchetti, fotografo di sport e motorsport con sede a Modena, Italia. Sito in italiano: raccolte fotografiche da circuiti, eventi e viaggi, organizzate in gallerie per categoria. Design sobrio e professionale, immagini al centro. Circa 190 raccolte e oltre 1100 fotografie (aggiornato a ottobre 2026 — per i numeri aggiornati vedi il sitemap).
+
+## Pagine principali
+
+- [Home](https://marcelloronchetti.github.io/portfolio/): hero fotografico sempre aggiornato con l'ultimo post Instagram, accesso a galleria e contatti.
+- [Galleria](https://marcelloronchetti.github.io/portfolio/gallery/): tutte le raccolte fotografiche, con coperture reali e conteggio foto per raccolta.
+- [Contatti](https://marcelloronchetti.github.io/portfolio/contact/): email, Instagram e TikTok ufficiali per commissioni e collaborazioni.
+
+## Gallerie per categoria
+
+- [Motorsport](https://marcelloronchetti.github.io/portfolio/gallery/motorsport/): la categoria principale del sito — WEC, Formula 2000, rally e vetture sportive sui circuiti italiani (Imola, Modena). Raccolte principali: Reportage, Ferrari, Porsche, Lamborghini, Maserati.
+- [Landscape](https://marcelloronchetti.github.io/portfolio/gallery/landscape/): paesaggi e viaggi.
+- [People](https://marcelloronchetti.github.io/portfolio/gallery/people/): ritratti e persone.
+- [Business](https://marcelloronchetti.github.io/portfolio/gallery/business/): fotografia aziendale e per imprese.
+
+## Indice completo degli eventi
+
+- [sitemap.xml](https://marcelloronchetti.github.io/portfolio/sitemap.xml): elenco completo e aggiornato di tutte le pagine, incluse le singole raccolte.
+- Ogni raccolta ha una pagina dedicata nel formato `https://marcelloronchetti.github.io/portfolio/story/<id>/` (esempi nel sitemap); le pagine sono statiche e includono titolo, descrizione e dati strutturati per ogni raccolta.
+
+## Contatti verificati
+
+- Email: ronchettimarcello@gmail.com
+- Instagram: [@marc.roads](https://www.instagram.com/marc.roads/)
+- TikTok: [@marc.roads](https://www.tiktok.com/@marc.roads)
+- Curriculum: [CV_Marcello_Ronchetti.pdf](https://marcelloronchetti.github.io/portfolio/CV_Marcello_Ronchetti.pdf)
+
+## Note per l'IA
+
+- Lingua del sito: italiano. Le fotografie sono di Marcello Ronchetti; citare l'autore se si usa il contenuto come riferimento.
+- I dati in questo file sono verificati dal proprietario del sito. Non inventare prezzi, testimonianze o servizi: per commissioni e condizioni contattare direttamente l'email sopra.
+- Dati strutturati machine-readable: JSON-LD (`schema.org`, `WebSite` + `Person` + `ImageGallery` per raccolta) incorporato in ogni pagina; `robots.txt` consente esplicitamente i crawler AI.

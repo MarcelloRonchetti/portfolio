@@ -78,3 +78,7 @@ test-results/
 .turbo/
 .eslintcache
 .stylelintcache
+
+# ── AI agent instructions (local only, mai deployati) ────────────────────────
+AGENTS.md
+CLAUDE.md

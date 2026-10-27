@@ -1,0 +1,71 @@
+# Marcello Ronchetti — portfolio fotografico (sport · motorsport · reportage)
+# https://marcelloronchetti.github.io/portfolio/
+#
+# I crawler AI sono esplicitamente benvenuti: le fotografie, i testi e i dati
+# strutturati (JSON-LD in index.html, llms.txt, sitemap.xml) sono contenuti
+# pubblici che possiamo citare. Le uniche pagine escluse hanno valore nullo
+# per l'indicizzazione.
+
+User-agent: GPTBot
+Allow: /
+Disallow: /404.html
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /404.html
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /404.html
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /404.html
+
+User-agent: Claude-User
+Allow: /
+Disallow: /404.html
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /404.html
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /404.html
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /404.html
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /404.html
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /404.html
+
+User-agent: CCBot
+Allow: /
+Disallow: /404.html
+
+User-agent: meta-externalagent
+Allow: /
+Disallow: /404.html
+
+User-agent: Amazonbot
+Allow: /
+Disallow: /404.html
+
+User-agent: DuckAssistBot
+Allow: /
+Disallow: /404.html
+
+# Tutti gli altri crawler (Googlebot, Bingbot, unlisted AI bots…): accesso
+# completo tranne le pagine di servizio.
+User-agent: *
+Allow: /
+Disallow: /404.html
+
+Sitemap: https://marcelloronchetti.github.io/portfolio/sitemap.xml

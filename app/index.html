@@ -4,17 +4,60 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Marcello Ronchetti — fotografo di sport e motorsport. Raccolte, eventi e contatti." />
+    <link rel="canonical" href="https://marcelloronchetti.github.io/portfolio/" />
     <meta name="theme-color" content="#faf9f6" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://marcelloronchetti.github.io/portfolio/#website",
+            "url": "https://marcelloronchetti.github.io/portfolio/",
+            "name": "Marcello Ronchetti — Fotografo Sport & Motorsport",
+            "inLanguage": "it",
+            "description": "Portfolio fotografico di Marcello Ronchetti: sport, motorsport e reportage da circuiti, eventi e viaggi.",
+            "publisher": { "@id": "https://marcelloronchetti.github.io/portfolio/#person" }
+          },
+          {
+            "@type": "Person",
+            "@id": "https://marcelloronchetti.github.io/portfolio/#person",
+            "name": "Marcello Ronchetti",
+            "jobTitle": "Fotografo",
+            "description": "Fotografo di sport e motorsport con sede a Modena, Italia.",
+            "url": "https://marcelloronchetti.github.io/portfolio/",
+            "email": "mailto:ronchettimarcello@gmail.com",
+            "homeLocation": { "@type": "Place", "name": "Modena, Italia" },
+            "knowsAbout": [
+              "Fotografia motorsport",
+              "Fotografia sportiva",
+              "Fotografia di paesaggio",
+              "Reportage fotografico"
+            ],
+            "sameAs": [
+              "https://www.instagram.com/marc.roads/",
+              "https://www.tiktok.com/@marc.roads"
+            ]
+          }
+        ]
+      }
+    </script>
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Italiana&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
     <title>Marcello Ronchetti — Fotografo Sport & Motorsport</title>
   </head>
   <body>
+    <script>
+      // Apply the stored (or OS-preferred) theme before first paint to avoid a flash.
+      try {
+        var t = localStorage.getItem('mr.theme')
+        if (t !== 'night' && t !== 'day') {
+          t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day'
+        }
+        document.documentElement.dataset.theme = t
+      } catch (e) {
+        document.documentElement.dataset.theme = 'day'
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
