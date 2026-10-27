@@ -82,3 +82,5 @@ test-results/
 # ── AI agent instructions (local only, mai deployati) ────────────────────────
 AGENTS.md
 CLAUDE.md
+.zcode/
+SETUP-DRIVE.md

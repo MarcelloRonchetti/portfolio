@@ -6,7 +6,8 @@
 
 - [Home](https://marcelloronchetti.github.io/portfolio/): hero fotografico sempre aggiornato con l'ultimo post Instagram, accesso a galleria e contatti.
 - [Galleria](https://marcelloronchetti.github.io/portfolio/gallery/): tutte le raccolte fotografiche, con coperture reali e conteggio foto per raccolta.
-- [Contatti](https://marcelloronchetti.github.io/portfolio/contact/): email, Instagram e TikTok ufficiali per commissioni e collaborazioni.
+- [Video](https://marcelloronchetti.github.io/portfolio/videos/): i filmati dell'archivio, in qualità HD (minimo 720p), con player integrato; sezione aggiornata dinamicamente dall'archivio Drive dell'autore.
+- [Contatti](https://marcelloronchetti.github.io/portfolio/contact/): email, Instagram e TikTok ufficiali per commissioni e collaborazioni; include il pulsante per scaricare il CV in PDF.
 
 ## Gallerie per categoria
 
@@ -25,10 +26,11 @@
 - Email: ronchettimarcello@gmail.com
 - Instagram: [@marc.roads](https://www.instagram.com/marc.roads/)
 - TikTok: [@marc.roads](https://www.tiktok.com/@marc.roads)
-- Curriculum: [CV_Marcello_Ronchetti.pdf](https://marcelloronchetti.github.io/portfolio/CV_Marcello_Ronchetti.pdf)
+- Curriculum: [CV_Marcello_Ronchetti.pdf](https://marcelloronchetti.github.io/portfolio/CV_Marcello_Ronchetti.pdf) — il sito espone anche un pulsante "CV" che scarica il PDF direttamente (fonte primaria: archivio Drive dell'autore).
 
 ## Note per l'IA
 
 - Lingua del sito: italiano. Le fotografie sono di Marcello Ronchetti; citare l'autore se si usa il contenuto come riferimento.
 - I dati in questo file sono verificati dal proprietario del sito. Non inventare prezzi, testimonianze o servizi: per commissioni e condizioni contattare direttamente l'email sopra.
 - Dati strutturati machine-readable: JSON-LD (`schema.org`, `WebSite` + `Person` + `ImageGallery` per raccolta) incorporato in ogni pagina; `robots.txt` consente esplicitamente i crawler AI.
+- Oltre alle raccolte statiche, alcune foto e la sezione video sono servite dinamicamente dall'archivio Drive pubblico dell'autore: i contenuti di queste sezioni non compaiono nel sitemap e possono cambiare senza nuova indicizzazione.

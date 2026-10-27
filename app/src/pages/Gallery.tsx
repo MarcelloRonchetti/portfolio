@@ -2,17 +2,18 @@ import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import type { Route } from '../lib/data'
 import { DATA } from '../lib/data'
 import type { Collection, Event } from '../lib/events'
+import type { DrivePhotoCollection } from '../lib/drive'
 import {
   events,
   collections,
-  categories,
   eventById,
   firstEventByTag,
-  adjacentEvents,
+  relatedEvents,
   photoUrl,
 } from '../lib/events'
 import PhotoFrame from '../components/PhotoFrame'
 import Clickable from '../components/Clickable'
+import { formatDate } from '../lib/format'
 
 type GoFn = (next: Route, ref?: string, tag?: string) => void
 
@@ -47,13 +48,46 @@ function CollectionCard({ c, go }: { c: Collection; go: GoFn }) {
   )
 }
 
+// Card for a Drive-backed collection: same layout as CollectionCard, image and
+// count come straight from the archive listing.
+function DriveCollectionCard({ c, go }: { c: DrivePhotoCollection; go: GoFn }) {
+  return (
+    <Clickable
+      onClick={() => go('story', c.id)}
+      className="card"
+    >
+      <div className="card-photo">
+        <img
+          src={c.cover}
+          alt={c.title}
+          loading="lazy"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none'
+          }}
+        />
+      </div>
+      <div className="card-body">
+        <div>
+          <div className="card-title">{c.title}</div>
+          {c.date && <div className="card-sub">{c.date.slice(0, 4)}</div>}
+        </div>
+        <div className="card-count">{c.photos?.length ?? 0} foto</div>
+      </div>
+    </Clickable>
+  )
+}
+
 export function Gallery({
   go,
   category,
+  categories,
+  driveCollections = [],
   onCategory,
 }: {
   go: GoFn
   category: string
+  categories: string[]
+  driveCollections?: DrivePhotoCollection[]
   onCategory: (c: string) => void
 }) {
   // App owns the active category (persisted, deep-linkable); Gallery renders it.
@@ -71,7 +105,9 @@ export function Gallery({
   const filteredCollections = collections.filter(c => c.category === activeCategory)
   const totalPhotos = events
     .filter(e => e.category === activeCategory)
-    .reduce((acc, e) => acc + Math.max(1, e.photos.length), 0)
+    .reduce((acc, e) => acc + Math.max(1, e.photos.length), 0) +
+    driveCollections.reduce((acc, c) => acc + (c.photos?.length ?? 0), 0)
+  const totalCollections = filteredCollections.length + driveCollections.length
 
   return (
     <main className="section section-dark" style={{ paddingTop: 120, paddingBottom: 90 }}>
@@ -84,7 +120,7 @@ export function Gallery({
             </p>
           </div>
           <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>
-            {totalPhotos} foto · {filteredCollections.length} {filteredCollections.length === 1 ? 'raccolta' : 'raccolte'}
+            {totalPhotos} foto · {totalCollections} {totalCollections === 1 ? 'raccolta' : 'raccolte'}
           </div>
         </div>
 
@@ -109,7 +145,7 @@ export function Gallery({
           ))}
         </div>
 
-        {filteredCollections.length === 0 ? (
+        {totalCollections === 0 ? (
           <p className="t-italic" style={{ color: 'var(--muted-inverse)' }}>
             Nessuna raccolta ancora pubblicata in questa categoria.
           </p>
@@ -117,6 +153,9 @@ export function Gallery({
           <div className="grid-cards">
             {filteredCollections.map((c) => (
               <CollectionCard key={c.tag} c={c} go={go} />
+            ))}
+            {driveCollections.map((c) => (
+              <DriveCollectionCard key={c.id} c={c} go={go} />
             ))}
           </div>
         )}
@@ -167,7 +206,7 @@ export function PhotoStory({
   }, [])
 
   // Drop the overlay once the dissolve-out has played; the cleanup cancels the
-  // timer if the story unmounts mid-animation (e.g. a pager hop).
+  // timer if the story unmounts mid-animation (e.g. a rail hop).
   useEffect(() => {
     if (lightbox !== 'closing') return
     const t = window.setTimeout(() => setLightbox('closed'), LIGHTBOX_DISSOLVE_MS)
@@ -184,7 +223,7 @@ export function PhotoStory({
     return () => window.removeEventListener('keydown', onKey)
   }, [lightbox, closeLightbox])
 
-  // Pager hops remount this component (App renders it with key={storyId}), so
+  // Rail hops remount this component (App renders it with key={storyId}), so
   // the photo index and the lightbox reset on their own.
 
   if (!f) {
@@ -202,10 +241,13 @@ export function PhotoStory({
     )
   }
 
-  // Prev/next follow the collection the visitor clicked into; entries without
-  // a matching tag context (deep links, hero) fall back to the category pool.
+  // Related rail follows the collection the visitor clicked into; entries
+  // without a matching tag context (deep links, hero) get the category pool —
+  // relatedEvents cascades tag -> category and never widens to all-events. A
+  // rail comes out empty only when the whole category has no other event; the
+  // aside is then dropped (story-grid-solo reclaims its column).
   const ctxTag = tag && f.tags.includes(tag) ? tag : undefined
-  const { prev, next } = adjacentEvents(f.id, { tag: ctxTag, category: f.category })
+  const related = relatedEvents(f.id, { tag: ctxTag, category: f.category })
   const photos = f.photos.length > 0 ? f.photos : [f.cover]
   const activeFile = photos[Math.min(activeIdx, photos.length - 1)]
 
@@ -220,48 +262,97 @@ export function PhotoStory({
           ← Galleria
         </button>
 
-        <div className="stack" style={{ gap: 10, marginBottom: 26 }}>
-          <h1 className="t-h1" style={{ margin: 0 }}>
-            <DisplayTitle title={f.title} />
-          </h1>
-          <div className="t-meta" style={{ color: 'var(--accent-inverse)' }}>
-            {([
-              formatDate(f.date),
-              f.location && !f.title.toLowerCase().includes(f.location.toLowerCase()) ? f.location : null,
-              !f.title.toLowerCase().includes(f.tag.toLowerCase()) ? f.tag : null,
-            ].filter(Boolean) as string[]).join(' · ')}
+        <div className={related.length > 0 ? 'story-grid' : 'story-grid story-grid-solo'}>
+          <div className="story-main">
+            <PhotoFrame
+              event={f}
+              file={activeFile}
+              alt={f.title}
+              caption={{ right: `${String(Math.min(activeIdx, photos.length - 1) + 1).padStart(2, '0')} / ${String(photos.length).padStart(2, '0')}` }}
+              onClick={() => setLightbox('open')}
+              style={{ cursor: 'zoom-in' }}
+            />
+
+            {photos.length > 1 && (
+              <div className="thumbstrip" style={{ marginTop: 12 }}>
+                {photos.map((file, i) => (
+                  <Clickable
+                    key={file}
+                    onClick={() => setActiveIdx(i)}
+                    className="thumb"
+                    data-active={i === activeIdx || undefined}
+                    aria-label={`Foto ${i + 1}`}
+                  >
+                    <PhotoFrame event={f} file={file} alt={`${f.title} — foto ${i + 1}`} />
+                  </Clickable>
+                ))}
+              </div>
+            )}
+
+            <div className="stack" style={{ gap: 10, marginTop: 28 }}>
+              <h1 className="t-h1" style={{ margin: 0 }}>
+                <DisplayTitle title={f.title} />
+              </h1>
+              <div className="t-meta" style={{ color: 'var(--accent-inverse)' }}>
+                {([
+                  formatDate(f.date),
+                  f.location && !f.title.toLowerCase().includes(f.location.toLowerCase()) ? f.location : null,
+                  !f.title.toLowerCase().includes(f.tag.toLowerCase()) ? f.tag : null,
+                ].filter(Boolean) as string[]).join(' · ')}
+              </div>
+              {f.specs && (
+                <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>{f.specs}</div>
+              )}
+            </div>
+
+            {f.description_it && (
+              <p className="prose" style={{ color: 'var(--muted-inverse)', margin: '18px 0 0' }}>
+                {f.description_it}
+              </p>
+            )}
+
+            {f.links?.instagram_url && (
+              <a
+                className="link-ext"
+                style={{ color: 'var(--ink-inverse)', marginTop: 24, alignSelf: 'flex-start' }}
+                href={f.links.instagram_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Instagram ↗
+              </a>
+            )}
           </div>
-          {f.specs && (
-            <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>{f.specs}</div>
+
+          {related.length > 0 && (
+            <aside className="story-related">
+              <h2 className="t-meta" style={{ margin: '0 0 10px', color: 'var(--muted-inverse)' }}>
+                Altre raccolte
+              </h2>
+              <div className="related-list">
+                {related.map((r) => (
+                  <Clickable
+                    key={r.id}
+                    className="related-item"
+                    onClick={() => go('story', r.id, ctxTag)}
+                    aria-label={`Apri la raccolta ${r.title}`}
+                  >
+                    <PhotoFrame event={r} file={r.cover} ratio="3 / 2" alt={r.title} />
+                    <div className="related-body">
+                      <div className="related-title">{r.title}</div>
+                      <div className="related-meta">
+                        {r.year} · {Math.max(1, r.photos.length)} foto
+                      </div>
+                    </div>
+                  </Clickable>
+                ))}
+              </div>
+              <button className="t-meta related-all" onClick={() => go('gallery', f.category)}>
+                Tutte le raccolte →
+              </button>
+            </aside>
           )}
         </div>
-
-        {f.description_it && (
-          <p className="prose" style={{ color: 'var(--muted-inverse)', margin: '0 0 24px' }}>
-            {f.description_it}
-          </p>
-        )}
-
-        {f.links?.instagram_url && (
-          <a
-            className="link-ext"
-            style={{ color: 'var(--ink-inverse)', marginBottom: 30 }}
-            href={f.links.instagram_url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Instagram ↗
-          </a>
-        )}
-
-        <PhotoFrame
-          event={f}
-          file={activeFile}
-          alt={f.title}
-          caption={{ right: `${String(Math.min(activeIdx, photos.length - 1) + 1).padStart(2, '0')} / ${String(photos.length).padStart(2, '0')}` }}
-          onClick={() => setLightbox('open')}
-          style={{ cursor: 'zoom-in' }}
-        />
 
         {lightbox !== 'closed' && (
           <div
@@ -275,51 +366,8 @@ export function PhotoStory({
             <img src={photoUrl(f, activeFile)} alt={f.title} />
           </div>
         )}
-
-        {photos.length > 1 && (
-          <div className="thumbstrip" style={{ marginTop: 12 }}>
-            {photos.map((file, i) => (
-              <Clickable
-                key={file}
-                onClick={() => setActiveIdx(i)}
-                className="thumb"
-                data-active={i === activeIdx || undefined}
-                aria-label={`Foto ${i + 1}`}
-              >
-                <PhotoFrame event={f} file={file} alt={`${f.title} — foto ${i + 1}`} />
-              </Clickable>
-            ))}
-          </div>
-        )}
-
-        <div className="pager">
-          <button
-            onClick={() => (prev ? go('story', prev.id, ctxTag) : go('gallery', f.category))}
-          >
-            {prev ? `← ${prev.title}` : '← Galleria'}
-          </button>
-          <span className="t-meta" style={{ color: 'var(--muted-inverse)' }}>
-            {photos.length} foto
-          </span>
-          <button
-            onClick={() => (next ? go('story', next.id, ctxTag) : go('gallery', f.category))}
-          >
-            {next ? `${next.title} →` : 'Galleria →'}
-          </button>
-        </div>
       </div>
     </main>
   )
 }
 
-function formatDate(iso: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
-  if (!m) return iso
-  const months = [
-    '', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
-  ]
-  const day = parseInt(m[3], 10)
-  const month = months[parseInt(m[2], 10)] ?? ''
-  return `${day} ${month} ${m[1]}`
-}

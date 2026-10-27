@@ -35,6 +35,10 @@ jobs:
       - name: Build
         working-directory: app
         run: npm run build
+        env:
+          # Drive API key (read-only, referrer-restricted) for the archive
+          # sections; optional — without it the Drive sections show a notice.
+          VITE_DRIVE_API_KEY: ${{ secrets.VITE_DRIVE_API_KEY }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

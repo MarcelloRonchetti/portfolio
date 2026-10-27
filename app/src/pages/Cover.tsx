@@ -9,7 +9,13 @@ export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
     <main>
       <section className="hero">
         <div className="hero-photo">
-          {featured && <img src={photoUrl(featured, featured.cover)} alt={DATA.identity.role} />}
+          {featured && (
+            <img
+              src={photoUrl(featured, featured.cover)}
+              alt={DATA.identity.role}
+              fetchPriority="high"
+            />
+          )}
         </div>
         <div className="hero-shade" />
         <div className="hero-content">

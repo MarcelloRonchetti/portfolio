@@ -1,7 +1,9 @@
 import { DATA } from '../lib/data'
+import { useCvDownload } from '../hooks/useCvDownload'
 
 export default function Contact() {
   const { email, instagram, tiktok } = DATA.identity
+  const cv = useCvDownload()
 
   return (
     <main className="section" style={{ paddingTop: 140, paddingBottom: 110, minHeight: '80vh' }}>
@@ -12,6 +14,19 @@ export default function Contact() {
         </p>
 
         <div className="contact-rows" style={{ marginTop: 26 }}>
+          <button
+            className="contact-row"
+            onClick={cv.download}
+            disabled={cv.busy}
+            style={{ textAlign: 'left' }}
+            title="Il CV viene scaricato in PDF, senza lasciare la pagina"
+          >
+            <span className="contact-label">Curriculum</span>
+            <span className="contact-value">
+              {cv.failed ? 'Non disponibile al momento' : 'Scarica il CV (PDF)'}
+            </span>
+            <span className="contact-arrow">{cv.busy ? '…' : cv.failed ? '✕' : '↓'}</span>
+          </button>
           <a className="contact-row" href={`mailto:${email}`}>
             <span className="contact-label">Email</span>
             <span className="contact-value">{email}</span>

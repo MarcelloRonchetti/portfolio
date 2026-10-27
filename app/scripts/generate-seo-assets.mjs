@@ -2,13 +2,12 @@
 //
 //   1. dist/sitemap.xml — every page at its pretty URL.
 //   2. Prerendered pages under dist/story/<id>/, dist/gallery/<slug>/,
-//      dist/gallery/, dist/contact/ — each is a CLONE of the SPA shell
-//      (same hashed bundle) with per-page <title>, description, canonical,
-//      Open Graph and JSON-LD, plus a tiny inline script that seeds the
-//      localStorage keys the app reads (the same keys the ?p= deep links set),
-//      and a noscript summary for crawlers that don't execute JS. Visitors get
-//      the full interactive site directly on the pretty URL; crawlers without
-//      JS get real per-URL content instead of the bare shell.
+//      dist/gallery/, dist/videos/, dist/contact/ — each is a CLONE of the SPA
+//      shell (same hashed bundle) with per-page <title>, description, canonical,
+//      Open Graph and JSON-LD, plus a noscript summary for crawlers that don't
+//      execute JS. Visitors get the full interactive site directly on the pretty
+//      URL (the router reads location.pathname); crawlers without JS get real
+//      per-URL content instead of the bare shell.
 //   3. dist/index.html (the SPA shell) — post-processed to add Open Graph tags
 //      with the current hero image (latest Instagram post).
 //
@@ -17,8 +16,8 @@
 //
 // Event normalization mirrors src/lib/events.ts exactly: skip events the app
 // would skip (missing title/year/tags/date), legacy `tag` fallback, category
-// defaults to Motorsport. Story ids must match the deep-link regex in
-// src/App.tsx (`^\/?story\/([\w-]+)\/?$`).
+// defaults to Motorsport. Story ids must match the /story/:id route ids
+// (`^[\w-]+$`), which also covers Drive-backed collections (`drive-<folderId>`).
 import fs from 'node:fs'
 import path from 'node:path'
 import url from 'node:url'
@@ -110,9 +109,9 @@ function siteGraph() {
   }
 }
 
-// Writes dist/<dir>/index.html: the shell with per-page meta + route seeding.
-// `seed` mirrors exactly what the matching ?p= deep link persists in App.tsx.
-function page({ dir, title, description, canonical, ogImage, jsonLd, seed, noscript }) {
+// Writes dist/<dir>/index.html: the shell with per-page meta. The router picks
+// the right view from the URL — no localStorage seeding needed anymore.
+function page({ dir, title, description, canonical, ogImage, jsonLd, noscript }) {
   let html = SHELL
     .replace(`<title>${SHELL_TITLE}</title>`, () => `<title>${escHtml(title)}</title>`)
     .replace(`content="${SHELL_DESC}"`, () => `content="${escHtml(description)}"`)
@@ -128,15 +127,6 @@ function page({ dir, title, description, canonical, ogImage, jsonLd, seed, noscr
     .replace(
       '<div id="root"></div>',
       () => `<div id="root"></div>
-    <script>
-      // Seeded by scripts/generate-seo-assets.mjs: this static page is the
-      // pretty URL of a route the SPA reaches via ?p= deep links. Setting the
-      // same localStorage keys before the bundle runs reproduces the deep-link
-      // behaviour (see initialRoute() in src/App.tsx).
-      try {
-        ${seed}
-      } catch (e) { /* ignore */ }
-    </script>
     <noscript>
       ${noscript}
     </noscript>`
@@ -224,24 +214,20 @@ for (const e of prunable) {
         },
       ],
     },
-    seed: `localStorage.setItem('mr.route', 'story')
-        localStorage.setItem('mr.storyId', ${JSON.stringify(e.id)})
-        localStorage.setItem('mr.storyTag', '')`,
     noscript: `<h1>${escHtml(e.title)}</h1>
         <p>${escHtml(description)}</p>
         <p><img src="${escHtml(`${SITE}/photos/${e.id}/${e.cover}`)}" alt="${escHtml(e.title)}" /></p>
-        <p>Fotografie di ${escHtml(IDENTITY.name)} — <a href="${escHtml(`${SITE}/?p=story/${e.id}`)}">Apri la raccolta completa</a></p>`,
+        <p>Fotografie di ${escHtml(IDENTITY.name)} — <a href="${escHtml(`${SITE}/story/${e.id}/`)}">Apri la raccolta completa</a></p>`,
   })
 }
 
-// ── 2. Prerendered gallery / category / contact pages ────────────────────────
+// ── 2. Prerendered gallery / category / videos / contact pages ───────────────
 page({
   dir: 'gallery',
   title: `Galleria — ${IDENTITY.name}`,
   description: `Tutte le raccolte fotografiche di ${IDENTITY.name} (${categories.join(', ')}). Raccolte da circuiti, eventi e viaggi.`,
   canonical: `${SITE}/gallery/`,
   jsonLd: siteGraph(),
-  seed: `localStorage.setItem('mr.route', 'gallery')`,
   noscript: `<h1>Galleria</h1><p>Raccolte da circuiti, eventi e viaggi. Categorie: ${escHtml(categories.join(', '))}.</p>`,
 })
 for (const cat of categories) {
@@ -252,18 +238,23 @@ for (const cat of categories) {
     description: `Galleria ${cat} di ${IDENTITY.name}: ${c.n} raccolte, ${c.photos} foto.`,
     canonical: `${SITE}/gallery/${slugOf(cat)}/`,
     jsonLd: siteGraph(),
-    seed: `localStorage.setItem('mr.route', 'gallery')
-        localStorage.setItem('mr.galleryCat', ${JSON.stringify(cat)})`,
     noscript: `<h1>Galleria — ${escHtml(cat)}</h1><p>${c.n} raccolte, ${c.photos} foto.</p>`,
   })
 }
+page({
+  dir: 'videos',
+  title: `Video — ${IDENTITY.name}`,
+  description: `I video di ${IDENTITY.name}, fotografo di sport e motorsport: filmati dall'archivio in qualità HD (minimo 720p).`,
+  canonical: `${SITE}/videos/`,
+  jsonLd: siteGraph(),
+  noscript: `<h1>Video</h1><p>I filmati dell'archivio di ${escHtml(IDENTITY.name)}, in qualità HD (minimo 720p).</p>`,
+})
 page({
   dir: 'contact',
   title: `Contatti — ${IDENTITY.name}`,
   description: `Contatti di ${IDENTITY.name}, fotografo a ${IDENTITY.location}: email, Instagram e TikTok per informazioni, commissioni e collaborazioni.`,
   canonical: `${SITE}/contact/`,
   jsonLd: siteGraph(),
-  seed: `localStorage.setItem('mr.route', 'contact')`,
   noscript: `<h1>Contatti</h1>
         <p>Per informazioni, commissioni o collaborazioni:</p>
         <p>Email: <a href="mailto:${IDENTITY.email}">${escHtml(IDENTITY.email)}</a></p>
@@ -279,29 +270,32 @@ xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
 xml += entry(`${SITE}/`, today)
 xml += entry(`${SITE}/gallery/`, today)
 for (const cat of categories) xml += entry(`${SITE}/gallery/${slugOf(cat)}/`, cats.get(cat).lastmod)
+xml += entry(`${SITE}/videos/`, today)
 xml += entry(`${SITE}/contact/`, today)
 for (const e of prunable) xml += entry(`${SITE}/story/${e.id}/`, e.date)
 xml += '</urlset>\n'
 fs.writeFileSync(path.join(DIST, 'sitemap.xml'), xml)
 
-// ── 4. Open Graph on the SPA shell (root) ────────────────────────────────────
+// ── 4. Open Graph + LCP preload on the SPA shell (root) ─────────────────────
 // The hero is always the latest Instagram post that is not a VIDEO (same rule
-// as src/lib/events.ts featuredEvent); fall back to the newest event.
+// as src/lib/events.ts featuredEvent); fall back to the newest event. The
+// preload is shell-only: on inner pages the hero image isn't the LCP.
 const heroEvent =
   events.find((e) => e.source.provider === 'instagram' && e.source.media_type !== 'VIDEO') ??
   events[0]
+const heroImage = `${SITE}/photos/${heroEvent.id}/${heroEvent.cover}`
 const shellPath = path.join(DIST, 'index.html')
 let shellHtml = fs.readFileSync(shellPath, 'utf8')
 if (!shellHtml.includes('property="og:title"')) {
   shellHtml = shellHtml.replace(
     '</head>',
     () =>
-      ogBlock(SHELL_TITLE, SITE_DESC, `${SITE}/`, `${SITE}/photos/${heroEvent.id}/${heroEvent.cover}`) +
-      '  </head>'
+      ogBlock(SHELL_TITLE, SITE_DESC, `${SITE}/`, heroImage) +
+      `  <link rel="preload" as="image" href="${escHtml(heroImage)}" fetchpriority="high" />\n  </head>`
   )
   fs.writeFileSync(shellPath, shellHtml)
 }
 
 console.log(
-  `seo: sitemap ${prunable.length} eventi + ${categories.length} categorie; ${prunable.length + categories.length + 2} pagine prerenderizzate; og:image da ${heroEvent.id}`
+  `seo: sitemap ${prunable.length} eventi + ${categories.length} categorie; ${prunable.length + categories.length + 3} pagine prerenderizzate; og:image da ${heroEvent.id}`
 )

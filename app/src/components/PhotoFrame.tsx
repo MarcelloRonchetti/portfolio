@@ -8,6 +8,7 @@ import Clickable from './Clickable'
 export default function PhotoFrame({
   event,
   file,
+  src: srcOverride,
   ratio,
   caption,
   style,
@@ -17,6 +18,8 @@ export default function PhotoFrame({
 }: {
   event?: Event
   file?: string
+  /** Absolute URL override (Drive-backed images); ignores event/file. */
+  src?: string
   ratio?: string
   caption?: { left?: string; right?: string }
   style?: CSSProperties
@@ -25,7 +28,7 @@ export default function PhotoFrame({
   alt?: string
 }) {
   const [failed, setFailed] = useState(false)
-  const src = event && file ? photoUrl(event, file) : undefined
+  const src = srcOverride ?? (event && file ? photoUrl(event, file) : undefined)
 
   return (
     <Clickable

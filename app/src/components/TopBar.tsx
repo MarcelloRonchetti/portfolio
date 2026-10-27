@@ -1,42 +1,36 @@
-import type { Route } from '../lib/data'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { DATA } from '../lib/data'
+import CvButton from './CvButton'
 
 type Theme = 'day' | 'night'
 
-type Props = {
-  route: Route
-  onNavigate: (next: Route, ref?: string) => void
-  theme: Theme
-  onToggleTheme: () => void
-}
-
-const ITEMS: { id: Route; label: string }[] = [
-  { id: 'cover', label: 'home' },
-  { id: 'gallery', label: 'galleria' },
-  { id: 'contact', label: 'contatti' },
+const ITEMS: { path: string; label: string; active: (p: string) => boolean }[] = [
+  { path: '/', label: 'home', active: (p) => p === '/' },
+  { path: '/gallery', label: 'galleria', active: (p) => p.startsWith('/gallery') || p.startsWith('/story') },
+  { path: '/videos', label: 'video', active: (p) => p.startsWith('/videos') },
+  { path: '/contact', label: 'contatti', active: (p) => p.startsWith('/contact') },
 ]
 
-export default function TopBar({ route, onNavigate, theme, onToggleTheme }: Props) {
+export default function TopBar({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+
   return (
     <header className="site-header">
-      <button className="brand" onClick={() => onNavigate('cover')}>
+      <button className="brand" onClick={() => navigate('/')}>
         {DATA.identity.name}
       </button>
       <nav>
-        {ITEMS.map((it) => {
-          const active =
-            route === it.id ||
-            (route === 'story' && it.id === 'gallery')
-          return (
-            <button
-              key={it.id}
-              data-active={active || undefined}
-              onClick={() => onNavigate(it.id)}
-            >
-              {it.label}
-            </button>
-          )
-        })}
+        {ITEMS.map((it) => (
+          <button
+            key={it.path}
+            data-active={it.active(pathname) || undefined}
+            onClick={() => navigate(it.path)}
+          >
+            {it.label}
+          </button>
+        ))}
+        <CvButton />
         <button
           className="theme-toggle"
           onClick={onToggleTheme}

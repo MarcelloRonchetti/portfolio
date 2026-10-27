@@ -160,23 +160,34 @@ export function photoUrl(event: Event, file: string): string {
   return `${base}/photos/${event.id}/${file}`
 }
 
-// Prev/next stay inside what the visitor is browsing: the collection tag when
-// they arrived from a collection card, else the gallery category — never
-// jumping across categories by date. Wraps at the ends so even a small
-// collection never dead-ends.
-export function adjacentEvents(
-  id: string,
-  opts?: { tag?: string; category?: string }
-): { prev?: Event; next?: Event } {
-  const pool = opts?.tag
+// Browsing pool for a story: the collection tag when the visitor arrived from
+// a collection card, else the gallery category — never jumping across
+// categories by date.
+function poolFor(opts?: { tag?: string; category?: string }): Event[] {
+  return opts?.tag
     ? eventsByTag(opts.tag)
     : opts?.category
       ? events.filter((e) => e.category === opts.category)
       : events
-  const i = pool.findIndex((e) => e.id === id)
-  if (i === -1 || pool.length < 2) return {}
-  return {
-    prev: pool[(i - 1 + pool.length) % pool.length],
-    next: pool[(i + 1) % pool.length],
-  }
+}
+
+// Newest-first list for the story page's related rail. The pool is the
+// collection tag when the visitor arrived from a collection card, falling back
+// to the gallery category — never all-events: letting tagless arrivals hit the
+// full archive surfaced Landscape/People posts under Motorsport stories.
+// Returns [] only when the category pool itself has no other events (a
+// single-event category deep-linked): the caller hides the rail rather than
+// widening scope.
+export function relatedEvents(
+  id: string,
+  opts?: { tag?: string; category?: string },
+  limit = 12
+): Event[] {
+  const fromTag = opts?.tag
+    ? poolFor({ tag: opts.tag }).filter((e) => e.id !== id)
+    : []
+  if (fromTag.length > 0) return fromTag.slice(0, limit)
+  return poolFor({ category: opts?.category })
+    .filter((e) => e.id !== id)
+    .slice(0, limit)
 }
