@@ -1,0 +1,29 @@
+{
+  "id": "instagram-18023661242741310",
+  "tags": [
+    "BMW"
+  ],
+  "title": "Kickstarting autumn with awesome group",
+  "year": "2025",
+  "subtitle": "",
+  "location": "",
+  "date": "2025-09-21",
+  "description_it": "Kickstarting autumn with awesome group shots from yesterday's car and bike meet!",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DO3no6tjBWP/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18023661242741310",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

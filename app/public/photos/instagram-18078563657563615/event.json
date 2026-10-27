@@ -1,0 +1,26 @@
+{
+  "id": "instagram-18078563657563615",
+  "tags": [
+    "Ferrari"
+  ],
+  "title": "Zanasi Racing Ferrari 296 Challenge in",
+  "year": "2026",
+  "subtitle": "",
+  "location": "",
+  "date": "2026-05-10",
+  "description_it": "Zanasi Racing Ferrari 296 Challenge in imola",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DYJpFjGjGek/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18078563657563615",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

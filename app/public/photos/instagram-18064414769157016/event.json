@@ -1,0 +1,28 @@
+{
+  "id": "instagram-18064414769157016",
+  "tags": [
+    "Lotus"
+  ],
+  "title": "Lotus Emira . . . . .",
+  "year": "2025",
+  "subtitle": "",
+  "location": "",
+  "date": "2025-07-08",
+  "description_it": "Lotus Emira . . . . .",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DL3Pm20s9fz/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18064414769157016",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "instagram-18117708469664597",
+  "tags": [
+    "Lamborghini"
+  ],
+  "title": "Gold digger lamborghini on the move",
+  "year": "2026",
+  "subtitle": "",
+  "location": "",
+  "date": "2026-05-14",
+  "description_it": "Gold digger lamborghini on the move",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DYUS0SLDIcm/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18117708469664597",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}
