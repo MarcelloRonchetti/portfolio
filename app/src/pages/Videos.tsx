@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import Clickable from '../components/Clickable'
 import { useDriveContent } from '../hooks/useDriveContent'
 import type { DriveVideo } from '../lib/drive'
-import { DRIVE_CONFIG } from '../lib/driveConfig'
 
 const ALL = 'Tutti'
 
@@ -97,11 +96,11 @@ export default function Videos() {
               Momentum in movimento — i filmati dell'archivio, in qualità HD.
             </p>
           </div>
-          <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>
-            {content
-              ? `${filtered.length} video · qualità min. ${DRIVE_CONFIG.minVideoHeight}p`
-              : `qualità min. ${DRIVE_CONFIG.minVideoHeight}p`}
-          </div>
+          {content && (
+            <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>
+              {filtered.length} video
+            </div>
+          )}
         </div>
 
         <div className="catnav" ref={catnavRef}>
