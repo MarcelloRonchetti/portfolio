@@ -123,11 +123,29 @@ async function videoCodec(file) {
 }
 
 async function download(id, dest) {
-  const res = await fetch(`${API}/files/${id}?alt=media&key=${KEY}`, {
-    headers: { Referer: REFERER },
-  })
-  if (!res.ok) throw new Error(`download HTTP ${res.status}`)
-  await pipeline(Readable.fromWeb(res.body), createWriteStream(dest))
+  // usercontent senza Referer serve file di qualunque dimensione senza
+  // interstitial (l'interstitial scatta solo con Referer presente) e non
+  // consuma quota della API key; alt=media resta come fallback. Un 200 con
+  // content-type text/html è l'interstitial o una pagina di errore: scarto.
+  const attempts = [
+    { url: `https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`, headers: {} },
+    { url: `${API}/files/${id}?alt=media&key=${KEY}`, headers: { Referer: REFERER } },
+  ]
+  for (const { url, headers } of attempts) {
+    const res = await fetch(url, { headers })
+    if (!res.ok) {
+      res.body?.cancel()
+      continue
+    }
+    const type = res.headers.get('content-type') ?? ''
+    if (type.startsWith('text/html')) {
+      res.body?.cancel()
+      continue
+    }
+    await pipeline(Readable.fromWeb(res.body), createWriteStream(dest))
+    return
+  }
+  throw new Error('download fallito da entrambi gli endpoint (rate-limit?)')
 }
 
 async function transcode(src, dest) {
