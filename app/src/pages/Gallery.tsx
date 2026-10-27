@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import type { Route } from '../lib/data'
 import { DATA } from '../lib/data'
 import type { Collection, Event } from '../lib/events'
@@ -142,6 +142,9 @@ function DisplayTitle({ title }: { title: string }) {
   )
 }
 
+// Must stay in sync with the lightboxDissolve animation duration in index.css.
+const LIGHTBOX_DISSOLVE_MS = 300
+
 export function PhotoStory({
   eventId,
   tag,
@@ -155,14 +158,34 @@ export function PhotoStory({
   const fallback = firstEventByTag(eventId)
   const f: Event | undefined = direct ?? fallback ?? events[0]
   const [activeIdx, setActiveIdx] = useState(0)
-  const [isExpanded, setIsExpanded] = useState(false)
+  // 'closing' keeps the overlay mounted while the dissolve-out plays.
+  const [lightbox, setLightbox] = useState<'closed' | 'open' | 'closing'>('closed')
 
-  // Pager hops swap the event without remounting (route stays 'story'); a
-  // stale photo index or open lightbox must not carry into the next event.
+  // Stable across renders: the guard reads the state via the functional update.
+  const closeLightbox = useCallback(() => {
+    setLightbox((prev) => (prev === 'open' ? 'closing' : prev))
+  }, [])
+
+  // Drop the overlay once the dissolve-out has played; the cleanup cancels the
+  // timer if the story unmounts mid-animation (e.g. a pager hop).
   useEffect(() => {
-    setActiveIdx(0)
-    setIsExpanded(false)
-  }, [eventId])
+    if (lightbox !== 'closing') return
+    const t = window.setTimeout(() => setLightbox('closed'), LIGHTBOX_DISSOLVE_MS)
+    return () => window.clearTimeout(t)
+  }, [lightbox])
+
+  // Esc closes, as in any lightbox; the listener drops when the overlay does.
+  useEffect(() => {
+    if (lightbox === 'closed') return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [lightbox, closeLightbox])
+
+  // Pager hops remount this component (App renders it with key={storyId}), so
+  // the photo index and the lightbox reset on their own.
 
   if (!f) {
     return (
@@ -236,33 +259,20 @@ export function PhotoStory({
           file={activeFile}
           alt={f.title}
           caption={{ right: `${String(Math.min(activeIdx, photos.length - 1) + 1).padStart(2, '0')} / ${String(photos.length).padStart(2, '0')}` }}
-          onClick={() => setIsExpanded(true)}
+          onClick={() => setLightbox('open')}
           style={{ cursor: 'zoom-in' }}
         />
 
-        {isExpanded && (
+        {lightbox !== 'closed' && (
           <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 100,
-              backgroundColor: 'rgba(10, 9, 7, 0.95)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'zoom-out'
-            }}
-            onClick={() => setIsExpanded(false)}
+            className="lightbox"
+            data-closing={lightbox === 'closing' || undefined}
+            onClick={closeLightbox}
+            role="dialog"
+            aria-modal="true"
+            aria-label={f.title}
           >
-            <img
-              src={photoUrl(f, activeFile)}
-              alt={f.title}
-              style={{
-                maxWidth: '95vw',
-                maxHeight: '95vh',
-                objectFit: 'contain'
-              }}
-            />
+            <img src={photoUrl(f, activeFile)} alt={f.title} />
           </div>
         )}
 

@@ -9,6 +9,8 @@ import Contact from './pages/Contact'
 
 const ROUTES: Route[] = ['cover', 'gallery', 'story', 'contact']
 
+type Theme = 'day' | 'night'
+
 function persistGet(k: string, fallback: string): string {
   try {
     return localStorage.getItem(k) ?? fallback
@@ -59,6 +61,14 @@ function initialRoute(): Route {
   return ROUTES.includes(stored) ? stored : 'cover'
 }
 
+// Night mode: stored choice wins, otherwise follow the OS preference (the same
+// value the inline script in index.html applies before first paint).
+function initialTheme(): Theme {
+  const stored = persistGet('mr.theme', '')
+  if (stored === 'night' || stored === 'day') return stored
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'night' : 'day'
+}
+
 export default function App() {
   // Order matters: initialRoute() may persist mr.galleryCat from a deep link,
   // and the initializer below must read it back after that.
@@ -68,11 +78,24 @@ export default function App() {
   const [galleryCat, setGalleryCat] = useState(
     () => categoryFromSlug(persistGet('mr.galleryCat', 'Motorsport')) ?? 'Motorsport'
   )
+  const [theme, setTheme] = useState<Theme>(initialTheme)
 
   useEffect(() => persistSet('mr.route', route), [route])
   useEffect(() => persistSet('mr.storyId', storyId), [storyId])
   useEffect(() => persistSet('mr.storyTag', storyTag), [storyTag])
   useEffect(() => persistSet('mr.galleryCat', galleryCat), [galleryCat])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    document.querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'night' ? '#131313' : '#faf9f6')
+  }, [theme])
+
+  const toggleTheme = () => {
+    const next = theme === 'night' ? 'day' : 'night'
+    setTheme(next)
+    persistSet('mr.theme', next)
+  }
 
   useEffect(() => {
     const dark = route === 'gallery' || route === 'story'
@@ -108,7 +131,7 @@ export default function App() {
 
   return (
     <>
-      <TopBar route={route} onNavigate={go} />
+      <TopBar route={route} onNavigate={go} theme={theme} onToggleTheme={toggleTheme} />
       <div key={route} className="page-fade">
         {screen}
       </div>

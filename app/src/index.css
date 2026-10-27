@@ -4,6 +4,8 @@
 ─────────────────────────────────────────────────────────── */
 
 :root {
+  /* giorno — palette neutra professionale: bianco caldo, antracite, bronzo */
+  color-scheme: light;
   --bg: #faf9f6;
   --bg-soft: #f1efe9;
   --ink: #1c1915;
@@ -16,6 +18,16 @@
   --muted-inverse: #a39d92;
   --hair-inverse: #2e2a25;
   --accent-inverse: #c2a678;
+
+  --header-bg: rgba(250, 249, 246, .92);
+  --header-bg-dark: rgba(20, 18, 15, .92);
+  --card-bg: #fff;
+  --card-bg-dark: #1d1a16;
+  --card-sub: #857e70;
+  --frame-bg-dark: #211e19;
+  --shadow-card: 0 18px 36px -22px rgba(28, 25, 21, .45);
+  --lightbox-bg: rgba(10, 9, 7, .95);
+  --accent-contrast: #fff;
 
   --font-display: 'Italiana', serif;
   --font-serif: 'Cormorant Garamond', Georgia, serif;
@@ -30,6 +42,34 @@
   --gutter: clamp(20px, 4vw, 56px);
   --line: 1px;
   --ease: cubic-bezier(.22, .61, .36, 1);
+}
+
+/* ─── notte ─── */
+/* Dark grayscale for the UI surfaces only: the photographs keep their colors. */
+[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #131313;
+  --bg-soft: #1b1b1b;
+  --ink: #e9e9e9;
+  --muted: #9c9c9c;
+  --accent: #cfcfcf;
+  --hair: #2a2a2a;
+
+  --bg-dark: #0c0c0c;
+  --ink-inverse: #f1f1f1;
+  --muted-inverse: #a8a8a8;
+  --hair-inverse: #2e2e2e;
+  --accent-inverse: #d6d6d6;
+
+  --header-bg: rgba(19, 19, 19, .92);
+  --header-bg-dark: rgba(12, 12, 12, .92);
+  --card-bg: #181818;
+  --card-bg-dark: #161616;
+  --card-sub: #8f8f8f;
+  --frame-bg-dark: #1d1d1d;
+  --shadow-card: 0 18px 36px -22px rgba(0, 0, 0, .65);
+  --lightbox-bg: rgba(0, 0, 0, .96);
+  --accent-contrast: #131313;
 }
 
 * { box-sizing: border-box; }
@@ -73,7 +113,7 @@ button {
   padding: 0;
 }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-::selection { background: var(--accent); color: #fff; }
+::selection { background: var(--accent); color: var(--accent-contrast); }
 
 /* ─── typography helpers ─── */
 .t-display { font-family: var(--font-display); font-weight: 400; line-height: 1.05; letter-spacing: .02em; }
@@ -107,14 +147,14 @@ button {
   align-items: center;
   gap: 24px;
   padding: 16px var(--gutter);
-  background: rgba(250, 249, 246, .92);
+  background: var(--header-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-bottom: var(--line) solid var(--hair);
   transition: background .3s var(--ease), border-color .3s var(--ease), color .3s var(--ease);
 }
 [data-section="dark"] .site-header {
-  background: rgba(20, 18, 15, .92);
+  background: var(--header-bg-dark);
   border-bottom-color: var(--hair-inverse);
   color: var(--ink-inverse);
 }
@@ -148,6 +188,16 @@ button {
 .site-header nav button:hover::after,
 .site-header nav button[data-active="true"]::after { transform: scaleX(1); }
 .site-header nav button[data-active="true"] { color: var(--accent); }
+
+/* ─── theme toggle ─── */
+.theme-toggle {
+  font-size: 15px;
+  line-height: 1;
+  color: var(--muted);
+  padding: 4px 2px;
+  transition: color .2s;
+}
+.theme-toggle:hover { color: var(--accent); }
 
 /* ─── hero (copertina) ─── */
 .hero {
@@ -258,17 +308,17 @@ button {
   flex: 1 1 270px;
   max-width: 340px;
   border: var(--line) solid var(--hair);
-  background: #fff;
+  background: var(--card-bg);
   overflow: hidden;
   transition: transform .3s var(--ease), box-shadow .3s var(--ease);
 }
-[data-section="dark"] .card { background: #1d1a16; border-color: var(--hair-inverse); }
+[data-section="dark"] .card { background: var(--card-bg-dark); border-color: var(--hair-inverse); }
 .card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 18px 36px -22px rgba(28, 25, 21, .45);
+  box-shadow: var(--shadow-card);
 }
 .card .card-photo { position: relative; aspect-ratio: 3 / 2; background: var(--bg-soft); }
-[data-section="dark"] .card .card-photo { background: #211e19; }
+[data-section="dark"] .card .card-photo { background: var(--frame-bg-dark); }
 .card .card-photo img {
   position: absolute;
   inset: 0;
@@ -284,10 +334,10 @@ button {
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 15px;
-  color: #857e70;
+  color: var(--card-sub);
   margin-top: 2px;
 }
-[data-section="dark"] .card .card-sub { color: #b8b0a2; }
+[data-section="dark"] .card .card-sub { color: var(--muted-inverse); }
 .card .card-count {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -310,7 +360,7 @@ button {
   overflow: hidden;
   background: var(--bg-soft);
 }
-.section-dark .frame { background: #211e19; }
+.section-dark .frame { background: var(--frame-bg-dark); }
 .frame img {
   position: absolute;
   inset: 0;
@@ -380,6 +430,27 @@ button {
 .thumbstrip .thumb:hover { opacity: 1; }
 .thumbstrip .thumb[data-active="true"] { outline-color: var(--accent-inverse); opacity: 1; }
 .thumbstrip .thumb .frame { position: absolute; inset: 0; }
+
+/* ─── lightbox ─── */
+/* Full-photo dissolve; data-closing replays the keyframes in reverse so the
+   exit fades too. Duration must match LIGHTBOX_DISSOLVE_MS in Gallery.tsx. */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--lightbox-bg);
+  cursor: zoom-out;
+  animation: lightboxDissolve .3s var(--ease) both;
+}
+.lightbox[data-closing="true"] { animation-direction: reverse; }
+.lightbox img { max-width: 95vw; max-height: 95vh; object-fit: contain; }
+@keyframes lightboxDissolve {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 
 /* ─── contact rows ─── */
 .contact-rows { display: flex; flex-direction: column; }
@@ -477,7 +548,7 @@ button {
 
 /* ─── reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
-  .page-fade { animation: none; }
+  .page-fade, .lightbox { animation: none; }
   .card, .btn, .link-ext, .contact-row, .pager button { transition: none; }
   html, body, .site-header, .site-footer { transition: none; }
 }
