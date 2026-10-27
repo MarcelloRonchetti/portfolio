@@ -16,7 +16,10 @@ export const DRIVE_CONFIG = {
   cvDirName: 'cv',
   cvFilePattern: /^(cv|curriculum)/i,
   cacheKey: 'mr.drive.v1',
-  cacheTtlMs: 15 * 60 * 1000,
+  // Cache epoch: cached content is considered stale once the local clock has
+  // passed 06:00 — every visitor gets one fresh Drive walk per day, on the
+  // first page view after that hour, with no manual refresh control.
+  cacheResetHour: 6,
   // Quality window: videos whose known short side is below 720p or above
   // 1080p (HD) are not listed — the archive is meant to stay 720p–1080p.
   minVideoHeight: 720,

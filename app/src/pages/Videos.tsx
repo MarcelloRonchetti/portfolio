@@ -97,29 +97,10 @@ export default function Videos() {
               Momentum in movimento — i filmati dell'archivio, in qualità HD.
             </p>
           </div>
-          <div className="stack" style={{ gap: 4, alignItems: 'flex-end' }}>
-            <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>
-              {content
-                ? `${filtered.length} video · qualità min. ${DRIVE_CONFIG.minVideoHeight}p`
-                : `qualità min. ${DRIVE_CONFIG.minVideoHeight}p`}
-            </div>
-            {content && (
-              <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>
-                aggiornato alle{' '}
-                {new Date(content.fetchedAt).toLocaleTimeString('it-IT', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}{' '}
-                ·{' '}
-                <button
-                  className="t-meta"
-                  style={{ color: 'var(--accent-inverse)' }}
-                  onClick={refresh}
-                >
-                  Aggiorna
-                </button>
-              </div>
-            )}
+          <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>
+            {content
+              ? `${filtered.length} video · qualità min. ${DRIVE_CONFIG.minVideoHeight}p`
+              : `qualità min. ${DRIVE_CONFIG.minVideoHeight}p`}
           </div>
         </div>
 

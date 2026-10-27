@@ -341,6 +341,18 @@ async function walkRoot(): Promise<Omit<DriveContent, 'fetchedAt'>> {
 
 type CacheShape = { content: DriveContent; fetchedAt: number }
 
+// Staleness is epoch-based, not a fixed TTL: content fetched before the last
+// 06:00 local crossing is stale, so the archive refreshes itself once a day
+// on the first visit after that hour (user requirement: update daily at 6).
+function cacheEpoch(now = Date.now()): number {
+  const probe = new Date(now)
+  probe.setHours(DRIVE_CONFIG.cacheResetHour, 0, 0, 0)
+  const base = now < probe.getTime() ? now - 86_400_000 : now
+  const d = new Date(base)
+  d.setHours(DRIVE_CONFIG.cacheResetHour, 0, 0, 0)
+  return d.getTime()
+}
+
 // Media hosts the app itself builds URLs from; anything else in a cached entry
 // means the cache was tampered with (the github.io origin is shared across
 // projects) or written by an older schema — drop it wholesale. Dropping
@@ -425,7 +437,7 @@ export function clearDriveCache(): void {
 /** Synchronous read of a still-fresh cache, for first-paint hydration. */
 export function peekDriveCache(): DriveContent | null {
   const cached = readCache()
-  if (!cached || Date.now() - cached.fetchedAt >= DRIVE_CONFIG.cacheTtlMs) return null
+  if (!cached || cached.fetchedAt < cacheEpoch()) return null
   return cached.content
 }
 
@@ -440,7 +452,7 @@ export async function loadDriveContent(opts?: { force?: boolean }): Promise<Driv
   }
   if (!opts?.force) {
     const cached = readCache()
-    if (cached && Date.now() - cached.fetchedAt < DRIVE_CONFIG.cacheTtlMs) {
+    if (cached && cached.fetchedAt >= cacheEpoch()) {
       return cached.content
     }
   }
