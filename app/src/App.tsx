@@ -17,6 +17,7 @@ import { Gallery, PhotoStory } from './pages/Gallery'
 import DriveStory from './pages/DriveStory'
 import Videos from './pages/Videos'
 import Contact from './pages/Contact'
+import RoomPage from './pages/Room'
 import { categories, eventById, firstEventByTag } from './lib/events'
 import { useDriveContent } from './hooks/useDriveContent'
 
@@ -209,7 +210,8 @@ function AppShell() {
   const dark =
     location.pathname.startsWith('/gallery') ||
     location.pathname.startsWith('/story') ||
-    location.pathname.startsWith('/videos')
+    location.pathname.startsWith('/videos') ||
+    location.pathname.startsWith('/room')
   useEffect(() => {
     document.body.setAttribute('data-section', dark ? 'dark' : 'light')
   }, [dark])
@@ -229,6 +231,7 @@ function AppShell() {
           <Route path="/story/:id" element={<StoryRoute go={go} />} />
           <Route path="/videos" element={<Videos />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/room/:roomId" element={<RoomPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

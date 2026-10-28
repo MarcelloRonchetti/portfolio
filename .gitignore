@@ -91,3 +91,6 @@ SETUP-DRIVE.md
 # output ri-encoding video Drive (locale)
 drive-reencoded/
 out/
+
+# stato hook video2code (locale, mai nella repo)
+.v2c/

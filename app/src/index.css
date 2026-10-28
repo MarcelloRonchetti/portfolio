@@ -28,6 +28,7 @@
   --shadow-card: 0 18px 36px -22px rgba(28, 25, 21, .45);
   --lightbox-bg: rgba(10, 9, 7, .95);
   --accent-contrast: #fff;
+  --error: #c0705a;
 
   --font-display: 'Italiana', serif;
   --font-serif: 'Cormorant Garamond', Georgia, serif;
@@ -70,6 +71,7 @@
   --shadow-card: 0 18px 36px -22px rgba(0, 0, 0, .65);
   --lightbox-bg: rgba(0, 0, 0, .96);
   --accent-contrast: #131313;
+  --error: #a89383;
 }
 
 * { box-sizing: border-box; }
@@ -681,4 +683,207 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .video-lightbox { animation: none; }
   .skeleton-block { animation: none; }
+}
+
+/* ─── client delivery rooms ────────────────────────────────────────────────
+   Private galleries for clients: proofing (approve / changes / favourites),
+   password gate, watermark. Sober by design — same tokens as the rest. */
+
+.room-gate {
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+  padding: clamp(30px, 6vw, 48px) clamp(22px, 5vw, 40px);
+  background: var(--card-bg-dark);
+  border: 1px solid var(--hair-inverse);
+}
+.room-gate input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--hair-inverse);
+  color: var(--ink-inverse);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: .08em;
+  padding: 12px 14px;
+}
+.room-gate input:focus-visible,
+.room-gate input:focus { outline: 2px solid var(--accent-inverse); outline-offset: 2px; border-color: var(--accent-inverse); }
+.room-gate-error {
+  margin: 0;
+  color: var(--error);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.room-btn {
+  display: inline-block;
+  padding: 10px 18px;
+  border: 1px solid var(--hair-inverse);
+  color: var(--ink-inverse);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.room-btn:hover { color: var(--accent-inverse); border-color: var(--accent-inverse); }
+.room-btn-solid { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+.room-btn-solid:hover { background: var(--accent-inverse); border-color: var(--accent-inverse); color: var(--accent-contrast); }
+.room-btn:disabled { opacity: .55; cursor: default; }
+
+.room-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0 2px;
+}
+
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 22px;
+  margin-top: 20px;
+}
+.room-tile { display: flex; flex-direction: column; gap: 8px; }
+.room-tile .frame { position: relative; width: 100%; }
+.room-watermark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 34px);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  /* white at .55 with a crisp dark outline: readable on bright skies and on
+     near-black alike (a single soft glow vanishes on bright imagery) */
+  color: rgba(245, 243, 238, .55);
+  text-shadow:
+    0 1px 3px rgba(10, 9, 7, .95),
+    0 0 1px rgba(10, 9, 7, .9),
+    0 0 22px rgba(10, 9, 7, .4);
+  transform: rotate(-18deg);
+}
+
+.room-tile-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.room-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+}
+.room-status-set { color: var(--accent-inverse); }
+.room-tile-buttons { display: flex; gap: 6px; }
+.room-tile-buttons button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hair-inverse);
+  color: var(--muted-inverse);
+  font-size: 13px;
+  line-height: 1;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.room-tile-buttons button:hover { color: var(--ink-inverse); border-color: var(--accent-inverse); }
+.room-tile-buttons button[aria-pressed="true"] {
+  color: var(--accent-contrast);
+  background: var(--accent-inverse);
+  border-color: var(--accent-inverse);
+}
+.room-tile-buttons button.room-fav-on {
+  color: var(--accent-inverse);
+  background: transparent;
+  border-color: var(--accent-inverse);
+}
+
+.room-proofbox {
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--lightbox-bg);
+  animation: lightboxDissolve .3s var(--ease) both;
+}
+.room-proofbox[data-closing="true"] { animation-direction: reverse; }
+.room-proofbox-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(1100px, 94vw);
+  max-height: 92vh;
+  /* media (≤62vh) + panel must never overflow the overlay: on short viewports
+     the inner column scrolls instead of letting the photo cover the panel. */
+  overflow: auto;
+}
+.room-proofbox-media {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  min-height: 0;
+  flex-shrink: 0;
+}
+.room-proofbox-media img {
+  max-width: 100%;
+  max-height: min(62vh, calc(92vh - 230px));
+  object-fit: contain;
+  display: block;
+}
+.room-proofbox-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px;
+  background: var(--card-bg-dark);
+  border: 1px solid var(--hair-inverse);
+}
+.room-proofbox-panel textarea {
+  resize: vertical;
+  min-height: 68px;
+  background: transparent;
+  border: 1px solid var(--hair-inverse);
+  color: var(--ink-inverse);
+  font-family: var(--font-serif);
+  font-size: 16px;
+  padding: 12px 14px;
+}
+.room-proofbox-panel textarea:focus-visible,
+.room-proofbox-panel textarea:focus { outline: 2px solid var(--accent-inverse); outline-offset: 2px; border-color: var(--accent-inverse); }
+
+.room-activity {
+  margin-top: 44px;
+  border-top: 1px solid var(--hair-inverse);
+  padding-top: 16px;
+  color: var(--muted-inverse);
+}
+.room-activity summary { cursor: pointer; }
+.room-activity ul {
+  list-style: none;
+  margin: 14px 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.room-activity li span { color: var(--accent-inverse); margin-right: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .room-proofbox { animation: none; }
 }

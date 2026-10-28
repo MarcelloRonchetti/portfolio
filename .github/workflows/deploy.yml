@@ -44,6 +44,9 @@ jobs:
           # Drive API key (read-only, referrer-restricted) for the archive
           # sections; optional — without it the Drive sections show a notice.
           VITE_DRIVE_API_KEY: ${{ secrets.VITE_DRIVE_API_KEY }}
+          # Stanze di consegna per clienti reali (JSON array di Room) — vedi
+          # SECURITY-NOTES.md; opzionale, senza il secret nessuna stanza extra.
+          VITE_ROOMS_EXTRA: ${{ secrets.VITE_ROOMS_EXTRA }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

@@ -22,8 +22,11 @@ try {
     const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '')
     const qi = p.indexOf('?')
     const path = (qi === -1 ? p : p.slice(0, qi)).replace(/^\/?/, '/')
+    // Same-origin only, no protocol-relative or double-slash paths: the bridge
+    // restores app routes, it is never a redirect primitive.
+    const safe = /^\/(?!\/)/.test(path) && !path.includes('//')
     const search = qi === -1 ? '' : p.slice(qi)
-    window.history.replaceState(null, '', `${base}${path}${search}`)
+    if (safe) window.history.replaceState(null, '', `${base}${path}${search}`)
   }
 } catch {
   /* ignore */

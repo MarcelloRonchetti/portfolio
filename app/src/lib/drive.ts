@@ -54,6 +54,8 @@ export type DriveVideo = {
 
 export type DrivePhoto = {
   id: string
+  /** File name cleaned for display (no extension, separators → spaces). */
+  name?: string
   fullUrl: string
   thumbUrl: string
 }
@@ -523,6 +525,24 @@ export async function loadDriveContent(opts?: { force?: boolean }): Promise<Driv
     }
   })()
   return inFlight
+}
+
+/** Photos of ONE Drive folder, for the client delivery rooms (Room.tsx).
+ *  Unlike the archive walk this lists any folder the API key can see, so a
+ *  "Consegne/<cliente>" folder placed OUTSIDE the public archive root stays
+ *  off the site's gallery/sitemap while remaining deliverable to its client.
+ *  thumb is card-size (w800): room tiles are bigger than a thumbstrip. */
+export async function listRoomPhotos(folderId: string): Promise<DrivePhoto[]> {
+  const files = await apiList(folderId)
+  return files
+    .filter(isImage)
+    .sort(byName)
+    .map((f) => ({
+      id: f.id,
+      name: cleanTitle(f.name),
+      fullUrl: lhUrl(f.id, 's0'),
+      thumbUrl: lhUrl(f.id, 'w800'),
+    }))
 }
 
 /** Pulls the CV as a Blob for an in-place download (never a redirect to Drive). */
