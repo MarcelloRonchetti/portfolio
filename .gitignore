@@ -85,6 +85,9 @@ CLAUDE.md
 .zcode/
 SETUP-DRIVE.md
 
+# credenziali Google per l'agente (service account / OAuth) — locale, MAI nella repo
+.secrets/
+
 # output ri-encoding video Drive (locale)
 drive-reencoded/
 out/
