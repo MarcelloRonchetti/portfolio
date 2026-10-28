@@ -172,16 +172,36 @@ function videoCategoryFor(folderName: string): string {
   return name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Varie'
 }
 
-// "IMX_2025-06_REEL.mp4" → "IMX 2025 06 REEL": readable enough for a card.
-function cleanTitle(name: string): string {
-  return name
+// Display title from a file name: separators → spaces, camelCase split
+// ("AlfaRomeoGiulia" → "Alfa Romeo Giulia", "Mclaren720s" → "Mclaren 720S"),
+// smart capitals that keep acronyms and model codes intact (BMW, GT2, GR86,
+// 190E, T1…) and the editing-pipeline marker "final"/"final2…" dropped —
+// unless dropping it would collapse the title onto another video's (walkRoot
+// re-adds " Final" there so the grid never shows two identical cards).
+// "porsche 911 carrera 3.0" keeps its decimal dot; "e36"/"v3" stay glued.
+function cleanTitle(name: string, { keepFinal = false } = {}): string {
+  let base = name
     .replace(/\.[a-z0-9]+$/i, '')
     .replace(/[_-]+/g, ' ')
+    .replace(/\./g, (_m, off, str) => (/\d/.test(str[off - 1] ?? '') && /\d/.test(str[off + 1] ?? '') ? '.' : ' '))
     .replace(/\s+/g, ' ')
     .trim()
+  const pre = base
+  if (!keepFinal) base = base.replace(/\s+final\d*$/i, '').trim()
+  base = (base || pre)
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/([a-z]{2,})(\d)/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return base.split(' ').map(w => {
+    if (/^\d+[a-z]/i.test(w)) return w.replace(/^(\d+)([a-z])/i, (_m, d, l) => d + l.toUpperCase())
+    if (/^\d/.test(w)) return w.toUpperCase()
+    if (w === w.toUpperCase()) return w
+    return w.charAt(0).toUpperCase() + w.slice(1)
+  }).join(' ')
 }
 
-function toVideo(f: DriveFile, category: string): DriveVideo {
+function toVideo(f: DriveFile, category: string, title: string): DriveVideo {
   const meta = f.videoMediaMetadata
   const w = meta?.width
   const h = meta?.height
@@ -189,7 +209,7 @@ function toVideo(f: DriveFile, category: string): DriveVideo {
   const short = w && h ? Math.min(w, h) : h
   return {
     id: f.id,
-    title: cleanTitle(f.name),
+    title,
     category,
     width: w,
     height: h,
@@ -220,6 +240,9 @@ async function walkRoot(): Promise<Omit<DriveContent, 'fetchedAt'>> {
   // Quality window: skip videos known to fall outside 720p–1080p (measured on
   // the short side so vertical HD clips pass). Files whose metadata is missing
   // (can happen right after upload) are kept rather than hidden.
+  // Video files are collected first and turned into DriveVideo entries at the
+  // end of the walk, so title dedup can see every title at once.
+  const videoFiles: Array<{ f: DriveFile; category: string }> = []
   const pushVideos = (list: DriveFile[], category: string) => {
     for (const f of list) {
       if (isFolder(f) || !f.mimeType.startsWith('video/')) continue
@@ -229,7 +252,7 @@ async function walkRoot(): Promise<Omit<DriveContent, 'fetchedAt'>> {
         const short = Math.min(w, h)
         if (short < DRIVE_CONFIG.minVideoHeight || short > DRIVE_CONFIG.maxVideoHeight) continue
       } else if (h && h < DRIVE_CONFIG.minVideoHeight) continue
-      videos.push(toVideo(f, category))
+      videoFiles.push({ f, category })
     }
   }
 
@@ -340,6 +363,20 @@ async function walkRoot(): Promise<Omit<DriveContent, 'fetchedAt'>> {
   photoCollections.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
   // Loose clips at the root (e.g. "Copia di final-vac_final.mp4") → 'Varie'.
   pushVideos(files, 'Varie')
+
+  // Title dedup: "ferrari.mp4" and "ferrari_final.mp4" would both strip to
+  // "Ferrari" — the one carrying the editing marker keeps " Final" so the
+  // grid never shows two identical cards.
+  const titleCounts = new Map<string, number>()
+  for (const { f } of videoFiles) {
+    const t = cleanTitle(f.name).toLowerCase()
+    titleCounts.set(t, (titleCounts.get(t) ?? 0) + 1)
+  }
+  for (const { f, category } of videoFiles) {
+    const stripped = cleanTitle(f.name)
+    const duplicated = (titleCounts.get(stripped.toLowerCase()) ?? 0) > 1
+    videos.push(toVideo(f, category, duplicated ? cleanTitle(f.name, { keepFinal: true }) : stripped))
+  }
   videos.sort(byCreatedDesc)
 
   if (!cv) cv = pickCv(files.filter((f) => DRIVE_CONFIG.cvFilePattern.test(f.name)))
