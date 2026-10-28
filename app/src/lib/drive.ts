@@ -18,6 +18,7 @@
 //     blob download (a PDF is never near 100 MB).
 import { DRIVE_CONFIG, driveApiKey } from './driveConfig'
 import { categories } from './events'
+import { VIDEO_IG_ORDER } from './videoIgOrder'
 
 export class DriveError extends Error {
   kind: 'not-configured' | 'not-found' | 'network'
@@ -379,7 +380,16 @@ async function walkRoot(): Promise<Omit<DriveContent, 'fetchedAt'>> {
     const duplicated = (titleCounts.get(stripped.toLowerCase()) ?? 0) > 1
     videos.push(toVideo(f, category, duplicated ? cleanTitle(f.name, { keepFinal: true }) : stripped))
   }
-  videos.sort(byCreatedDesc)
+  // Display order: the Instagram reels sequence (see videoIgOrder.ts). Videos
+  // missing from the list follow at the end, newest first.
+  const igRank = new Map(VIDEO_IG_ORDER.map((title, i) => [title, i]))
+  videos.sort((a, b) => {
+    const ra = igRank.get(a.title)
+    const rb = igRank.get(b.title)
+    if (ra !== undefined && rb !== undefined) return ra - rb
+    if (ra === undefined && rb === undefined) return byCreatedDesc(a, b)
+    return ra === undefined ? 1 : -1
+  })
 
   if (!cv) cv = pickCv(files.filter((f) => DRIVE_CONFIG.cvFilePattern.test(f.name)))
 
