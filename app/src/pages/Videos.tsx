@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Clickable from '../components/Clickable'
 import { useDriveContent } from '../hooks/useDriveContent'
 import type { DriveVideo } from '../lib/drive'
@@ -173,7 +174,11 @@ export default function Videos() {
           </>
         )}
 
-        {playing && (
+        {/* Portal to <body>: .page-fade keeps a transform (fill-mode: both),
+            and a transformed ancestor becomes the containing block for
+            position:fixed — without the portal the player centers on the whole
+            document (off-screen) instead of the viewport. */}
+        {playing && createPortal(
           <div
             className="video-lightbox"
             onClick={close}
@@ -215,7 +220,8 @@ export default function Videos() {
                 />
               )}
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </main>

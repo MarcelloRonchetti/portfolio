@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Navigate } from 'react-router-dom'
 import Clickable from '../components/Clickable'
 import PhotoFrame from '../components/PhotoFrame'
@@ -173,7 +174,9 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
           </aside>
         </div>
 
-        {lightbox !== 'closed' && (
+        {/* Portal to <body>: the page-fade wrapper keeps a transform, which
+            would make this fixed lightbox center on the document, not the viewport. */}
+        {lightbox !== 'closed' && createPortal(
           <div
             className="lightbox"
             data-closing={lightbox === 'closing' || undefined}
@@ -183,7 +186,8 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
             aria-label={c.title}
           >
             <img src={active.fullUrl} alt={c.title} />
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </main>

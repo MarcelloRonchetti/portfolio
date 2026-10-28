@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Route } from '../lib/data'
 import { DATA } from '../lib/data'
 import type { Collection, Event } from '../lib/events'
@@ -354,7 +355,9 @@ export function PhotoStory({
           )}
         </div>
 
-        {lightbox !== 'closed' && (
+        {/* Portal to <body>: the page-fade wrapper keeps a transform, which
+            would make this fixed lightbox center on the document, not the viewport. */}
+        {lightbox !== 'closed' && createPortal(
           <div
             className="lightbox"
             data-closing={lightbox === 'closing' || undefined}
@@ -364,7 +367,8 @@ export function PhotoStory({
             aria-label={f.title}
           >
             <img src={photoUrl(f, activeFile)} alt={f.title} />
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </main>
