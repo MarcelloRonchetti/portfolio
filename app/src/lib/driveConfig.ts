@@ -15,7 +15,10 @@ export const DRIVE_CONFIG = {
   videoDirName: 'video',
   cvDirName: 'cv',
   cvFilePattern: /^(cv|curriculum)/i,
-  cacheKey: 'mr.drive.v1',
+  // Bump v1 → v2 (2026-10-29): one-time invalidation so every visitor's
+  // browser drops the pre-IG-order listing and refetches immediately, without
+  // waiting for the next 06:00 epoch.
+  cacheKey: 'mr.drive.v2',
   // Cache epoch: cached content is considered stale once the local clock has
   // passed 06:00 — every visitor gets one fresh Drive walk per day, on the
   // first page view after that hour, with no manual refresh control.
