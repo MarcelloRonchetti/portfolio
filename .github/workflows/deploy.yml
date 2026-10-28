@@ -32,6 +32,11 @@ jobs:
         working-directory: app
         run: npm ci
 
+      # Not preinstalled on the ubuntu-24.04 runner image: needed by
+      # generate-seo-assets.mjs for the 3× hero.jpg (skipped non-fatally without it).
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
       - name: Build
         working-directory: app
         run: npm run build
