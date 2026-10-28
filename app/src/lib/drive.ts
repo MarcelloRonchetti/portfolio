@@ -18,7 +18,7 @@
 //     blob download (a PDF is never near 100 MB).
 import { DRIVE_CONFIG, driveApiKey } from './driveConfig'
 import { categories } from './events'
-import { VIDEO_IG_ORDER } from './videoIgOrder'
+import { VIDEO_IG_ORDER, VIDEO_PINNED } from './videoIgOrder'
 
 export class DriveError extends Error {
   kind: 'not-configured' | 'not-found' | 'network'
@@ -380,15 +380,20 @@ async function walkRoot(): Promise<Omit<DriveContent, 'fetchedAt'>> {
     const duplicated = (titleCounts.get(stripped.toLowerCase()) ?? 0) > 1
     videos.push(toVideo(f, category, duplicated ? cleanTitle(f.name, { keepFinal: true }) : stripped))
   }
-  // Display order: the Instagram reels sequence (see videoIgOrder.ts). Videos
-  // missing from the list follow at the end, newest first.
+  // Display order: the pinned reel ALWAYS comes first (VIDEO_PINNED), then
+  // videos not in the list (fresh uploads, newest first — like Instagram),
+  // then the Instagram reels sequence (see videoIgOrder.ts).
   const igRank = new Map(VIDEO_IG_ORDER.map((title, i) => [title, i]))
   videos.sort((a, b) => {
+    const pa = a.title === VIDEO_PINNED
+    const pb = b.title === VIDEO_PINNED
+    if (pa !== pb) return pa ? -1 : 1
     const ra = igRank.get(a.title)
     const rb = igRank.get(b.title)
-    if (ra !== undefined && rb !== undefined) return ra - rb
     if (ra === undefined && rb === undefined) return byCreatedDesc(a, b)
-    return ra === undefined ? 1 : -1
+    if (ra === undefined) return -1
+    if (rb === undefined) return 1
+    return ra - rb
   })
 
   if (!cv) cv = pickCv(files.filter((f) => DRIVE_CONFIG.cvFilePattern.test(f.name)))

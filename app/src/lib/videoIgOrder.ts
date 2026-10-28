@@ -1,33 +1,48 @@
-// Visual order of the videos, transcribed from the Instagram reels grid
-// (@marc.roads, newest post first — 2026-10-28). Keys are the display titles
-// produced by cleanTitle(); a video whose title is not in the list sorts after
-// every listed one (newest first), so fresh uploads surface on top until the
-// list is updated. Reorder here when Marcello refreshes the archive.
+// Visual order of the videos, transcribed from the reels walkthrough Marcello
+// recorded on 2026-10-29 (screencast 00-16-24) — newest first.
+//
+// VIDEO_PINNED is sticky: it stays FIRST no matter what (it's the reel he
+// pins on his profile), even when new uploads arrive. A video not in the
+// list ranks right after the pinned one (new uploads surface there, newest
+// first) and before the rest of the list. Keys are the display titles
+// produced by cleanTitle() — if a file is renamed on Drive its title changes
+// and it falls in the "new" tier until this list is updated.
+export const VIDEO_PINNED = 'Maserati GT2'
+
 export const VIDEO_IG_ORDER: readonly string[] = [
   'BMW Diba F36',
-  'Maserati GT2',
   'Bizzarrini 5300 GT Corsa',
-  'Alpine',
   'Ferrari F430',
-  'Lotus Elise S',
+  'Audi Sport',
+  'Mclaren 720S',
   'Lotus Elises V4',
-  'Porsche 911 Carrera 3.0',
-  'Ferrari Final',
-  'The Green Beast V3',
-  'The Green Beast V1',
-  '2Old Ferrari V3',
+  'Lotus Elise S',
+  'Ferrari',
+  'Porsche Carrera Black V',
+  'Blackpantherferrari',
+  'Toyota GR86',
   'BMW M4 Comp',
   'Toyota GR86 Lilla',
-  'Toyota Blue',
   'Toyota Red',
-  'Toyota GR86',
   'Ferrasrmercedes 190E',
   'Velside VCF',
-  'Volkswagen',
-  'Alfa Joker',
-  'Vintage',
   'Alfa Romeo Giulia',
-  'Lambo STO',
-  'Cadillac',
-  'Mclaren 720S',
+  'Ferrari No Monster',
+  // Not walked in the screencast (older reels) — reorder freely.
+  '2Old Ferrari V3',
+  'The Green Beast V3',
+  'The Green Beast V1',
+  'Vintage',
+  'Volkswagen Type 2 T1',
+  'Vac',
+  'Ferrari 8',
+  'Bellissima',
+  'Porsche 911 ST V3',
+  'Porsche 911 ST',
+  'E36 Drift',
+  'Toyota G86',
+  'Gym Street V2',
+  'Gym Powerlifting V2',
+  'Cintura WF V2',
+  'WF Parallele',
 ]
