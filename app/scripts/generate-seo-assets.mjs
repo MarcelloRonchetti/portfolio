@@ -10,6 +10,10 @@
 //      per-URL content instead of the bare shell.
 //   3. dist/index.html (the SPA shell) — post-processed to add Open Graph tags
 //      with the current hero image (latest Instagram post).
+//   4. dist/photos/<hero>/hero.jpg — 3× enhanced upscale of the hero cover
+//      (Instagram caps the source at 1080px; the banner needs more). Requires
+//      ffmpeg; skipped non-fatally without it (Cover.tsx falls back to the
+//      original cover.jpg).
 //
 // Never commit the generated files: the daily Instagram import bot adds events,
 // so everything here regenerates on every build.
@@ -21,6 +25,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import url from 'node:url'
+import { spawnSync } from 'node:child_process'
 
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..')
 const PHOTOS = path.join(ROOT, 'public/photos')
@@ -276,14 +281,52 @@ for (const e of prunable) xml += entry(`${SITE}/story/${e.id}/`, e.date)
 xml += '</urlset>\n'
 fs.writeFileSync(path.join(DIST, 'sitemap.xml'), xml)
 
-// ── 4. Open Graph + LCP preload on the SPA shell (root) ─────────────────────
+// ── 4. Hero banner upscale ───────────────────────────────────────────────────
 // The hero is always the latest Instagram post that is not a VIDEO (same rule
-// as src/lib/events.ts featuredEvent); fall back to the newest event. The
-// preload is shell-only: on inner pages the hero image isn't the LCP.
+// as src/lib/events.ts featuredEvent); fall back to the newest event. Instagram
+// caps the source at 1080px, which pixelates on a full-screen banner, so the
+// build writes a 3× enhanced version (denoise → Lanczos → unsharp) as hero.jpg
+// next to the cover. Cover.tsx serves hero.jpg and falls back to the original
+// cover when it's missing (dev server, or ffmpeg absent — this step is
+// non-fatal and just keeps the 1080 hero).
 const heroEvent =
   events.find((e) => e.source.provider === 'instagram' && e.source.media_type !== 'VIDEO') ??
   events[0]
-const heroImage = `${SITE}/photos/${heroEvent.id}/${heroEvent.cover}`
+let heroImage = `${SITE}/photos/${heroEvent.id}/${heroEvent.cover}`
+
+const heroSrc = path.join(PHOTOS, heroEvent.id, heroEvent.cover)
+const heroOutDir = path.join(DIST, 'photos', heroEvent.id)
+if (fs.existsSync(heroSrc) && !fs.existsSync(path.join(heroOutDir, 'hero.jpg'))) {
+  const probe = spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' })
+  if (probe.error) {
+    console.warn('seo: ffmpeg non disponibile — la copertina hero resta a 1080px')
+  } else {
+    fs.mkdirSync(heroOutDir, { recursive: true })
+    const out = path.join(heroOutDir, 'hero.jpg')
+    const res = spawnSync(
+      'ffmpeg',
+      [
+        '-y',
+        '-loglevel', 'error',
+        '-i', heroSrc,
+        '-vf',
+        'vaguedenoiser=threshold=1.2:method=soft,scale=3240:4320:flags=lanczos,unsharp=5:5:0.45:5:5:0',
+        '-q:v', '3',
+        out,
+      ],
+      { stdio: 'ignore' }
+    )
+    if (res.status === 0 && fs.existsSync(out) && fs.statSync(out).size > 0) {
+      heroImage = `${SITE}/photos/${heroEvent.id}/hero.jpg`
+      console.log(`seo: hero.jpg 3× generato per ${heroEvent.id}`)
+    } else {
+      console.warn('seo: ffmpeg ha fallito — la copertina hero resta a 1080px')
+    }
+  }
+}
+
+// ── 5. Open Graph + LCP preload on the SPA shell (root) ─────────────────────
+// The preload is shell-only: on inner pages the hero image isn't the LCP.
 const shellPath = path.join(DIST, 'index.html')
 let shellHtml = fs.readFileSync(shellPath, 'utf8')
 if (!shellHtml.includes('property="og:title"')) {
@@ -297,5 +340,5 @@ if (!shellHtml.includes('property="og:title"')) {
 }
 
 console.log(
-  `seo: sitemap ${prunable.length} eventi + ${categories.length} categorie; ${prunable.length + categories.length + 3} pagine prerenderizzate; og:image da ${heroEvent.id}`
+  `seo: sitemap ${prunable.length} eventi + ${categories.length} categorie; ${prunable.length + categories.length + 3} pagine prerenderizzate; og:image da ${heroImage.split('/').slice(-2).join('/')}`
 )
