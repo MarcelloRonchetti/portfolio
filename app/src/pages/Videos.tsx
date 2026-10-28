@@ -4,7 +4,8 @@ import Clickable from '../components/Clickable'
 import { useDriveContent } from '../hooks/useDriveContent'
 import type { DriveVideo } from '../lib/drive'
 
-const ALL = 'Tutti'
+// The page opens on the car archive; there is deliberately no "Tutti" tab.
+const DEFAULT_CATEGORY = 'Varie'
 
 // 83000 → "1:23", 725000 → "12:05" (minutes unbounded: 75:00 for long clips).
 function formatDuration(ms: number): string {
@@ -42,7 +43,7 @@ function VideoCard({ v, onPlay }: { v: DriveVideo; onPlay: (v: DriveVideo) => vo
 
 export default function Videos() {
   const { configured, content, loading, error, refresh } = useDriveContent()
-  const [activeCategory, setActiveCategory] = useState(ALL)
+  const [activeCategory, setActiveCategory] = useState(DEFAULT_CATEGORY)
   const [playing, setPlaying] = useState<DriveVideo | null>(null)
   const [playError, setPlayError] = useState(false)
   const catnavRef = useRef<HTMLDivElement>(null)
@@ -51,8 +52,10 @@ export default function Videos() {
   const categories = Array.from(new Set(videos.map((v) => v.category))).sort((a, b) =>
     a.localeCompare(b)
   )
-  const filtered =
-    activeCategory === ALL ? videos : videos.filter((v) => v.category === activeCategory)
+  // Keep the selection valid across listing refreshes: a category that
+  // disappeared falls back to the first available tab.
+  const active = categories.includes(activeCategory) ? activeCategory : categories[0]
+  const filtered = active ? videos.filter((v) => v.category === active) : []
 
   const openPlayer = (v: DriveVideo) => {
     setPlaying(v)
@@ -105,16 +108,16 @@ export default function Videos() {
         </div>
 
         <div className="catnav" ref={catnavRef}>
-          {[ALL, ...categories].map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className="t-meta"
-              data-active={activeCategory === cat || undefined}
-              aria-pressed={activeCategory === cat}
+              data-active={active === cat || undefined}
+              aria-pressed={active === cat}
               style={{
-                color: activeCategory === cat ? 'var(--accent-inverse)' : 'var(--muted-inverse)',
-                borderBottom: activeCategory === cat ? '1px solid var(--accent-inverse)' : '1px solid transparent',
+                color: active === cat ? 'var(--accent-inverse)' : 'var(--muted-inverse)',
+                borderBottom: active === cat ? '1px solid var(--accent-inverse)' : '1px solid transparent',
                 paddingBottom: '4px',
                 transition: 'color 0.2s, border-color 0.2s',
                 whiteSpace: 'nowrap'

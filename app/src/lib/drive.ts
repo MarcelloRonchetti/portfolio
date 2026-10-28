@@ -162,6 +162,16 @@ function categoryFor(folderName: string): string {
   return categories.find((c) => c.toLowerCase() === n) ?? 'Varie'
 }
 
+// Subfolders of video/ name their own video tab (video/storytelling/ →
+// 'Storytelling'); a name matching a local site category still maps to it.
+function videoCategoryFor(folderName: string): string {
+  const n = folderName.trim().toLowerCase()
+  const local = categories.find((c) => c.toLowerCase() === n)
+  if (local) return local
+  const name = folderName.trim()
+  return name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Varie'
+}
+
 // "IMX_2025-06_REEL.mp4" → "IMX 2025 06 REEL": readable enough for a card.
 function cleanTitle(name: string): string {
   return name
@@ -312,7 +322,7 @@ async function walkRoot(): Promise<Omit<DriveContent, 'fetchedAt'>> {
           errors.push(`Video/${dir.name}: ${errMessage(e)}`)
           return []
         })
-        pushVideos(vids, categoryFor(dir.name))
+        pushVideos(vids, videoCategoryFor(dir.name))
       })
     )
   }
