@@ -7,6 +7,8 @@
 // first) and before the rest of the list. Keys are the display titles
 // produced by cleanTitle() — if a file is renamed on Drive its title changes
 // and it falls in the "new" tier until this list is updated.
+// NOTE: keep this list COMPLETE (all 43 titles) — a missing title silently
+// demotes that video into the "new" tier.
 export const VIDEO_PINNED = 'Maserati GT2'
 
 export const VIDEO_IG_ORDER: readonly string[] = [
@@ -24,8 +26,16 @@ export const VIDEO_IG_ORDER: readonly string[] = [
   'BMW M4 Comp',
   'Toyota GR86 Lilla',
   'Toyota Red',
+  'Toyota Blue',
   'Ferrasrmercedes 190E',
   'Velside VCF',
+  'Volkswagen',
+  'Alfa Joker',
+  'Cadillac',
+  'Lambo STO',
+  'Alpine',
+  'Lotus Exige 350 Sport',
+  'Porsche 911 Carrera 3.0',
   'Alfa Romeo Giulia',
   'Ferrari No Monster',
   // Not walked in the screencast (older reels) — reorder freely.
@@ -35,6 +45,7 @@ export const VIDEO_IG_ORDER: readonly string[] = [
   'Vintage',
   'Volkswagen Type 2 T1',
   'Vac',
+  'Ferrari Final',
   'Ferrari 8',
   'Bellissima',
   'Porsche 911 ST V3',
