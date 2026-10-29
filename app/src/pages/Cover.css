@@ -1,0 +1,75 @@
+/* ───────────────────────────────────────────────────────────
+   Cover — full-screen hero of the landing page.
+   Scoped to .hero / .hero-content. Loads after index.css, so
+   equal-specificity rules here win. Over a photograph the
+   tokens don't reach: the whites (rgba(255,255,255,…)) and the
+   dark scrims (rgba(10,9,7,…)) are the established hero idiom
+   and stay literal by design.
+─────────────────────────────────────────────────────────── */
+
+/* Shade: slightly heavier anchors than the original (.25/.1/.78)
+   plus a mid stop that ramps smoothly into the caption bed — the
+   name holds on bright skies and near-black imagery alike while
+   the middle of the photo stays clear. */
+.hero .hero-shade {
+  background: linear-gradient(
+    180deg,
+    rgba(10, 9, 7, .30) 0%,
+    rgba(10, 9, 7, .08) 36%,
+    rgba(10, 9, 7, .44) 66%,
+    rgba(10, 9, 7, .82) 100%
+  );
+}
+
+/* Two-tier rhythm: the role pairs tightly with the name, the
+   location breathes after it, the CTA stands apart. */
+.hero-content {
+  gap: 10px;
+}
+.hero-content .hero-name {
+  line-height: 1.06;
+  letter-spacing: .02em; /* same tracking as .t-display */
+}
+.hero-content .hero-role {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+/* The one accent mark: a bronze hairline opens the block. On a wrapped line
+   (mobile) it stays glued to the first line instead of floating mid-block. */
+.hero-content .hero-role::before {
+  content: "";
+  width: 30px;
+  height: 1px;
+  margin-top: .55em;
+  background: var(--accent-inverse);
+}
+.hero-content .hero-location {
+  margin-top: 8px;
+}
+
+/* CTA: a hairline ghost instead of the solid .btn — it sits under
+   the name without competing with it; hover and focus settle on
+   the brand bronze, like every other interactive element. */
+.hero-cta {
+  margin-top: 18px;
+}
+.hero-content .btn {
+  background: transparent;
+  border-color: rgba(255, 255, 255, .55);
+  color: rgba(255, 255, 255, .95);
+}
+.hero-content .btn:hover,
+.hero-content .btn:focus-visible {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+/* The global bronze outline is too dim over a photo. */
+.hero-content .btn:focus-visible {
+  outline-color: var(--accent-inverse);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-content .btn { transition: none; }
+}

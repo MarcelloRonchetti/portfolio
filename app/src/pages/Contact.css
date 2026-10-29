@@ -1,0 +1,58 @@
+/* ───────────────────────────────────────────────────────────
+   Contact — light-section page. Scoped classes only; loads
+   after index.css, so equal-specificity rules here win. The
+   .contact-row grid itself stays in index.css — including its
+   ≤480px single-column and ≤760px compact overrides, which
+   keep applying untouched (nothing responsive is redeclared
+   here).
+─────────────────────────────────────────────────────────── */
+
+/* Page scaffold: 120/90 matches the section rhythm of Gallery
+   and Videos; min-height keeps the short page from ending
+   mid-air above the footer. */
+.contact-main {
+  padding-top: 120px;
+  padding-bottom: 90px;
+  min-height: 80vh;
+}
+.contact-main .container { max-width: 680px; }
+
+/* Head subtitle (the Gallery/Videos section-head idiom). */
+.contact-head-sub {
+  margin: 0;
+  font-size: 18px;
+  color: var(--muted);
+}
+
+/* The rows read as a small table: the section-head's hairline opens it, each
+   row closes its own — one rule between them, not two. */
+.contact-rows {
+  margin-top: 32px;
+}
+
+.contact-row { text-align: left; }
+
+/* Keyboard parity with hover: same shift, same bronze rule. */
+.contact-row:focus-visible {
+  padding-left: 10px;
+  border-bottom-color: var(--accent);
+}
+
+/* CV row while busy or unavailable: no shift, no accent, an
+   honest cursor, and the failure spoken in the shared error
+   colour (the hook clears it after 3s). */
+.contact-row:disabled {
+  cursor: default;
+  opacity: .55;
+}
+.contact-row:disabled:hover {
+  padding-left: 0;
+  border-bottom-color: var(--hair);
+}
+.contact-row:disabled .contact-arrow { color: var(--muted); }
+.contact-row[data-failed] .contact-value,
+.contact-row[data-failed] .contact-arrow { color: var(--error); }
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-row { transition: none; }
+}

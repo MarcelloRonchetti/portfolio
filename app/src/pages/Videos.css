@@ -1,0 +1,345 @@
+/* ───────────────────────────────────────────────────────────
+   Videos — page-scoped refinements.
+   Loads after index.css (imported first in Videos.tsx): equal-
+   specificity rules here win. This file owns the whole video
+   section: page paddings, tab row, cards (play coin, duration,
+   skeleton) and the video player overlay. The base .card and
+   .catnav blocks stay in index.css; the rules below only extend
+   them, scoped to this page's classes.
+
+   NOTE for maintainers: .video-play / .video-duration /
+   .video-lightbox / .video-lightbox-close / .video-lightbox-inner
+   are also rendered by Room.tsx (delivery rooms player + proofbox
+   close button). Keep those names shared and their rules
+   compatible; everything Room-specific stays untouched here.
+
+   Everything is driven by theme variables, so the dark section
+   and the [data-theme="night"] palette follow automatically.
+─────────────────────────────────────────────────────────── */
+
+/* ── page paddings (were inline styles on <main>) ── */
+.vl-page { padding-top: 120px; padding-bottom: 90px; }
+
+/* ── section head ── */
+.vl-head-stack { gap: 6px; }
+.vl-head-title { margin: 0; }
+.vl-head-sub {
+  margin: 0;
+  font-size: 18px;
+  color: var(--muted-inverse);
+}
+.vl-head-meta { color: var(--muted-inverse); }
+
+/* ── category nav ── */
+/* Same underline idiom as the header nav and Gallery's .gl-cat: a hairline
+   grows from the left on hover, holds in accent on the active tab. */
+.vl-cat {
+  position: relative;
+  padding: 4px 0;
+  color: var(--muted-inverse);
+  white-space: nowrap;
+  transition: color .2s var(--ease);
+}
+.vl-cat::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: var(--line);
+  background: var(--hair-inverse);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .25s var(--ease), background .2s var(--ease);
+}
+.vl-cat:hover { color: var(--accent-inverse); }
+.vl-cat:hover::after { transform: scaleX(1); }
+.vl-cat[data-active="true"] { color: var(--accent-inverse); }
+.vl-cat[data-active="true"]::after { background: var(--accent-inverse); transform: scaleX(1); }
+
+/* L'overflow affordance del catnav (padding + mask fade) è condivisa con la
+   galleria e vive in index.css accanto alla base .catnav. */
+
+/* ── video cards ── */
+/* Poster fades in on decode (data-loaded is set by the component, with a
+   ref check for images already complete from cache) so a slow poster grows
+   out of the placeholder instead of popping in; hover answers with the same
+   quiet push-in the gallery cards use. */
+.vl-card .card-photo img {
+  opacity: 0;
+  transition: opacity .35s var(--ease), transform .45s var(--ease);
+}
+.vl-card .card-photo img[data-loaded="true"] { opacity: 1; }
+.vl-card:hover .card-photo img,
+.vl-card:focus-visible .card-photo img { transform: scale(1.03); }
+.vl-card .card-title { transition: color .2s var(--ease); }
+.vl-card:hover .card-title,
+.vl-card:focus-visible .card-title { color: var(--accent-inverse); }
+
+/* Play coin: a quiet circle over the poster, always visible. On card hover
+   it deepens and lifts a step. pointer-events stay off — the whole card is
+   the target. */
+.card .video-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .55);
+  border: 1px solid var(--accent-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 3px; /* optical centering for the ▷ glyph */
+  color: #fff;
+  font-size: 18px;
+  pointer-events: none;
+  transition: transform .3s var(--ease), background .25s var(--ease);
+}
+.vl-card:hover .video-play,
+.vl-card:focus-visible .video-play {
+  transform: translate(-50%, -50%) scale(1.07);
+  background: rgba(0, 0, 0, .72);
+}
+
+/* Duration chip: mono meta on the corner, the site tracking on a small
+   footprint. */
+.card .video-duration {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .14em;
+  background: rgba(0, 0, 0, .62);
+  color: #fff;
+  padding: 3px 8px;
+  pointer-events: none;
+}
+
+/* ── loading skeleton ── */
+/* A card shell with a shimmering block in place of the poster and a quiet
+   line for the title; pointer-events stay off. */
+.card.skeleton-card {
+  background: var(--card-bg-dark);
+  border-color: var(--hair-inverse);
+  pointer-events: none;
+}
+.skeleton-block {
+  aspect-ratio: 3 / 2;
+  background: linear-gradient(100deg, var(--card-bg-dark) 40%, rgba(255, 255, 255, .04) 50%, var(--card-bg-dark) 60%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s infinite linear;
+}
+.skeleton-line {
+  height: 11px;
+  margin: 16px;
+  width: 58%;
+  background: linear-gradient(100deg, var(--card-bg-dark) 40%, rgba(255, 255, 255, .04) 50%, var(--card-bg-dark) 60%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s infinite linear;
+}
+@keyframes skeletonShimmer {
+  to { background-position: -200% 0; }
+}
+
+/* Screen-reader-only label for the skeleton run (host carries role="status"). */
+.vl-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── state screens (unconfigured / error / empty) ── */
+/* Own equivalent of Gallery's .gl-state and DriveStory's .ds-state: mono
+   kicker over a serif line, mono actions when there is something to do. */
+.vl-state {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 560px;
+}
+.vl-state-kicker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+}
+.vl-state-kicker::before {
+  content: "";
+  width: 24px;
+  height: var(--line);
+  background: var(--hair-inverse);
+}
+/* Errors carry their own quiet signal, theme-aware via --error. */
+.vl-state[data-variant="error"] .vl-state-kicker { color: var(--error); }
+.vl-state[data-variant="error"] .vl-state-kicker::before { background: var(--error); }
+.vl-state-text {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.5;
+  color: var(--ink-inverse);
+}
+/* ── actions (state screens, notices, player error) ── */
+.vl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-top: 14px;
+}
+/* Inside a state screen the container gap already gives the rhythm. */
+.vl-state .vl-actions { margin-top: 0; }
+.vl-action {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+  padding: 8px 0;
+  border-bottom: var(--line) solid var(--hair-inverse);
+  transition: color .2s var(--ease), border-bottom-color .2s var(--ease);
+}
+.vl-action:hover {
+  color: var(--accent-inverse);
+  border-bottom-color: var(--accent-inverse);
+}
+
+/* Inline notice while stale content stays on screen: a failed refresh must
+   never blank a page that already has videos — the reason surfaces as a
+   hairline-marked row above the grid (same idiom as DriveStory). */
+.vl-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+  margin: 0 0 24px;
+  padding-left: 12px;
+  border-left: 2px solid var(--error);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted-inverse);
+}
+.vl-notice .vl-action { padding: 2px 0; }
+
+/* ── video player overlay ── */
+/* Same dissolve as .lightbox (keyframes live in index.css), one level above
+   it; data-closing replays the keyframes in reverse so the exit fades too.
+   Rendered through createPortal(..., document.body): the page-fade wrapper
+   keeps a transform, and a transformed ancestor becomes the containing
+   block for position:fixed. */
+.video-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--lightbox-bg);
+  animation: lightboxDissolve .3s var(--ease) both;
+}
+.video-lightbox[data-closing="true"] { animation-direction: reverse; }
+.video-lightbox-inner { width: min(1100px, 94vw); }
+.vl-player-meta {
+  color: var(--ink-inverse);
+  margin-bottom: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere; /* long Drive file names must wrap, not overflow */
+}
+.vl-player-stage { position: relative; }
+.video-lightbox video {
+  width: 100%;
+  max-height: 78vh;
+  background: #000;
+  display: block;
+}
+/* Buffering chip: appears only if the wait is long enough to be noticed
+   (.3s delay), then breathes — a frozen label reads as a bug. */
+.vl-player-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, .62);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #fff;
+  pointer-events: none;
+  animation: vlLoadingIn .25s var(--ease) .3s both;
+}
+.vl-player-loading span {
+  display: inline-block;
+  animation: vlPulse 1.6s ease-in-out infinite;
+}
+@keyframes vlLoadingIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes vlPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .45; }
+}
+
+/* Close: the glyph is small, the hit area is not — 12px of padding around
+   the ✕, pulled back by the same amount so the visual position holds
+   (glyph at 24/28 as before). Room's proofbox shares this button and gains
+   the same hit area. */
+.video-lightbox-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  padding: 12px;
+  color: var(--ink-inverse);
+  font-size: 20px;
+  line-height: 1;
+  transition: color .2s var(--ease);
+}
+.video-lightbox-close:hover { color: var(--accent-inverse); }
+
+/* Playback error panel: same voice as the page states, inside the overlay. */
+.vl-player-error { padding: 24px 0 8px; }
+.vl-player-error-text {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink-inverse);
+  max-width: 52ch;
+}
+
+/* ── focus ── */
+/* The global ring is tuned for light surfaces (bronze --accent); everything
+   on this page lives on the dark section or the dark overlay. */
+.vl-page :focus-visible,
+.video-lightbox :focus-visible { outline-color: var(--accent-inverse); }
+
+/* ── responsive ── */
+@media (max-width: 480px) {
+  .vl-head-sub { font-size: 16px; }
+  .vl-state-text, .vl-player-error-text { font-size: 18px; }
+  .video-lightbox-close { top: 8px; right: 10px; }
+}
+
+/* ── reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .video-lightbox, .vl-player-loading, .vl-player-loading span,
+  .skeleton-block, .skeleton-line { animation: none; }
+  .vl-cat, .vl-cat::after,
+  .vl-card .card-photo img, .vl-card .card-title,
+  .card .video-play, .video-lightbox-close, .vl-action { transition: none; }
+  .vl-card:hover .card-photo img,
+  .vl-card:focus-visible .card-photo img { transform: none; }
+  .vl-card:hover .video-play,
+  .vl-card:focus-visible .video-play { transform: translate(-50%, -50%); }
+}

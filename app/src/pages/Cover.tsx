@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Route } from '../lib/data'
 import { DATA } from '../lib/data'
 import { featuredEvent, photoUrl } from '../lib/events'
+import './Cover.css'
 
 export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
   const featured = featuredEvent
@@ -25,6 +26,7 @@ export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
               src={src}
               alt={DATA.identity.role}
               fetchPriority="high"
+              decoding="async"
               onError={() => setHeroFailed(true)}
             />
           )}
@@ -34,7 +36,7 @@ export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
           <div className="hero-role">{DATA.identity.role}</div>
           <h1 className="hero-name">{DATA.identity.name}</h1>
           <div className="hero-location">{DATA.identity.location}</div>
-          <div style={{ marginTop: 14 }}>
+          <div className="hero-cta">
             <button className="btn" onClick={() => go('gallery')}>
               Vedi la galleria
             </button>

@@ -20,6 +20,7 @@ import Contact from './pages/Contact'
 import RoomPage from './pages/Room'
 import { categories, eventById, firstEventByTag } from './lib/events'
 import { useDriveContent } from './hooks/useDriveContent'
+import { useCvDownload } from './hooks/useCvDownload'
 
 type Theme = 'day' | 'night'
 
@@ -127,11 +128,12 @@ function GalleryRoute({ go }: { go: GoFn }) {
 
   if (cat && !requested && !driveSettled) {
     return (
-      <main className="section section-dark" style={{ paddingTop: 140, minHeight: '70vh' }}>
+      <main className="section section-dark story-state-page">
         <div className="container">
-          <p className="t-italic" style={{ color: 'var(--muted-inverse)' }}>
-            Caricamento dall'archivio…
-          </p>
+          <div className="gl-state" role="status">
+            <p className="gl-state-kicker">Archivio Drive</p>
+            <p className="gl-state-text">Caricamento dall'archivio…</p>
+          </div>
         </div>
       </main>
     )
@@ -139,18 +141,20 @@ function GalleryRoute({ go }: { go: GoFn }) {
 
   if (cat && !requested && drive.error) {
     return (
-      <main className="section section-dark" style={{ paddingTop: 140, minHeight: '70vh' }}>
+      <main className="section section-dark story-state-page">
         <div className="container">
-          <p className="t-italic" style={{ color: 'var(--muted-inverse)' }}>
-            {drive.error}{' '}
-            <button onClick={drive.refresh} style={{ color: 'var(--accent-inverse)' }}>
-              Riprova
-            </button>{' '}
-            ·{' '}
-            <button onClick={() => go('gallery')} style={{ color: 'var(--accent-inverse)' }}>
-              ← Galleria
-            </button>
-          </p>
+          <div className="gl-state" role="status">
+            <p className="gl-state-kicker">Errore</p>
+            <p className="gl-state-text">{drive.error}</p>
+            <div className="gl-state-actions">
+              <button className="gl-state-action" onClick={drive.refresh}>
+                Riprova
+              </button>
+              <button className="gl-state-action" onClick={() => go('gallery')}>
+                ← Galleria
+              </button>
+            </div>
+          </div>
         </div>
       </main>
     )
@@ -162,6 +166,8 @@ function GalleryRoute({ go }: { go: GoFn }) {
       category={category}
       categories={allCategories}
       driveCollections={driveCollections}
+      driveError={drive.error}
+      onDriveRetry={drive.refresh}
       onCategory={(c) => go('gallery', c)}
     />
   )
@@ -188,6 +194,9 @@ function AppShell() {
   const location = useLocation()
   const go = useGo()
   const [theme, setTheme] = useState<Theme>(initialTheme)
+  // One download state for the whole shell: the header's CV button and the
+  // Contact row are two views of the same download.
+  const cv = useCvDownload()
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -222,7 +231,7 @@ function AppShell() {
 
   return (
     <>
-      <TopBar theme={theme} onToggleTheme={toggleTheme} />
+      <TopBar theme={theme} onToggleTheme={toggleTheme} cv={cv} />
       <div key={location.pathname} className="page-fade">
         <Routes>
           <Route path="/" element={<Cover go={go} />} />
@@ -230,7 +239,7 @@ function AppShell() {
           <Route path="/gallery/:cat" element={<GalleryRoute go={go} />} />
           <Route path="/story/:id" element={<StoryRoute go={go} />} />
           <Route path="/videos" element={<Videos />} />
-          <Route path="/contact" element={<Contact />} />
+          <Route path="/contact" element={<Contact cv={cv} />} />
           <Route path="/room/:roomId" element={<RoomPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -239,10 +248,7 @@ function AppShell() {
         <span>© {new Date().getFullYear()} {DATA.identity.name}</span>
         <span>{DATA.identity.location}</span>
         <a className="link-ext" href={`mailto:${DATA.identity.email}`}>Email</a>
-        <span
-          className="t-meta"
-          style={{ flexBasis: '100%', fontSize: 10 }}
-        >
+        <span className="footer-note">
           Nessun cookie, nessun tracciamento · foto e video dell'archivio serviti dai CDN di Google Drive
         </span>
       </footer>

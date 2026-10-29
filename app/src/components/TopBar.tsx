@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { DATA } from '../lib/data'
+import type { CvState } from '../hooks/useCvDownload'
 import CvButton from './CvButton'
 
 type Theme = 'day' | 'night'
@@ -11,7 +12,15 @@ const ITEMS: { path: string; label: string; active: (p: string) => boolean }[] =
   { path: '/contact', label: 'contatti', active: (p) => p.startsWith('/contact') },
 ]
 
-export default function TopBar({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
+export default function TopBar({
+  theme,
+  onToggleTheme,
+  cv,
+}: {
+  theme: Theme
+  onToggleTheme: () => void
+  cv: CvState
+}) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
@@ -20,7 +29,7 @@ export default function TopBar({ theme, onToggleTheme }: { theme: Theme; onToggl
       <button className="brand" onClick={() => navigate('/')}>
         {DATA.identity.name}
       </button>
-      <nav>
+      <nav aria-label="Navigazione principale">
         {ITEMS.map((it) => (
           <button
             key={it.path}
@@ -30,7 +39,7 @@ export default function TopBar({ theme, onToggleTheme }: { theme: Theme; onToggl
             {it.label}
           </button>
         ))}
-        <CvButton />
+        <CvButton {...cv} />
         <button
           className="theme-toggle"
           onClick={onToggleTheme}

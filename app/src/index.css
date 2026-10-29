@@ -34,11 +34,21 @@
   --font-serif: 'Cormorant Garamond', Georgia, serif;
   --font-mono: 'JetBrains Mono', monospace;
 
+  /* Scala tipografica — Italiana per i titoli, Cormorant per il testo, mono
+     per le meta. Gradoni: display → h1 (titoli di pagina) → h2 (titoli
+     scheda) → lead (standfirst, paragrafi editoriali) → body → small
+     (annotazioni serif) → meta (etichette mono) → micro (caption e rail).
+     Le etichette mono maiuscole condividono la base .16em; le eccezioni sono
+     volute e documentate nel loro blocco (kicker di stato .22em, contatore
+     lightbox .18em, chip durata .14em). */
   --t-display: clamp(38px, 5.5vw, 72px);
   --t-h1: clamp(28px, 4vw, 52px);
+  --t-h2: 22px;
+  --t-lead: 18px;
   --t-body: 17px;
-  --t-small: 14px;
+  --t-small: 15px;
   --t-meta: 12px;
+  --t-micro: 10px;
 
   --gutter: clamp(20px, 4vw, 56px);
   --line: 1px;
@@ -114,20 +124,26 @@ button {
   cursor: pointer;
   padding: 0;
 }
+button:disabled { cursor: default; }
+/* Div interattivi (role="button"): l'affordance che il ruolo promette. */
+[role="button"] { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* Sulle sezioni scure il bronzo del tema chiaro perde contrasto: l'anello
+   passa all'inverso, come ogni altro accento di quelle pagine. */
+[data-section="dark"] :focus-visible { outline-color: var(--accent-inverse); }
 ::selection { background: var(--accent); color: var(--accent-contrast); }
 
 /* ─── typography helpers ─── */
 .t-display { font-family: var(--font-display); font-weight: 400; line-height: 1.05; letter-spacing: .02em; }
 /* Italiana's em dash is nearly invisible — render it in the body serif */
 .t-dash { font-family: var(--font-serif); font-style: normal; padding: 0 .1em; }
-.t-h1      { font-family: var(--font-display); font-weight: 400; line-height: 1.1; font-size: var(--t-h1); }
+.t-h1      { font-family: var(--font-display); font-weight: 400; line-height: 1.1; font-size: var(--t-h1); letter-spacing: .02em; }
 .t-serif   { font-family: var(--font-serif); }
 .t-italic  { font-family: var(--font-serif); font-style: italic; }
 .t-meta {
   font-family: var(--font-mono);
   font-size: var(--t-meta);
-  letter-spacing: .18em;
+  letter-spacing: .16em; /* la tracking delle etichette mono, ovunque */
   text-transform: uppercase;
 }
 .t-muted { color: var(--muted); }
@@ -137,6 +153,13 @@ button {
 @keyframes pageFade {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Casa globale del dissolve dei lightbox: i blocchi lightbox/video-lightbox
+   (ripolcati nelle pagine) vi fanno riferimento e devono trovarlo qui. */
+@keyframes lightboxDissolve {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* ─── header ─── */
@@ -170,12 +193,12 @@ button {
 .site-header nav button {
   position: relative;
   font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: .14em;
+  font-size: var(--t-meta);
+  letter-spacing: .16em;
   text-transform: uppercase;
   padding: 4px 0;
   color: var(--muted);
-  transition: color .2s;
+  transition: color .2s var(--ease);
 }
 [data-section="dark"] .site-header nav button { color: var(--muted-inverse); }
 .site-header nav button::after {
@@ -187,9 +210,12 @@ button {
   transform: scaleX(0);
   transition: transform .25s var(--ease);
 }
+[data-section="dark"] .site-header nav button::after { background: var(--accent-inverse); }
 .site-header nav button:hover::after,
 .site-header nav button[data-active="true"]::after { transform: scaleX(1); }
 .site-header nav button[data-active="true"] { color: var(--accent); }
+[data-section="dark"] .site-header nav button[data-active="true"] { color: var(--accent-inverse); }
+.site-header nav button[data-failed="true"] { color: var(--error); }
 
 /* ─── theme toggle ─── */
 .theme-toggle {
@@ -197,9 +223,10 @@ button {
   line-height: 1;
   color: var(--muted);
   padding: 4px 2px;
-  transition: color .2s;
+  transition: color .2s var(--ease);
 }
 .theme-toggle:hover { color: var(--accent); }
+[data-section="dark"] .theme-toggle:hover { color: var(--accent-inverse); }
 
 /* ─── hero (copertina) ─── */
 .hero {
@@ -214,7 +241,8 @@ button {
 .hero .hero-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(10, 9, 7, .25) 0%, rgba(10, 9, 7, .1) 40%, rgba(10, 9, 7, .78) 100%);
+  /* Il gradiente che protegge la scritta vive in Cover.css (proprietaria
+     della copertina): qui resta solo il posizionamento. */
 }
 .hero-content {
   position: absolute;
@@ -256,27 +284,30 @@ button {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--t-meta);
   letter-spacing: .16em;
   text-transform: uppercase;
   border: 1px solid var(--bg);
   transition: background .25s var(--ease), color .25s var(--ease), border-color .25s var(--ease);
 }
-.btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* Il contrasto del testo sul bronzo segue il tema: bianco di giorno, quasi
+   nero di notte. */
+.btn:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
 
 .link-ext {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: .14em;
+  font-size: var(--t-meta);
+  letter-spacing: .16em;
   text-transform: uppercase;
   border-bottom: 1px solid var(--hair);
   padding-bottom: 3px;
-  transition: border-color .2s, color .2s;
+  transition: border-color .2s var(--ease), color .2s var(--ease);
 }
 .link-ext:hover { border-color: var(--accent); color: var(--accent); }
+[data-section="dark"] .link-ext:hover { border-color: var(--accent-inverse); color: var(--accent-inverse); }
 
 /* ─── sections ─── */
 .section {
@@ -288,7 +319,7 @@ button {
   align-items: flex-end;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
   padding-bottom: 18px;
   border-bottom: var(--line) solid var(--hair);
 }
@@ -327,34 +358,35 @@ button {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Alla card che si alza risponde la foto: una sola scala lenta, la foto
+     parla per sé. */
+  transition: transform .6s var(--ease);
 }
+.card:hover .card-photo img { transform: scale(1.025); }
 .card .card-body {
-  padding: 14px 16px;
+  padding: 16px;
 }
-.card .card-title { font-family: var(--font-display); font-size: 22px; line-height: 1.1; }
+.card .card-title { font-family: var(--font-display); font-size: var(--t-h2); line-height: 1.1; }
 .card .card-sub {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 15px;
+  font-size: var(--t-small);
   color: var(--card-sub);
   margin-top: 2px;
 }
 [data-section="dark"] .card .card-sub { color: var(--muted-inverse); }
 .card .card-count {
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: .14em;
+  font-size: var(--t-meta);
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--muted);
   white-space: nowrap;
+  /* Nei riquadri il conteggio sta sotto a titolo/sottotitolo: gli serve un
+     suo respiro (il titolo è il contenuto, il conteggio la didascalia). */
+  margin-top: 8px;
 }
 [data-section="dark"] .card .card-count { color: var(--muted-inverse); }
-.card .card-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-}
 
 /* ─── photo frames ─── */
 .frame {
@@ -392,7 +424,7 @@ button {
   gap: 12px;
   padding: 14px;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--t-micro);
   letter-spacing: .16em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, .92);
@@ -408,8 +440,30 @@ button {
   margin-bottom: 40px;
   overflow-x: auto;
   scrollbar-width: none;
+  /* room for the underline and the 2px+3px focus ring inside the clipped box */
+  padding: 5px;
 }
 .catnav::-webkit-scrollbar { display: none; }
+
+/* Overflow affordance shared by gallery and video tabs: the row scrolls
+   without a scrollbar, so a scrolled edge gets a 24px fade instead. The mask
+   is anchored to the visible box — the tabs slide under a fixed gradient.
+   data-overflow ("left" | "right" | "both") comes from the scroll handlers in
+   Gallery.tsx / Videos.tsx; no attribute means everything fits and no fade is
+   drawn. currentColor is the opaque stop (fully opaque in every theme — only
+   alpha matters in a mask). */
+.catnav[data-overflow="left"] {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, currentColor 24px);
+  mask-image: linear-gradient(90deg, transparent 0, currentColor 24px);
+}
+.catnav[data-overflow="right"] {
+  -webkit-mask-image: linear-gradient(90deg, currentColor calc(100% - 24px), transparent);
+  mask-image: linear-gradient(90deg, currentColor calc(100% - 24px), transparent);
+}
+.catnav[data-overflow="both"] {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, currentColor 24px, currentColor calc(100% - 24px), transparent);
+  mask-image: linear-gradient(90deg, transparent 0, currentColor 24px, currentColor calc(100% - 24px), transparent);
+}
 
 /* ─── thumbnails ─── */
 /* Fixed-size thumbs, centered: a short strip doesn't strand on the left. */
@@ -419,6 +473,8 @@ button {
   justify-content: center;
   gap: 10px;
 }
+/* Air between the story's main photo and its strip. */
+.story-main .thumbstrip { margin-top: 12px; }
 .thumbstrip .thumb {
   position: relative;
   flex: 0 0 120px;
@@ -432,6 +488,12 @@ button {
 .thumbstrip .thumb:hover { opacity: 1; }
 .thumbstrip .thumb[data-active="true"] { outline-color: var(--accent-inverse); opacity: 1; }
 .thumbstrip .thumb .frame { position: absolute; inset: 0; }
+/* The thumb's own transparent outline (the active marker) otherwise swallows
+   the global focus ring — keyboard focus on a thumb was invisible. */
+.thumbstrip .thumb:focus-visible {
+  outline: 2px solid var(--accent-inverse);
+  outline-offset: 3px;
+}
 
 /* ─── lightbox ─── */
 /* Full-photo dissolve; data-closing replays the keyframes in reverse so the
@@ -449,10 +511,44 @@ button {
 }
 .lightbox[data-closing="true"] { animation-direction: reverse; }
 .lightbox img { max-width: 95vw; max-height: 95vh; object-fit: contain; }
-@keyframes lightboxDissolve {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+/* Shared furniture (PhotoStory e DriveStory): frecce laterali e contatore in
+   mono sopra la foto, con la stessa ombra delle didascalie per reggere i
+   cieli chiari. */
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  color: var(--ink-inverse);
+  font-size: 24px;
+  line-height: 1;
+  padding: 14px;
+  text-shadow: 0 1px 8px rgba(10, 9, 7, .8);
+  transition: color .2s var(--ease);
 }
+.lightbox-nav:hover { color: var(--accent-inverse); }
+.lightbox-nav-prev { left: 10px; }
+.lightbox-nav-next { right: 10px; }
+.lightbox-counter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .18em;
+  color: var(--ink-inverse);
+  text-shadow: 0 1px 8px rgba(10, 9, 7, .8);
+  text-align: center;
+  pointer-events: none;
+}
+/* Programmatic focus lands on the dialog itself — no ring around the whole
+   viewport; the arrows inside keep the dark-tuned ring. */
+.lightbox:focus { outline: none; }
+.lightbox :focus-visible { outline-color: var(--accent-inverse); }
+/* Il dissolve è definito una volta sola in testa al file (casa globale di
+   .lightbox, .video-lightbox e .room-proofbox). */
 
 /* ─── contact rows ─── */
 .contact-rows { display: flex; flex-direction: column; }
@@ -469,7 +565,7 @@ button {
 .contact-row .contact-label {
   font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: .18em;
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -517,20 +613,20 @@ button {
 .related-body { min-width: 0; }
 .related-title {
   font-family: var(--font-serif);
-  font-size: 17px;
+  font-size: var(--t-body);
   line-height: 1.3;
   color: var(--ink-inverse);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  transition: color .2s;
+  transition: color .2s var(--ease);
 }
 .related-item:hover .related-title { color: var(--accent-inverse); }
 .related-meta {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: .14em;
+  font-size: var(--t-micro);
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--muted-inverse);
   margin-top: 5px;
@@ -538,7 +634,7 @@ button {
 .related-all {
   margin-top: 16px;
   color: var(--muted-inverse);
-  transition: color .2s;
+  transition: color .2s var(--ease);
 }
 .related-all:hover { color: var(--accent-inverse); }
 
@@ -560,10 +656,10 @@ button {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px 24px;
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: .14em;
+  font-size: var(--t-meta);
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--muted);
   transition: border-color .45s var(--ease), color .45s var(--ease);
@@ -572,118 +668,60 @@ button {
   border-top-color: var(--hair-inverse);
   color: var(--muted-inverse);
 }
+/* L'Email del footer parla la lingua del footer: stessa misura e tracking
+   delle voci, la sua hairline si accende al passaggio come nel header. */
+.site-footer .link-ext {
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+/* Nota privacy: l'ultimo gradino della scala, sotto le voci. */
+.footer-note {
+  flex-basis: 100%;
+  font-size: var(--t-micro);
+  letter-spacing: .16em;
+  margin-top: 2px;
+}
 
 /* ─── layout helpers ─── */
 .container { max-width: 1200px; margin: 0 auto; }
-.prose { max-width: 62ch; font-size: 18px; line-height: 1.65; }
+.prose { max-width: 62ch; font-size: var(--t-lead); line-height: 1.65; }
 .stack { display: flex; flex-direction: column; gap: 14px; }
 
 /* ─── responsive ─── */
-@media (max-width: 480px) {
-  .contact-row { grid-template-columns: 1fr; gap: 4px; padding: 14px 0; }
-  .site-footer { flex-direction: column; gap: 6px; align-items: flex-start; }
-}
+/* Il blocco ≤760px viene prima: a ≤480px valgono entrambe le query e vince
+   la riga del telefono (una colonna) che arriva dopo. */
 @media (max-width: 760px) {
   .site-header {
     flex-wrap: wrap;
-    row-gap: 2px;
+    row-gap: 6px;
     padding: 10px var(--gutter);
   }
   .site-header .brand { font-size: 16px; letter-spacing: .04em; }
   .site-header nav { width: 100%; justify-content: space-between; gap: 16px; }
-  .site-header nav button { font-size: 10.5px; letter-spacing: .1em; }
+  .site-header nav button { font-size: 11px; letter-spacing: .16em; }
   .hero-content { bottom: 40px; }
   .contact-row { grid-template-columns: 96px minmax(0, 1fr) auto; gap: 12px; }
   .contact-row .contact-value { font-size: 16px; }
+}
+@media (max-width: 480px) {
+  .contact-row { grid-template-columns: 1fr; gap: 4px; padding: 14px 0; }
+  .site-footer { flex-direction: column; gap: 6px; align-items: flex-start; }
 }
 
 /* ─── reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
   .page-fade, .lightbox { animation: none; }
-  .card, .btn, .link-ext, .contact-row, .related-title, .related-all { transition: none; }
+  .card, .btn, .link-ext, .contact-row, .related-title, .related-all,
+  .card .card-photo img, .site-header nav button, .site-header nav button::after,
+  .theme-toggle, .site-footer .link-ext { transition: none; }
+  .card:hover .card-photo img { transform: none; }
   html, body, .site-header, .site-footer { transition: none; }
 }
 
-/* ─── video section ─── */
-
-/* Play overlay on video cards: always visible, centered circle over the poster. */
-.card .video-play {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, .55);
-  border: 1px solid var(--accent-inverse);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* optical centering for the ▷ glyph */
-  padding-left: 3px;
-  color: #fff;
-  font-size: 18px;
-  pointer-events: none;
-}
-.card .video-duration {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: .06em;
-  background: rgba(0, 0, 0, .6);
-  color: #fff;
-  padding: 2px 8px;
-  pointer-events: none;
-}
-
-/* Loading skeleton: a card shell with a shimmering block in place of the photo. */
-.card.skeleton-card { background: var(--card-bg-dark); pointer-events: none; }
-.skeleton-block {
-  aspect-ratio: 3 / 2;
-  background: linear-gradient(100deg, var(--card-bg-dark) 40%, rgba(255, 255, 255, .04) 50%, var(--card-bg-dark) 60%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.4s infinite linear;
-}
-@keyframes skeletonShimmer {
-  to { background-position: -200% 0; }
-}
-
-/* Video player overlay: same dissolve as .lightbox, one level above it. */
-.video-lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 101;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--lightbox-bg);
-  animation: lightboxDissolve .3s var(--ease) both;
-}
-.video-lightbox-inner { width: min(1100px, 94vw); }
-.video-lightbox video {
-  width: 100%;
-  max-height: 78vh;
-  background: #000;
-  display: block;
-}
-.video-lightbox-close {
-  position: absolute;
-  top: 24px;
-  right: 28px;
-  color: var(--ink-inverse);
-  font-size: 20px;
-  line-height: 1;
-  transition: color .2s;
-}
-.video-lightbox-close:hover { color: var(--accent-inverse); }
-
-@media (prefers-reduced-motion: reduce) {
-  .video-lightbox { animation: none; }
-  .skeleton-block { animation: none; }
-}
+/* Il blocco stili video è migrato in src/pages/Videos.css (che ne è
+   proprietaria: .video-play, .video-duration, skeleton, .video-lightbox).
+   Room.tsx condivide quei selettori: tutti i CSS di pagina sono nel bundle
+   (import statici), quindi la definizione unica resta sempre disponibile. */
 
 /* ─── client delivery rooms ────────────────────────────────────────────────
    Private galleries for clients: proofing (approve / changes / favourites),

@@ -27,7 +27,12 @@ async function pullCv(): Promise<{ url: string; name: string }> {
   return cached
 }
 
-export function useCvDownload(): { busy: boolean; failed: boolean; download: () => void } {
+// One instance lives in AppShell and is passed down (TopBar's button and the
+// Contact row are two views of the same download: separate instances would
+// each keep their own busy/failed state and the two controls would lie).
+export type CvState = { busy: boolean; failed: boolean; download: () => void }
+
+export function useCvDownload(): CvState {
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
 

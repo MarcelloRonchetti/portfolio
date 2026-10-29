@@ -1,9 +1,9 @@
-import type { HTMLAttributes, ReactNode } from 'react'
+import type { CSSProperties, HTMLAttributes, ReactNode } from 'react'
 
 type ClickableProps = {
   onClick?: () => void
   className?: string
-  style?: React.CSSProperties
+  style?: CSSProperties
   children?: ReactNode
 } & Omit<HTMLAttributes<HTMLDivElement>, 'onClick'>
 
