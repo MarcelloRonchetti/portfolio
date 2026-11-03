@@ -1,0 +1,31 @@
+{
+  "id": "instagram-17915074713533130",
+  "tags": [
+    "lamborghini",
+    "huracán",
+    "huracansterrato"
+  ],
+  "title": "Lamborghini Huracán Sterrato 1/1500",
+  "year": "2026",
+  "subtitle": "",
+  "location": "",
+  "date": "2026-10-25",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/De7qC4diCbd/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "17915074713533130",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}
