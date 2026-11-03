@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: instagram-import
   cancel-in-progress: false
@@ -20,7 +21,9 @@ jobs:
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
       # Stage PRIMA del diff: i nuovi eventi sono file non tracciati e
       # `git diff --quiet` (solo tracked) non li vedrebbe mai — il bot non
-      # avrebbe mai committato un post nuovo.
+      # avrebbe mai committato un post nuovo. Dopo il push, il dispatch esplicito
+      # del deploy serve perché un push con GITHUB_TOKEN NON triggera altri
+      # workflow (workflow_dispatch è l'unica eccezione ammessa).
       - run: |
           git add app/public/photos
           git diff --cached --quiet || (
@@ -28,4 +31,7 @@ jobs:
             git config user.email 'portfolio-sync[bot]@users.noreply.github.com'
             git commit -m 'chore: import Instagram media'
             git push
+            gh workflow run deploy.yml --repo "$GITHUB_REPOSITORY" --ref main
           )
+        env:
+          GH_TOKEN: ${{ github.token }}
