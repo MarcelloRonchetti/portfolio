@@ -18,11 +18,14 @@ jobs:
       - run: node scripts/sync-instagram.mjs
         env:
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+      # Stage PRIMA del diff: i nuovi eventi sono file non tracciati e
+      # `git diff --quiet` (solo tracked) non li vedrebbe mai — il bot non
+      # avrebbe mai committato un post nuovo.
       - run: |
-          git diff --quiet || (
+          git add app/public/photos
+          git diff --cached --quiet || (
             git config user.name 'portfolio-sync[bot]'
             git config user.email 'portfolio-sync[bot]@users.noreply.github.com'
-            git add app/public/photos
             git commit -m 'chore: import Instagram media'
             git push
           )
