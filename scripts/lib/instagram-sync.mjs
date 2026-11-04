@@ -63,7 +63,9 @@ export function planEvent(media, existingKeys = new Set()) {
     return { action: 'unsupported', media_type: media.media_type }
   }
   const draft = captionToEvent(media)
-  const photos = assets.slice(1).map((_, i) => `${String(i + 1).padStart(2, '0')}.jpg`)
+  // Il primo asset è anche la cover: entra in `photos` così lo story mostra
+  // tutte le foto del post (altrimenti la prima sparisce dallo story).
+  const files = ['cover.jpg', ...assets.slice(1).map((_, i) => `${String(i + 1).padStart(2, '0')}.jpg`)]
   const manifest = {
     id: draft.id,
     tags: draft.tags.slice(0, 3),
@@ -74,12 +76,12 @@ export function planEvent(media, existingKeys = new Set()) {
     date: draft.date,
     description_it: draft.description_it,
     cover: 'cover.jpg',
-    photos,
+    photos: files,
     links: { instagram_url: media.permalink ?? '' },
     featured: false,
     source: { provider: 'instagram', media_id: media.id, media_type: media.media_type },
   }
-  return { action: 'create', folder: draft.id, manifest, assets }
+  return { action: 'create', folder: draft.id, manifest, assets, files }
 }
 
 // ── network + filesystem side of the import ────────────────────────────────
@@ -147,7 +149,7 @@ export async function runImport({ token, dryRun = false, fetchImpl = fetch, phot
     const tmpDir = path.join(root, `.tmp-${plan.folder}-${Date.now()}`)
     try {
       await fs.mkdir(tmpDir, { recursive: true })
-      const names = ['cover.jpg', ...plan.manifest.photos]
+      const names = plan.files
       for (let i = 0; i < plan.assets.length; i++) {
         const res = await fetchImpl(plan.assets[i].url)
         if (!res.ok) throw new Error(`download ${names[i]}: HTTP ${res.status}`)

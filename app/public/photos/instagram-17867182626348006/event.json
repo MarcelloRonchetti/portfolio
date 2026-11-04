@@ -10,7 +10,9 @@
   "date": "2025-03-28",
   "description_it": "Unedited 📸",
   "cover": "cover.jpg",
-  "photos": [],
+  "photos": [
+    "cover.jpg"
+  ],
   "links": {
     "instagram_url": "https://www.instagram.com/p/DHu75rzMNpl/"
   },

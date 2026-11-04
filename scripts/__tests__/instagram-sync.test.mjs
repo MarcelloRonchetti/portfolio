@@ -39,7 +39,8 @@ test('expandMedia keeps carousel images and uses a thumbnail-only plan for video
     { id: 'two', media_type: 'IMAGE', media_url: 'https://img/two.jpg' },
   ] } })
   assert.equal(carousel.length, 2)
-  assert.equal(expandMedia({ media_type: 'VIDEO', thumbnail_url: 'https://img/thumb.jpg' })[0].kind, 'thumbnail')
+  // I reel/video non vengono mai importati come eventi: nessun asset.
+  assert.deepEqual(expandMedia({ media_type: 'VIDEO', thumbnail_url: 'https://img/thumb.jpg' }), [])
 })
 
 test('expandMedia returns nothing for unsupported types', () => {
@@ -69,7 +70,9 @@ test('planEvent builds a manifest with cover, photos and source', () => {
   assert.equal(plan.action, 'create')
   assert.equal(plan.folder, 'instagram-1790')
   assert.equal(plan.manifest.cover, 'cover.jpg')
-  assert.deepEqual(plan.manifest.photos, ['01.jpg'])
+  // Il primo asset è la cover ma resta anche nella storia (nessuna foto persa).
+  assert.deepEqual(plan.manifest.photos, ['cover.jpg', '01.jpg'])
+  assert.deepEqual(plan.files, ['cover.jpg', '01.jpg'])
   assert.equal(plan.manifest.source.media_id, '1790')
   assert.equal(plan.manifest.date, '2026-09-10')
   assert.deepEqual(plan.manifest.tags, ['Ferrari'])

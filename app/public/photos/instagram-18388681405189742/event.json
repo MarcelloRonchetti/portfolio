@@ -11,6 +11,7 @@
   "description_it": "WEC Ferrari",
   "cover": "cover.jpg",
   "photos": [
+    "cover.jpg",
     "01.jpg"
   ],
   "links": {
