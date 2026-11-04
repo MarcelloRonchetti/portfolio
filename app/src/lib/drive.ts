@@ -159,10 +159,16 @@ async function apiList(folderId: string): Promise<DriveFile[]> {
 }
 
 // Drive folder names map to site categories case-insensitively; anything else
-// becomes its own category (e.g. 'Sport') — the gallery merges it in.
+// becomes its own category (e.g. 'Sport') — the gallery merges it in. Il
+// fallback è il nome della cartella, NON 'Varie': le categorie che vivono
+// solo su Drive (Business, Landscape, People…) devono restare se stesse
+// anche quando gli eventi locali di quella categoria non esistono più.
 function categoryFor(folderName: string): string {
   const n = folderName.trim().toLowerCase()
-  return categories.find((c) => c.toLowerCase() === n) ?? 'Varie'
+  const local = categories.find((c) => c.toLowerCase() === n)
+  if (local) return local
+  const name = folderName.trim()
+  return name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Varie'
 }
 
 // Subfolders of video/ name their own video tab (video/storytelling/ →

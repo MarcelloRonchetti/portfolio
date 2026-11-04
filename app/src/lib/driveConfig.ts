@@ -18,7 +18,10 @@ export const DRIVE_CONFIG = {
   // Bump v1 → v2 (2026-10-29): one-time invalidation so every visitor's
   // browser drops the pre-IG-order listing and refetches immediately, without
   // waiting for the next 06:00 epoch.
-  cacheKey: 'mr.drive.v2',
+  // Bump v2 → v3 (2026-11-04): le categorie delle raccolte foto tornano al
+  // nome della cartella Drive (Business/Landscape/People/Sport) invece di
+  // cadere in 'Varie' — le liste cached portano la categoria vecchia.
+  cacheKey: 'mr.drive.v3',
   // Cache epoch: cached content is considered stale once the local clock has
   // passed 06:00 — every visitor gets one fresh Drive walk per day, on the
   // first page view after that hour, with no manual refresh control.

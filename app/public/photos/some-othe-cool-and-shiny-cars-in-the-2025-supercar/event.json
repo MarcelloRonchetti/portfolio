@@ -1,7 +1,8 @@
 {
   "id": "some-othe-cool-and-shiny-cars-in-the-2025-supercar",
   "tags": [
-    "Supercar"
+    "Supercar",
+    "bmw"
   ],
   "title": "Auto in notturna — Modena, 2025",
   "year": "2025",
@@ -22,5 +23,8 @@
   "links": {
     "instagram_url": "https://www.instagram.com/p/DNO4O2SsYMw/"
   },
-  "featured": false
+  "featured": false,
+  "source": {
+    "media_id": "18314865430215439"
+  }
 }

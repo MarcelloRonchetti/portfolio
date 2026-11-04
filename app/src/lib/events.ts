@@ -100,29 +100,77 @@ export const featuredEvent: Event | undefined =
     (e) => e.source?.provider === 'instagram' && e.source?.media_type !== 'VIDEO'
   ) ?? events[0]
 
+// ─── raccolte della galleria: solo marche ───
+// Brief dell'utente: le card sono le MARCHE delle auto — gli hashtag generici
+// (cars, carsdaily, supercars, reportage, huracán…) creavano cartelle
+// duplicate con la stessa copertina. Ogni evento entra nella marca del suo
+// tag / titolo / id cartella; chi non appartiene a nessuna marca non produce
+// card (resta su sitemap e storie). L'ordine segue la data dell'evento più
+// recente: la marca dell'ultimo post guida la galleria.
+const BRAND_PATTERNS: Array<[RegExp, string]> = [
+  [/ferrari|sf90|\bf8\b|\b488\b|\b296\b/, 'Ferrari'],
+  [/lamborghini|lamborghinisto|hurac[aá]n|sterrato|revuelto|temerario|\burus\b/, 'Lamborghini'],
+  [/porsche|\b911\b|carrera|gt3|boxster|cayman/, 'Porsche'],
+  [/maserati/, 'Maserati'],
+  [/\blotus\b|emira|elise|exige/, 'Lotus'],
+  [/\bbmw\b/, 'BMW'],
+  [/mercedes|\bamg\b/, 'Mercedes-AMG'],
+  [/mc ?laren|maclaren|artura/, 'McLaren'],
+  [/pagani|utopia/, 'Pagani'],
+  [/corvette|chevrolet/, 'Corvette'],
+  [/alfa ?romeo|\balfa\b/, 'Alfa Romeo'],
+  [/ducati/, 'Ducati'],
+  [/honda|civic/, 'Honda'],
+  [/lancia|delta integrale/, 'Lancia'],
+  [/dallara/, 'Dallara'],
+  [/\baudi\b/, 'Audi'],
+  [/toyota|\bgr86\b/, 'Toyota'],
+  [/\balpine\b/, 'Alpine'],
+  [/cadillac/, 'Cadillac'],
+  [/nissan|\bgtr\b|gt-r/, 'Nissan'],
+  [/\bford\b|mustang|gt40/, 'Ford'],
+  [/bizzarrini/, 'Bizzarrini'],
+  [/matra|simca/, 'Matra-Simca'],
+  [/aston ?martin|\bdb ?11\b/, 'Aston Martin'],
+]
+
+function brandOf(ev: Event): string | undefined {
+  const hay = `${ev.id} ${ev.tags.join(' ')} ${ev.title}`.toLowerCase()
+  for (const [pattern, brand] of BRAND_PATTERNS) {
+    if (pattern.test(hay)) return brand
+  }
+  return undefined
+}
+
 export const collections: Collection[] = (() => {
-  const byTag = new Map<string, Event[]>()
+  const byBrand = new Map<string, Event[]>()
   for (const ev of events) {
-    for (const tag of ev.tags) {
-      const list = byTag.get(tag) ?? []
-      list.push(ev)
-      byTag.set(tag, list)
-    }
+    const brand = brandOf(ev)
+    if (!brand) continue
+    const list = byBrand.get(brand) ?? []
+    list.push(ev)
+    byBrand.set(brand, list)
   }
   const out: Collection[] = []
-  for (const [tag, list] of byTag) {
-    const representative = list[0]
+  for (const [brand, list] of byBrand) {
+    // events è già newest-first: il rappresentante è l'evento più recente.
     out.push({
-      tag,
+      tag: brand,
       n: list.reduce((acc, e) => acc + Math.max(1, e.photos.length), 0),
       desc: [...new Set(list.map((e) => e.year))].sort().join(' · '),
-      representativeId: representative.id,
-      links: representative.links,
-      category: representative.category,
+      representativeId: list[0].id,
+      links: list[0].links,
+      category: list[0].category,
     })
   }
-  // Sort collections by number of events desc, then alphabetically
-  out.sort((a, b) => (b.n - a.n) || a.tag.localeCompare(b.tag))
+  // La marca dell'ultimo post sta in cima; poi quantità di foto, poi nome.
+  const newestDate = new Map(out.map((c) => [c.tag, events.find((e) => e.id === c.representativeId)?.date ?? '']))
+  out.sort(
+    (a, b) =>
+      (newestDate.get(b.tag) ?? '').localeCompare(newestDate.get(a.tag) ?? '') ||
+      b.n - a.n ||
+      a.tag.localeCompare(b.tag)
+  )
   return out
 })()
 
