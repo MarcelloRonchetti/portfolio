@@ -15,6 +15,8 @@ import {
 } from '../lib/events'
 import PhotoFrame from '../components/PhotoFrame'
 import Clickable from '../components/Clickable'
+import StoryCarousel from '../components/StoryCarousel'
+import useViewportSize from '../hooks/useViewportSize'
 import { useDialogA11y } from '../hooks/useDialogA11y'
 import { formatDate } from '../lib/format'
 
@@ -279,8 +281,20 @@ export function PhotoStory({
     () => (f && f.photos.length > 0 ? f.photos : f ? [f.cover] : []),
     [f]
   )
+  // Slide list for the carousel (stage + lightbox share it): the alt carries
+  // the position for screen readers like the old lightbox img did. Memoizzata
+  // perché l'identità stabile evita che geom ricalcoli a ogni render del drag.
+  const slides = useMemo(
+    () =>
+      photos.map((file, i) => ({
+        key: file,
+        src: f ? photoUrl(f, file) : '',
+        alt: photos.length > 1 && f ? `${f.title} — foto ${i + 1} di ${photos.length}` : (f?.title ?? ''),
+      })),
+    [f, photos]
+  )
+  const vp = useViewportSize()
   const shownIdx = Math.min(activeIdx, photos.length - 1)
-  const activeFile = photos[shownIdx]
 
   // Stable across renders: the guard reads the state via the functional update.
   const closeLightbox = useCallback(() => {
@@ -290,19 +304,18 @@ export function PhotoStory({
   // Remembered at open time so closing can hand keyboard focus back to the
   // frame that opened the lightbox.
   const openerRef = useRef<HTMLElement | null>(null)
-  // Horizontal swipe tracking on the lightbox (start x, null when idle).
-  const touchX = useRef<number | null>(null)
 
   const openLightbox = useCallback(() => {
     openerRef.current = document.activeElement as HTMLElement | null
     setLightbox('open')
   }, [])
 
-  // Step with wrap-around; rebound only when the story's photo count changes.
+  // Step clamped at the ends — the carousel doesn't wrap (like Instagram);
+  // rebound only when the story's photo count changes.
   const stepPhoto = useCallback((dir: 1 | -1) => {
     const n = photos.length
     if (n === 0) return
-    setActiveIdx((i) => (i + dir + n) % n)
+    setActiveIdx((i) => Math.min(n - 1, Math.max(0, i + dir)))
   }, [photos.length])
 
   // Drop the overlay once the dissolve-out has played; the cleanup cancels the
@@ -322,14 +335,16 @@ export function PhotoStory({
     openerRef,
   })
 
-  // While browsing, prefetch the neighbours so stepping through feels instant.
+  // Prefetch the neighbours so stepping (carousel, rail, lightbox) feels
+  // instant — with the carousel visible from mount this runs always.
   useEffect(() => {
-    if (lightbox === 'closed' || !f || photos.length < 2) return
-    for (const dir of [1, -1] as const) {
+    if (!f) return
+    for (const i of [shownIdx - 1, shownIdx + 1]) {
+      if (i < 0 || i >= photos.length) continue
       const img = new Image()
-      img.src = photoUrl(f, photos[(activeIdx + dir + photos.length) % photos.length])
+      img.src = photoUrl(f, photos[i])
     }
-  }, [lightbox, activeIdx, photos, f])
+  }, [shownIdx, photos, f])
 
   // Rail hops remount this component (App renders it with key={storyId}), so
   // the photo index and the lightbox reset on their own.
@@ -372,13 +387,16 @@ export function PhotoStory({
 
         <div className={related.length > 0 ? 'story-grid' : 'story-grid story-grid-solo'}>
           <div className="story-main">
-            <PhotoFrame
-              event={f}
-              file={activeFile}
-              alt={f.title}
+            <StoryCarousel
+              slides={slides}
+              activeIdx={shownIdx}
+              onActiveChange={setActiveIdx}
+              maxH={Math.min(vp.h * 0.78, 1100)}
               caption={{ right: `${pad2(shownIdx + 1)} / ${pad2(photos.length)}` }}
-              onClick={openLightbox}
-              style={{ cursor: 'zoom-in' }}
+              onActivate={openLightbox}
+              activateLabel={`Ingrandisci ${f.title}`}
+              arrows
+              label={f.title}
             />
 
             {photos.length > 1 && (
@@ -465,7 +483,8 @@ export function PhotoStory({
 
         {/* Portal to <body>: the page-fade wrapper keeps a transform, which
             would make this fixed lightbox center on the document, not the
-            viewport. Backdrop click closes; arrows and swipe step through. */}
+            viewport. Backdrop click closes; arrows, drag and keyboard step
+            through — the carousel suppresses the click that follows a drag. */}
         {lightbox !== 'closed' && createPortal(
           <div
             className="lightbox"
@@ -476,21 +495,16 @@ export function PhotoStory({
             aria-label={f.title}
             ref={dialogRef}
             tabIndex={-1}
-            onTouchStart={(e) => {
-              touchX.current = e.touches[0].clientX
-            }}
-            onTouchEnd={(e) => {
-              const x0 = touchX.current
-              touchX.current = null
-              if (x0 === null) return
-              const dx = e.changedTouches[0].clientX - x0
-              if (Math.abs(dx) > 48) stepPhoto(dx < 0 ? 1 : -1)
-            }}
           >
+            {/* Frecce sempre montate finché c'è più di una foto: ai bordi
+                aria-disabled (il click è un no-op per il clamp) — smontarle
+                mentre sono focalizzate farebbe cadere il focus fuori dalla
+                trappola del dialog. */}
             {photos.length > 1 && (
               <button
                 className="lightbox-nav lightbox-nav-prev"
                 aria-label="Foto precedente"
+                aria-disabled={shownIdx === 0 || undefined}
                 onClick={(e) => {
                   e.stopPropagation()
                   stepPhoto(-1)
@@ -499,16 +513,19 @@ export function PhotoStory({
                 ←
               </button>
             )}
-            {/* L'alt segue la foto mostrata: chi usa un screen reader sente
-                la posizione anche se il contatore resta solo visibile... */}
-            <img
-              src={photoUrl(f, activeFile)}
-              alt={photos.length > 1 ? `${f.title} — foto ${shownIdx + 1} di ${photos.length}` : f.title}
+            <StoryCarousel
+              slides={slides}
+              activeIdx={shownIdx}
+              onActiveChange={setActiveIdx}
+              maxW={Math.round(vp.w * 0.95)}
+              maxH={Math.round(vp.h * 0.95)}
+              label={f.title}
             />
             {photos.length > 1 && (
               <button
                 className="lightbox-nav lightbox-nav-next"
                 aria-label="Foto successiva"
+                aria-disabled={shownIdx === photos.length - 1 || undefined}
                 onClick={(e) => {
                   e.stopPropagation()
                   stepPhoto(1)
@@ -517,7 +534,7 @@ export function PhotoStory({
                 →
               </button>
             )}
-            {/* ...e il contatore è una live region: ogni passo viene annunciato. */}
+            {/* Il contatore è una live region: ogni passo viene annunciato. */}
             {photos.length > 1 && (
               <div className="lightbox-counter" role="status">
                 {pad2(shownIdx + 1)} / {pad2(photos.length)}

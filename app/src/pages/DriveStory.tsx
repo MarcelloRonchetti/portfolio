@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom'
 import { Navigate } from 'react-router-dom'
 import Clickable from '../components/Clickable'
 import PhotoFrame from '../components/PhotoFrame'
+import StoryCarousel from '../components/StoryCarousel'
+import useViewportSize from '../hooks/useViewportSize'
 import { useDriveContent } from '../hooks/useDriveContent'
 import { useDialogA11y } from '../hooks/useDialogA11y'
 import type { DrivePhotoCollection } from '../lib/drive'
@@ -66,29 +68,52 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
   const [activeIdx, setActiveIdx] = useState(0)
   const [lightbox, setLightbox] = useState<'closed' | 'open' | 'closing'>('closed')
   // Remembered at open time so closing can hand keyboard focus back to the
-  // frame that opened the lightbox; horizontal swipe tracking (start x).
+  // frame that opened the lightbox.
   const openerRef = useRef<HTMLElement | null>(null)
-  const touchX = useRef<number | null>(null)
 
   // The overlay floor and the stepping below only need the photo count (a
   // primitive: stable callback identities); the array itself is plain data.
   const photos = c?.photos ?? []
   const photoCount = photos.length
+  const shownIdx = Math.min(activeIdx, photoCount - 1)
+  const vp = useViewportSize()
+
+  // Carousel slide list (stage + lightbox share it), keyed on the Drive file
+  // id; alt carries the position like PhotoStory's. NON memoizzata: il
+  // compiler-lint rifiuta manual memo su liste derivate da c?.photos — il
+  // ricalcolo a render è un map su N foto, costo trascurabile.
+  const slides = photos.map((p, i) => ({
+    key: p.id,
+    src: p.fullUrl,
+    alt: photoCount > 1 ? `${c?.title ?? ''} — foto ${i + 1} di ${photoCount}` : (c?.title ?? ''),
+  }))
 
   const closeLightbox = useCallback(() => {
     setLightbox((prev) => (prev === 'open' ? 'closing' : prev))
   }, [])
+
+  // Prefetch dei vicini: il primo trascinamento di una raccolta non deve
+  // rivelare una slide grigia (come fa PhotoStory con l'archivio locale).
+  // Dipende da c (identità stabile per refresh), non da photos (nuova lista
+  // a ogni render).
+  useEffect(() => {
+    if (!c) return
+    for (const i of [shownIdx - 1, shownIdx + 1]) {
+      if (i < 0 || i >= c.photos.length) continue
+      const img = new Image()
+      img.src = c.photos[i].fullUrl
+    }
+  }, [shownIdx, c])
 
   const openLightbox = useCallback(() => {
     openerRef.current = document.activeElement as HTMLElement | null
     setLightbox('open')
   }, [])
 
-  // Step with wrap-around; rebound only when the collection's photo count
-  // changes.
+  // Step clamped at the ends — the carousel doesn't wrap (like Instagram).
   const stepPhoto = useCallback(
     (dir: 1 | -1) => {
-      setActiveIdx((i) => (photoCount === 0 ? i : (i + dir + photoCount) % photoCount))
+      setActiveIdx((i) => (photoCount === 0 ? i : Math.min(photoCount - 1, Math.max(0, i + dir))))
     },
     [photoCount]
   )
@@ -147,8 +172,6 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
     .filter((x) => x.category === c.category && x.id !== c.id)
     .slice(0, 12)
 
-  const active = photos[Math.min(activeIdx, photos.length - 1)]
-
   return (
     <main className="section section-dark story-page">
       <div className="container">
@@ -168,12 +191,16 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
             the media reclaims its column (story-grid-solo). */}
         <div className={related.length > 0 ? 'story-grid' : 'story-grid story-grid-solo'}>
           <div className="story-main">
-            <PhotoFrame
-              src={active.fullUrl}
-              alt={c.title}
-              caption={{ right: `${pad2(activeIdx + 1)} / ${pad2(photos.length)}` }}
-              onClick={openLightbox}
-              style={{ cursor: 'zoom-in' }}
+            <StoryCarousel
+              slides={slides}
+              activeIdx={shownIdx}
+              onActiveChange={setActiveIdx}
+              maxH={Math.min(vp.h * 0.78, 1100)}
+              caption={{ right: `${pad2(shownIdx + 1)} / ${pad2(photos.length)}` }}
+              onActivate={openLightbox}
+              activateLabel={`Ingrandisci ${c.title}`}
+              arrows
+              label={c.title}
             />
 
             {photos.length > 1 && (
@@ -183,8 +210,8 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
                     key={p.id}
                     onClick={() => setActiveIdx(i)}
                     className="thumb"
-                    data-active={i === activeIdx || undefined}
-                    aria-current={i === activeIdx ? 'true' : undefined}
+                    data-active={i === shownIdx || undefined}
+                    aria-current={i === shownIdx ? 'true' : undefined}
                     aria-label={`Foto ${i + 1}`}
                   >
                     <PhotoFrame src={p.thumbUrl} alt={`${c.title} — foto ${i + 1}`} />
@@ -233,7 +260,8 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
 
         {/* Portal to <body>: the page-fade wrapper keeps a transform, which
             would make this fixed lightbox center on the document, not the
-            viewport. Backdrop click closes; arrows and swipe step through. */}
+            viewport. Backdrop click closes; arrows, drag and keyboard step
+            through — the carousel suppresses the click that follows a drag. */}
         {lightbox !== 'closed' && createPortal(
           <div
             className="lightbox"
@@ -244,21 +272,16 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
             aria-label={c.title}
             ref={dialogRef}
             tabIndex={-1}
-            onTouchStart={(e) => {
-              touchX.current = e.touches[0].clientX
-            }}
-            onTouchEnd={(e) => {
-              const x0 = touchX.current
-              touchX.current = null
-              if (x0 === null) return
-              const dx = e.changedTouches[0].clientX - x0
-              if (Math.abs(dx) > 48) stepPhoto(dx < 0 ? 1 : -1)
-            }}
           >
+            {/* Frecce sempre montate finché c'è più di una foto: ai bordi
+                aria-disabled (il click è un no-op per il clamp) — smontarle
+                mentre sono focalizzate farebbe cadere il focus fuori dalla
+                trappola del dialog. */}
             {photos.length > 1 && (
               <button
                 className="lightbox-nav lightbox-nav-prev"
                 aria-label="Foto precedente"
+                aria-disabled={shownIdx === 0 || undefined}
                 onClick={(e) => {
                   e.stopPropagation()
                   stepPhoto(-1)
@@ -267,15 +290,19 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
                 ←
               </button>
             )}
-            {/* Alt e contatore parlano la posizione, come in PhotoStory. */}
-            <img
-              src={active.fullUrl}
-              alt={photos.length > 1 ? `${c.title} — foto ${activeIdx + 1} di ${photos.length}` : c.title}
+            <StoryCarousel
+              slides={slides}
+              activeIdx={shownIdx}
+              onActiveChange={setActiveIdx}
+              maxW={Math.round(vp.w * 0.95)}
+              maxH={Math.round(vp.h * 0.95)}
+              label={c.title}
             />
             {photos.length > 1 && (
               <button
                 className="lightbox-nav lightbox-nav-next"
                 aria-label="Foto successiva"
+                aria-disabled={shownIdx === photos.length - 1 || undefined}
                 onClick={(e) => {
                   e.stopPropagation()
                   stepPhoto(1)
@@ -286,7 +313,7 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
             )}
             {photos.length > 1 && (
               <div className="lightbox-counter" role="status">
-                {pad2(activeIdx + 1)} / {pad2(photos.length)}
+                {pad2(shownIdx + 1)} / {pad2(photos.length)}
               </div>
             )}
           </div>,
