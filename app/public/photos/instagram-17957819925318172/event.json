@@ -1,0 +1,35 @@
+{
+  "id": "instagram-17957819925318172",
+  "tags": [
+    "lamborghini",
+    "supercars",
+    "monza"
+  ],
+  "title": "Some other Lamborghini from monza",
+  "year": "2026",
+  "subtitle": "",
+  "location": "",
+  "date": "2026-11-05",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "cover.jpg",
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg",
+    "07.jpg",
+    "08.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DfYAMI0DF6p/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "17957819925318172",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}
