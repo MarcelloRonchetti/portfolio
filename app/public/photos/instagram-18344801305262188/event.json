@@ -1,0 +1,32 @@
+{
+  "id": "instagram-18344801305262188",
+  "tags": [
+    "lamborghini",
+    "supercars",
+    "monza"
+  ],
+  "title": "Lamborghini in the paddock at monza",
+  "year": "2026",
+  "subtitle": "",
+  "location": "",
+  "date": "2026-11-09",
+  "description_it": "",
+  "cover": "cover.jpg",
+  "photos": [
+    "cover.jpg",
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg"
+  ],
+  "links": {
+    "instagram_url": "https://www.instagram.com/p/DfiZHd-jCHQ/"
+  },
+  "featured": false,
+  "source": {
+    "provider": "instagram",
+    "media_id": "18344801305262188",
+    "media_type": "CAROUSEL_ALBUM"
+  }
+}
