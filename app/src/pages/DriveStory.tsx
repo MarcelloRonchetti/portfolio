@@ -82,9 +82,15 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
   // id; alt carries the position like PhotoStory's. NON memoizzata: il
   // compiler-lint rifiuta manual memo su liste derivate da c?.photos — il
   // ricalcolo a render è un map su N foto, costo trascurabile.
+  //
+  // Stage su displayUrl (w1600): gli originali di macchina sono 5–15 MB e la
+  // colonna è larga ~900px — il resize CDN è indistinguibile e una frazione
+  // dei byte. Il lightbox sale a s0 con l'upgrade progressivo del carosello.
+  // Fallback su fullUrl per le cache localStorage scritte prima di displayUrl.
   const slides = photos.map((p, i) => ({
     key: p.id,
-    src: p.fullUrl,
+    src: p.displayUrl ?? p.fullUrl,
+    zoomSrc: p.fullUrl,
     alt: photoCount > 1 ? `${c?.title ?? ''} — foto ${i + 1} di ${photoCount}` : (c?.title ?? ''),
   }))
 
@@ -92,16 +98,17 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
     setLightbox((prev) => (prev === 'open' ? 'closing' : prev))
   }, [])
 
-  // Prefetch dei vicini: il primo trascinamento di una raccolta non deve
-  // rivelare una slide grigia (come fa PhotoStory con l'archivio locale).
-  // Dipende da c (identità stabile per refresh), non da photos (nuova lista
-  // a ogni render).
+  // Prefetch dei vicini alla misura dello stage (displayUrl): il primo
+  // trascinamento di una raccolta non deve rivelare una slide grigia, ma
+  // nemmeno tirare giù gli originali a monte (come fa PhotoStory con
+  // l'archivio locale). Dipende da c (identità stabile per refresh), non da
+  // photos (nuova lista a ogni render).
   useEffect(() => {
     if (!c) return
     for (const i of [shownIdx - 1, shownIdx + 1]) {
       if (i < 0 || i >= c.photos.length) continue
       const img = new Image()
-      img.src = c.photos[i].fullUrl
+      img.src = c.photos[i].displayUrl ?? c.photos[i].fullUrl
     }
   }, [shownIdx, c])
 

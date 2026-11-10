@@ -31,7 +31,7 @@ function markImgLoaded(img: HTMLImageElement | null) {
   if (img && img.complete && img.naturalWidth > 0) img.dataset.loaded = 'true'
 }
 
-function CollectionCard({ c, go }: { c: Collection; go: GoFn }) {
+function CollectionCard({ c, go, eager = false, priority = false }: { c: Collection; go: GoFn; eager?: boolean; priority?: boolean }) {
   const rep = eventById(c.representativeId)
 
   return (
@@ -45,7 +45,11 @@ function CollectionCard({ c, go }: { c: Collection; go: GoFn }) {
             ref={markImgLoaded}
             src={photoUrl(rep, rep.cover)}
             alt={c.tag}
-            loading="lazy"
+            // Le prime coperture sono il LCP della pagina: fuori dal differimento
+            // lazy; la priorità alta però sta solo sulla prima card (su mobile
+            // le altre "eager" sono sotto la piega e non devono gareggiare col LCP).
+            loading={eager ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : undefined}
             decoding="async"
             onLoad={(e) => {
               e.currentTarget.dataset.loaded = 'true'
@@ -69,7 +73,7 @@ function CollectionCard({ c, go }: { c: Collection; go: GoFn }) {
 
 // Card for a Drive-backed collection: same layout as CollectionCard, image and
 // count come straight from the archive listing.
-function DriveCollectionCard({ c, go }: { c: DrivePhotoCollection; go: GoFn }) {
+function DriveCollectionCard({ c, go, eager = false, priority = false }: { c: DrivePhotoCollection; go: GoFn; eager?: boolean; priority?: boolean }) {
   return (
     <Clickable
       onClick={() => go('story', c.id)}
@@ -80,7 +84,8 @@ function DriveCollectionCard({ c, go }: { c: DrivePhotoCollection; go: GoFn }) {
           ref={markImgLoaded}
           src={c.cover}
           alt={c.title}
-          loading="lazy"
+          loading={eager ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : undefined}
           decoding="async"
           onLoad={(e) => {
             e.currentTarget.dataset.loaded = 'true'
@@ -172,6 +177,12 @@ export function Gallery({
     driveCollections.reduce((acc, c) => acc + (c.photos?.length ?? 0), 0)
   const totalCollections = filteredCollections.length + driveCollections.length
 
+  // Coperture fuori dal lazy: ~una riga di card. Su mobile una riga è UNA card
+  // (flex-basis 270px) — quattro "eager" sarebbero quattro schermate sotto la
+  // piega. La priorità alta sta solo sulla prima (il LCP vero).
+  const vp = useViewportSize()
+  const eagerCount = vp.w > 0 && vp.w < 760 ? 2 : 4
+
   return (
     <main className="section section-dark gl-page">
       <div className="container">
@@ -225,12 +236,27 @@ export function Gallery({
           </div>
         ) : (
           <div className="grid-cards">
-            {filteredCollections.map((c) => (
-              <CollectionCard key={c.tag} c={c} go={go} />
+            {filteredCollections.map((c, i) => (
+              <CollectionCard
+                key={c.tag}
+                c={c}
+                go={go}
+                eager={i < eagerCount}
+                priority={i === 0}
+              />
             ))}
-            {driveCollections.map((c) => (
-              <DriveCollectionCard key={c.id} c={c} go={go} />
-            ))}
+            {driveCollections.map((c, i) => {
+              const pos = filteredCollections.length + i
+              return (
+                <DriveCollectionCard
+                  key={c.id}
+                  c={c}
+                  go={go}
+                  eager={pos < eagerCount}
+                  priority={pos === 0}
+                />
+              )
+            })}
           </div>
         )}
       </div>

@@ -48,8 +48,53 @@ const DECISION_LABEL: Record<PhotoDecision, string> = {
 
 // One proofable image, whichever source backs the room: a local event file
 // (key = file name) or a Drive photo (key = Drive file id, label = cleaned
-// file name — ids are for storage, humans read labels).
-type RoomItem = { key: string; label: string; thumb: string; full: string }
+// file name — ids are for storage, humans read labels). `full` is the ORIGINAL
+// (link "Apri l'originale"); `display`, when set, is the CDN resize the
+// proofbox paints first, with the original fading over it once decoded.
+type RoomItem = { key: string; label: string; thumb: string; full: string; display?: string }
+
+// Proofbox media with the same progressive upgrade as the story lightbox: the
+// w1600 resize appears immediately, the original (5–15 MB from camera)
+// replaces it with a fade when it lands. Il fallback segue il carosello: se la
+// w1600 cade la base diventa l'originale; se cade anche quella, nessuna img —
+// cornice neutra, mai l'icona di immagine rotta. Local files (≤1080px) carry
+// no `display` and render a single img — unchanged. Mount with key={item.key}:
+// cambiando foto il componente si rimonta e lo stato riparte pulito.
+function ProofMedia({ item, title }: { item: RoomItem; title: string }) {
+  const [zoomReady, setZoomReady] = useState(false)
+  const [baseFailed, setBaseFailed] = useState(false)
+  const [dead, setDead] = useState(false)
+  const display = item.display ?? item.full
+  const baseSrc = baseFailed ? item.full : display
+  return (
+    <>
+      {!dead && (
+        <img
+          src={baseSrc}
+          alt={`${title} — ${item.label}`}
+          decoding="async"
+          onError={(e) => {
+            if (e.currentTarget.src === item.full) setDead(true)
+            else setBaseFailed(true)
+          }}
+        />
+      )}
+      {!baseFailed && display !== item.full && (
+        <img
+          className="carousel-zoom-img"
+          src={item.full}
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          data-zoom={zoomReady || undefined}
+          onLoad={() => setZoomReady(true)}
+          // Sotto c'è sempre la w1600: un errore dell'originale non rompe niente.
+          onError={() => setZoomReady(true)}
+        />
+      )}
+    </>
+  )
+}
 
 const countLabel = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
@@ -288,6 +333,7 @@ export default function RoomPage() {
               label: p.name ?? p.id,
               thumb: p.thumbUrl,
               full: p.fullUrl,
+              display: p.displayUrl ?? p.fullUrl,
             })),
           })
         }
@@ -673,7 +719,7 @@ export default function RoomPage() {
             </button>
             <div className="room-proofbox-inner" onClick={(e) => e.stopPropagation()}>
               <div className="room-proofbox-media">
-                <img src={proofItem.full} alt={`${room.title} — ${proofItem.label}`} />
+                <ProofMedia key={proofItem.key} item={proofItem} title={room.title} />
                 {room.watermark && (
                   <span className="room-watermark" aria-hidden="true">
                     Marcello Ronchetti

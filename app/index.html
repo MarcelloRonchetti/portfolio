@@ -6,6 +6,13 @@
     <meta name="description" content="Marcello Ronchetti — fotografo di sport e motorsport. Raccolte, eventi e contatti." />
     <link rel="canonical" href="https://marcelloronchetti.github.io/portfolio/" />
     <meta name="theme-color" content="#faf9f6" />
+    <!-- Tutto il media dell'archivio (foto, poster, stream video) arriva dai
+         CDN di Google: la connessione parte prima del primo fetch JS. -->
+    <link rel="preconnect" href="https://lh3.googleusercontent.com" />
+    <link rel="preconnect" href="https://www.googleapis.com" />
+    <!-- Le chiamate Drive API girano in CORS mode: una seconda
+         preconnessione crossorigin apre la connessione CORS-mode dedicata. -->
+    <link rel="preconnect" href="https://www.googleapis.com" crossorigin />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",

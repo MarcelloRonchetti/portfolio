@@ -57,13 +57,21 @@ export type DrivePhoto = {
   id: string
   /** File name cleaned for display (no extension, separators → spaces). */
   name?: string
+  /** Original bytes (lh3, s0): the lightbox / fullscreen viewer only. */
   fullUrl: string
+  /** Stage-size resize (lh3, w1600): story stage, lightbox base layer and
+   *  proofbox base layer. Camera originals are 5–15 MB; at display size the
+   *  resize is indistinguishable and a fraction of the bytes. Absent in
+   *  localStorage caches written before this field existed — consumers fall
+   *  back to fullUrl. */
+  displayUrl?: string
   thumbUrl: string
 }
 
 // Thumb sizing: lh3 URLs are deterministic from the id, so pick a size per
 // context — w400 for the 120px thumbstrip/rail, w800 for ~340px cards and
-// posters, w1280 for the player poster, s0 (original) for the lightbox.
+// posters, w1280 for the player poster, w1600 for the story stage, s0
+// (original) for the lightbox.
 
 export type DrivePhotoCollection = {
   /** Story id used in routes: `drive-<folderId>`. */
@@ -289,6 +297,7 @@ async function walkRoot(): Promise<Omit<DriveContent, 'fetchedAt'>> {
       photos: imgs.map((f) => ({
         id: f.id,
         fullUrl: lhUrl(f.id, 's0'),
+        displayUrl: lhUrl(f.id, 'w1600'),
         thumbUrl: lhUrl(f.id, 'w400'),
       })),
     })
@@ -459,7 +468,14 @@ function validCollection(c: unknown): c is DrivePhotoCollection {
     x.photos.length > 0 &&
     x.photos.every((p) => {
       const ph = p as DrivePhoto
-      return isStr(ph?.id) && isMediaUrl(ph?.fullUrl) && isMediaUrl(ph?.thumbUrl)
+      return (
+        isStr(ph?.id) &&
+        isMediaUrl(ph?.fullUrl) &&
+        isMediaUrl(ph?.thumbUrl) &&
+        // Optional (old caches don't carry it) — but present or absent, never
+        // an arbitrary URL: it feeds img src like the other two.
+        (ph?.displayUrl == null || isMediaUrl(ph.displayUrl))
+      )
     })
   )
 }
@@ -562,6 +578,7 @@ export async function listRoomPhotos(folderId: string): Promise<DrivePhoto[]> {
       id: f.id,
       name: cleanTitle(f.name),
       fullUrl: lhUrl(f.id, 's0'),
+      displayUrl: lhUrl(f.id, 'w1600'),
       thumbUrl: lhUrl(f.id, 'w800'),
     }))
 }

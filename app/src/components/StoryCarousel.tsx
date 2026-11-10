@@ -21,6 +21,10 @@ export type CarouselSlide = {
   key: string
   src: string
   alt?: string
+  /** Full-resolution copy (lightbox scene only): fades over the already
+   *  visible `src` once decoded, so zooming in never flashes a blank frame.
+   *  Absent → the lightbox shows `src` alone (local photos are ≤1080px). */
+  zoomSrc?: string
 }
 
 type StoryCarouselProps = {
@@ -64,9 +68,15 @@ export default function StoryCarousel({
   className,
 }: StoryCarouselProps) {
   const [ratios, setRatios] = useState<Record<string, number>>({})
-  // Slide il cui src è fallito (hiccups CDN su Drive): resta la cornice neutra
-  // come faceva PhotoFrame, niente icona di immagine rotta.
+  // Slide il cui src è fallito (hiccups CDN su Drive): ricade sulla zoomSrc
+  // quando esiste, altrimenti resta la cornice neutra come faceva PhotoFrame.
   const [failed, setFailed] = useState<Record<string, boolean>>({})
+  // Slide cadute DUE volte (base e fallback): nessuna img — cornice neutra,
+  // mai l'icona di immagine rotta.
+  const [dead, setDead] = useState<Record<string, boolean>>({})
+  // Zoom già arrivato (per slide): resta montato e senza refade per tutta la
+  // vita del carosello — un passo avanti/indietro non riavvia il download.
+  const [zoomReady, setZoomReady] = useState<Record<string, boolean>>({})
   const wrapperRef = useRef<HTMLDivElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
@@ -272,6 +282,15 @@ export default function StoryCarousel({
             // Finestra ±1: le slide lontane restano segnaposto (stessa
             // geometria) finché non servono — niente download a monte.
             const near = Math.abs(i - idx) <= 1
+            // Con zoomSrc la base (displayUrl) che fallisce ricade sulla s0 in
+            // ENTRAMBE le scene: un hiccup del CDN non deve lasciare la cornice
+            // neutra quando l'originale risponde. L'overlay di upgrade invece
+            // vive solo nel lightbox: la s0 copre la base già visibile appena
+            // decodificata — mai un frame grigio al passaggio al grande.
+            const hasZoom = !!s.zoomSrc
+            const baseFailed = !!failed[s.key]
+            const gone = !!dead[s.key]
+            const baseSrc = baseFailed && hasZoom ? s.zoomSrc! : s.src
             return (
               // aria-hidden sulle slide fuori fuoco: il lettore di schermo
               // sente una foto sola (le vicine sono nel DOM solo per la
@@ -282,9 +301,9 @@ export default function StoryCarousel({
                 style={{ width: geom.widths[i] }}
                 aria-hidden={i !== idx || undefined}
               >
-                {near && !failed[s.key] && (
+                {near && !gone && (hasZoom || !baseFailed) && (
                   <img
-                    src={s.src}
+                    src={baseSrc}
                     alt={s.alt ?? ''}
                     draggable={false}
                     decoding="async"
@@ -297,7 +316,32 @@ export default function StoryCarousel({
                       if (img.naturalWidth > 0)
                         recordRatio(s.key, img.naturalWidth / img.naturalHeight)
                     }}
-                    onError={() => setFailed((prev) => ({ ...prev, [s.key]: true }))}
+                    onError={(e) => {
+                      // Caduto anche il fallback (l'img sta già mostrando la
+                      // zoomSrc): la slide esce — cornice neutra, mai l'icona
+                      // di immagine rotta.
+                      if (hasZoom && e.currentTarget.src === s.zoomSrc) {
+                        setDead((prev) => ({ ...prev, [s.key]: true }))
+                      }
+                      setFailed((prev) => ({ ...prev, [s.key]: true }))
+                    }}
+                  />
+                )}
+                {near && !onActivate && hasZoom && !baseFailed && (
+                  <img
+                    className="carousel-zoom-img"
+                    src={s.zoomSrc}
+                    alt=""
+                    aria-hidden="true"
+                    draggable={false}
+                    decoding="async"
+                    data-zoom={zoomReady[s.key] || undefined}
+                    onLoad={() =>
+                      setZoomReady((prev) => (prev[s.key] ? prev : { ...prev, [s.key]: true }))
+                    }
+                    // Sotto la s0 c'è sempre la base w1600: un errore qui non
+                    // lascia niente di rotto a schermo, si prosegue con la base.
+                    onError={() => setZoomReady((prev) => ({ ...prev, [s.key]: true }))}
                   />
                 )}
               </div>

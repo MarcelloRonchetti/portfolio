@@ -231,8 +231,13 @@ function AppShell() {
 
   return (
     <>
+      {/* Primo elemento focusabile: la scorciatoia da tastiera salta la
+          navigazione e porta il focus al contenuto della pagina. */}
+      <a className="skip-link" href="#contenuto">
+        Vai al contenuto
+      </a>
       <TopBar theme={theme} onToggleTheme={toggleTheme} cv={cv} />
-      <div key={location.pathname} className="page-fade">
+      <div key={location.pathname} className="page-fade" id="contenuto" tabIndex={-1}>
         <Routes>
           <Route path="/" element={<Cover go={go} />} />
           <Route path="/gallery" element={<GalleryRoute go={go} />} />

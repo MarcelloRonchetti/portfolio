@@ -581,11 +581,23 @@ button:disabled { cursor: default; }
 /* Durante il trascinamento la track segue il dito 1:1 (niente easing che
    insegue il puntatore); al rilascio la transizione torna e riafferma. */
 .carousel-frame[data-dragging="true"] .carousel-track { transition: none; }
-.carousel-slide { flex: 0 0 auto; height: 100%; overflow: hidden; }
+.carousel-slide { flex: 0 0 auto; height: 100%; overflow: hidden; position: relative; }
 /* contain: mentre la cornice si sta ancora ridimensionando la foto in
    arrivo non viene mai ritagliata; a regime la slide ha esattamente il
    rapporto della foto → piena, senza bande. */
 .carousel-slide img { display: block; width: 100%; height: 100%; object-fit: contain; -webkit-touch-callout: none; }
+/* Upgrade progressivo del lightbox (solo scena lightbox, slide con zoomSrc):
+   la risoluzione piena copre la base w1600 già visibile e la rimpiazza con un
+   fade — niente frame grigio mentre l'originale scarica. Alla base non tocca
+   niente: il .carousel-zoom-img sta sopra e non riceve pointer. */
+.carousel-zoom-img {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s var(--ease);
+}
+.carousel-zoom-img[data-zoom="true"] { opacity: 1; }
 /* Il lightbox restringe le sue img (95vw/95vh): qui il limite è la cornice,
    le img devono poter riempire la slide. */
 .carousel .carousel-slide img { max-width: none; max-height: none; }
@@ -784,13 +796,37 @@ button:disabled { cursor: default; }
   .site-footer { flex-direction: column; gap: 6px; align-items: flex-start; }
 }
 
+/* ─── skip link (a11y) ───
+   Primo elemento focusabile del documento: fuori schermo finché non prende
+   il focus da tastiera, poi appare in alto a sinistra e porta il focus al
+   contenuto (#contenuto, tabIndex -1 sul wrapper .page-fade). */
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 300;
+  padding: 10px 16px;
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transform: translateY(-300%);
+  transition: transform .15s var(--ease);
+}
+.skip-link:focus { transform: none; }
+/* Bersaglio del salto: il focus programmatico non deve disegnare l'anello
+   attorno a un wrapper che non è un controllo. */
+.page-fade:focus { outline: none; }
+
 /* ─── reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
   .page-fade, .lightbox { animation: none; }
-  .carousel-frame, .carousel-track { transition: none; }
+  .carousel-frame, .carousel-track, .carousel-zoom-img { transition: none; }
   .card, .btn, .link-ext, .contact-row, .related-title, .related-all,
   .card .card-photo img, .site-header nav button, .site-header nav button::after,
-  .theme-toggle, .site-footer .link-ext { transition: none; }
+  .theme-toggle, .site-footer .link-ext, .skip-link { transition: none; }
   .card:hover .card-photo img { transform: none; }
   html, body, .site-header, .site-footer { transition: none; }
 }
