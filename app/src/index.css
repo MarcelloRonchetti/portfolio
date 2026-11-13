@@ -174,7 +174,7 @@ button:disabled { cursor: default; }
   @keyframes routeIn {
     from { opacity: 0; transform: scale(.982) translateY(1%); }
   }
-  @supports (view-transition-name: none) {
+  @supports selector(html:active-view-transition *) {
     /* Inside a running transition the inner crossfade would double the motion;
        outside one (header navigations bypassing go(), redirects) it still
        plays. :active-view-transition matches only while a VT is running. */

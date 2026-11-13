@@ -390,22 +390,84 @@ body[data-immersive='1'] .site-footer {
   }
 }
 
-/* short landscape viewports (phones rotated): same treatment */
-@media (max-height: 700px) and (min-width: 721px) {
+/* ── Short viewports (phone landscape, tiny windows): height-driven, any
+   width. A centered multi-shot room can never fit 100dvh here — compact the
+   rhythm, show one photo and cap it against the remaining space. ────────── */
+@media (max-height: 620px) {
   .exp-page {
     align-items: flex-start;
   }
   .exp-room-body {
-    padding-top: 84px;
-    padding-bottom: 118px;
+    padding-top: 64px;
+    padding-bottom: 104px;
   }
   .exp-title {
-    font-size: clamp(44px, 6vw, 72px);
+    font-size: clamp(36px, 8vh, 56px);
+    margin: 8px 0 6px;
   }
   .exp-shots {
-    margin-top: 22px;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .exp-shot-1,
+  .exp-shot-2 {
+    display: none;
   }
   .exp-shot-frame img {
     aspect-ratio: 16 / 9;
+    max-height: calc(100dvh - 310px);
+  }
+  .exp-shot-title {
+    font-size: 14px;
+  }
+  .exp-cta {
+    margin-top: 12px;
+  }
+  .exp-ghost {
+    display: none;
+  }
+  /* single-row HUD: the stacked dots+label band would collide with the CTA
+     on short screens */
+  .exp-hud {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+  .exp-hud-dots {
+    flex: 1;
+    justify-content: flex-start;
+  }
+  .exp-hud-room {
+    display: none;
+  }
+  .exp-hud-back {
+    align-self: flex-end;
+  }
+}
+
+@media (max-height: 460px) {
+  .exp-room-body {
+    padding-top: 52px;
+    padding-bottom: 92px;
+  }
+  .exp-title {
+    font-size: clamp(30px, 9vh, 44px);
+    margin: 6px 0 4px;
+  }
+  .exp-meta {
+    font-size: 11px;
+  }
+  .exp-shot-frame img {
+    max-height: calc(100dvh - 300px);
+  }
+}
+
+/* very narrow portrait phones: the wrapped header is ~100px tall */
+@media (max-width: 360px) {
+  .exp-room-body {
+    padding-top: 108px;
   }
 }

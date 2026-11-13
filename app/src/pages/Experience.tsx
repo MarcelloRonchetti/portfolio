@@ -206,6 +206,8 @@ export default function Experience({ go }: { go: GoFn }) {
   useEffect(() => {
     const fine = window.matchMedia?.('(pointer: fine)').matches ?? false
     const onWheel = (e: WheelEvent) => {
+      // ctrl+wheel is the trackpad pinch-zoom — never hijack it (WCAG 1.4.4)
+      if (e.ctrlKey) return
       e.preventDefault()
       snapRef.current = null
       lastInputRef.current = performance.now()
@@ -311,9 +313,10 @@ export default function Experience({ go }: { go: GoFn }) {
                     >
                       <span className="exp-shot-frame">
                         {/* mounted only when the camera is near: lazy never
-                            fires on absolutely-positioned rooms */}
+                            fires on absolutely-positioned rooms. alt="" — the
+                            visible title below is the accessible name. */}
                         {Math.abs(i - room) <= 1 && (
-                          <img src={shotUrl(e)} alt={e.title} decoding="async" />
+                          <img src={shotUrl(e)} alt="" decoding="async" />
                         )}
                       </span>
                       <span className="exp-shot-title">{e.title}</span>
@@ -338,7 +341,7 @@ export default function Experience({ go }: { go: GoFn }) {
       </div>
 
       <div className="exp-hud">
-        <div className="exp-hud-dots" aria-label="Sale">
+        <div className="exp-hud-dots">
           {topics.map((t, i) => (
             <button
               key={t.key}
