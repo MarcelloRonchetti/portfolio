@@ -41,16 +41,21 @@ function initialTheme(): Theme {
 
 // Maps the semantic go() of the views onto real paths: the router is the source
 // of truth for the URL (deep-linkable, shareable, prerendered per page).
+// Every navigation runs inside a View Transition (camera-push language: the
+// page left behind zooms/fades, the new one settles from slight depth); on
+// browsers without support the router falls back to the plain .page-fade.
 function useGo(): GoFn {
   const navigate = useNavigate()
   return useCallback<GoFn>(
     (next, ref, tag) => {
+      const vt = { viewTransition: true }
       if (next === 'story' && ref) {
         navigate(
-          `/story/${encodeURIComponent(ref)}${tag ? `?t=${encodeURIComponent(tag)}` : ''}`
+          `/story/${encodeURIComponent(ref)}${tag ? `?t=${encodeURIComponent(tag)}` : ''}`,
+          vt
         )
       } else if (next === 'gallery') {
-        navigate(ref ? `/gallery/${slugOf(ref)}` : '/gallery')
+        navigate(ref ? `/gallery/${slugOf(ref)}` : '/gallery', vt)
       } else {
         navigate(
           next === 'videos'
@@ -59,7 +64,8 @@ function useGo(): GoFn {
               ? '/contact'
               : next === 'experience'
                 ? '/experience'
-                : '/'
+                : '/',
+          vt
         )
       }
     },

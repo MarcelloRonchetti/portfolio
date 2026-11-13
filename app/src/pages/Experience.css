@@ -1,5 +1,6 @@
-/* /experience — "Le Sale". Fullscreen themed pages with cinematic page
-   transitions: DOM + CSS 3D only (perspective + translateZ), no WebGL.
+/* /experience — "Le Sale". Fullscreen themed pages driven by a continuous
+   camera: JS positions every room in depth (translateZ/opacity/blur) each
+   frame; CSS supplies the themed furniture and the layered parallax.
    Extends the shared base (index.css) without redefining it. */
 
 body[data-immersive='1'] .site-footer {
@@ -22,50 +23,32 @@ body[data-immersive='1'] .site-footer {
   transform-style: preserve-3d;
 }
 
-/* ── Themed pages ───────────────────────────────────────────────────────── */
+/* ── Themed pages: JS-driven camera states ────────────────────────────────
+   transform / opacity / filter / --p are written per frame by the loop; CSS
+   only provides the hidden default (no flash before the first frame). */
 .exp-page {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   background: var(--bg-dark);
+  opacity: 0;
   pointer-events: none;
-  visibility: hidden;
-  transition:
-    transform 1s var(--ease),
-    opacity 0.9s var(--ease),
-    visibility 0s linear 1s;
-  will-change: transform, opacity;
+  will-change: transform, opacity, filter;
 }
 
-.exp-page.is-active {
+.exp-page.is-near {
   pointer-events: auto;
-  visibility: visible;
-  transform: translateZ(0);
-  opacity: 1;
-  transition-delay: 0s;
 }
 
-/* The camera just passed through this room: it swells past the viewer. */
-.exp-page.is-past {
-  visibility: visible;
-  transform: translateZ(420px) scale(1.18);
-  opacity: 0;
-  transition-delay: 0s;
-}
-
-/* The next room waits in depth and flies toward the camera. */
-.exp-page.is-far {
-  visibility: visible;
-  transform: translateZ(-1000px) scale(0.86);
-  opacity: 0;
-  transition-delay: 0s;
-}
-
-/* Themed furniture: one soft accent glow + a floor hairline, nothing loud. */
+/* ── Themed furniture ──────────────────────────────────────────────────────
+   Layers move at different rates with the pointer (--mx/--my on the stage,
+   inherited): the glow drifts opposite, the ghost number follows, the body
+   barely moves — quiet depth, never a gimmick. */
 .exp-room-glow {
   position: absolute;
   inset: 0;
+  transform: translate(calc(var(--mx, 0) * -18px), calc(var(--my, 0) * -14px));
   background:
     radial-gradient(52% 44% at 24% 78%, color-mix(in srgb, var(--room-accent) 34%, transparent) 0%, transparent 72%),
     radial-gradient(40% 34% at 82% 18%, color-mix(in srgb, var(--room-accent) 16%, transparent) 0%, transparent 70%),
@@ -81,14 +64,35 @@ body[data-immersive='1'] .site-footer {
   right: 0;
   bottom: 18%;
   height: 1px;
-  background: linear-gradient(to right, transparent, color-mix(in srgb, var(--room-accent) 55%, transparent) 30%, color-mix(in srgb, var(--room-accent) 55%, transparent) 70%, transparent);
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--room-accent) 55%, transparent) 30%,
+    color-mix(in srgb, var(--room-accent) 55%, transparent) 70%,
+    transparent
+  );
+}
+
+.exp-ghost {
+  position: absolute;
+  right: 3%;
+  bottom: 4%;
+  font-family: var(--font-display);
+  font-size: clamp(180px, 30vw, 340px);
+  line-height: 0.8;
+  color: color-mix(in srgb, var(--room-accent) 13%, transparent);
+  transform: translate(calc(var(--mx, 0) * 12px), calc(var(--my, 0) * 9px));
+  user-select: none;
+  pointer-events: none;
 }
 
 .exp-room-body {
   position: relative;
+  z-index: 1;
   width: min(1200px, 100%);
   margin: 0 auto;
   padding: 96px var(--gutter) 120px; /* top clears the fixed TopBar */
+  transform: translate(calc(var(--mx, 0) * -6px), calc(var(--my, 0) * -5px));
 }
 
 .exp-kicker {
@@ -126,7 +130,20 @@ body[data-immersive='1'] .site-footer {
   color: var(--muted-inverse);
 }
 
-/* ── The room's photographs: real covers, hairline frames ──────────────── */
+/* ── Continuous reveal: elements land as the room becomes active ──────────
+   --p (0..1, set per frame) drives opacity and rise; --lag staggers them. */
+.exp-room-body > * {
+  --lag: 0;
+  opacity: clamp(0, calc(var(--p, 0) - var(--lag) * 0.22), 1);
+  transform: translateY(calc((1 - var(--p, 0)) * 34px * (var(--lag) + 0.4)));
+}
+
+.exp-room-body > *:nth-child(2) { --lag: 0.8; }
+.exp-room-body > *:nth-child(3) { --lag: 1.6; }
+.exp-room-body > *:nth-child(4) { --lag: 2.4; }
+.exp-room-body > *:nth-child(5) { --lag: 3.2; }
+
+/* ── The room's photographs: real covers, layered parallax, hover zoom ──── */
 .exp-shots {
   display: grid;
   grid-template-columns: 5fr 3fr 3fr;
@@ -141,24 +158,43 @@ body[data-immersive='1'] .site-footer {
   cursor: pointer;
 }
 
-.exp-shot img {
+.exp-shot-frame {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--hair-inverse);
+  transition: border-color 0.25s var(--ease);
+}
+
+.exp-shot-frame img {
+  display: block;
   width: 100%;
   aspect-ratio: 3 / 2;
   object-fit: cover;
-  border: 1px solid var(--hair-inverse);
-  transition: border-color 0.25s var(--ease), transform 0.25s var(--ease);
+  transform: translate(
+    calc(var(--mx, 0) * var(--sx, 4px)),
+    calc(var(--my, 0) * var(--sy, 4px))
+  );
+  transition: transform 0.35s var(--ease), border-color 0.25s var(--ease);
 }
 
-.exp-shot:hover img,
-.exp-shot:focus-visible img {
+.exp-shot:hover .exp-shot-frame,
+.exp-shot:focus-visible .exp-shot-frame {
   border-color: var(--room-accent);
-  transform: translateY(-3px);
 }
 
-.exp-shot-1,
-.exp-shot-2 {
-  padding-top: 26px; /* staggered strip — less grid-like, more editorial */
+.exp-shot:hover .exp-shot-frame img,
+.exp-shot:focus-visible .exp-shot-frame img {
+  transform: translate(
+      calc(var(--mx, 0) * var(--sx, 4px)),
+      calc(var(--my, 0) * var(--sy, 4px))
+    )
+    scale(1.06);
 }
+
+/* each photo sits on its own depth layer */
+.exp-shot-0 { --sx: 8px; --sy: 6px; }
+.exp-shot-1 { --sx: 13px; --sy: 10px; padding-top: 26px; }
+.exp-shot-2 { --sx: 5px; --sy: 4px; padding-top: 26px; }
 
 .exp-shot-title {
   font-family: var(--font-serif);
@@ -195,24 +231,6 @@ body[data-immersive='1'] .site-footer {
   color: var(--muted-inverse);
 }
 
-/* Content reveal: the active room's elements land in sequence. */
-.exp-room-body > * {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
-}
-
-.exp-page.is-active .exp-room-body > * {
-  opacity: 1;
-  transform: none;
-}
-
-.exp-page.is-active .exp-room-body > *:nth-child(1) { transition-delay: 0.15s; }
-.exp-page.is-active .exp-room-body > *:nth-child(2) { transition-delay: 0.28s; }
-.exp-page.is-active .exp-room-body > *:nth-child(3) { transition-delay: 0.4s; }
-.exp-page.is-active .exp-room-body > *:nth-child(4) { transition-delay: 0.52s; }
-.exp-page.is-active .exp-room-body > *:nth-child(5) { transition-delay: 0.66s; }
-
 /* ── HUD ────────────────────────────────────────────────────────────────── */
 .exp-hud {
   position: absolute;
@@ -240,6 +258,10 @@ body[data-immersive='1'] .site-footer {
   background: var(--hair-inverse);
   cursor: pointer;
   transition: background 0.3s var(--ease), width 0.3s var(--ease);
+}
+
+.exp-dot:hover {
+  background: var(--muted-inverse);
 }
 
 .exp-dot.is-on {
@@ -292,20 +314,18 @@ body[data-immersive='1'] .site-footer {
   white-space: nowrap;
 }
 
-/* ── Reduced motion: crossfade only, no 3D travel ──────────────────────── */
+/* ── Reduced motion: crossfade only — no travel, no parallax, no blur ───── */
 @media (prefers-reduced-motion: reduce) {
-  .exp-page,
+  .exp-page {
+    will-change: opacity;
+  }
+  .exp-room-glow,
+  .exp-ghost,
+  .exp-room-body,
   .exp-room-body > *,
-  .exp-shot img {
-    transition-property: opacity;
-    transition-duration: 0.2s;
-  }
-  .exp-page.is-past,
-  .exp-page.is-far {
+  .exp-shot-frame img {
     transform: none;
-  }
-  .exp-room-body > * {
-    transform: none;
+    transition: none;
   }
 }
 
@@ -317,6 +337,9 @@ body[data-immersive='1'] .site-footer {
   }
   .exp-title {
     font-size: clamp(44px, 12vw, 72px);
+  }
+  .exp-ghost {
+    font-size: clamp(120px, 34vw, 200px);
   }
   .exp-shots {
     grid-template-columns: 1fr 1fr;

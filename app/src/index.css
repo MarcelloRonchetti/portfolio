@@ -155,6 +155,30 @@ button:disabled { cursor: default; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ─── route transitions (View Transitions API) ───
+   Ogni navigazione di go() gira dentro document.startViewTransition:
+   la camera spinge attraverso la pagina che si lascia (zoom + fade) e la
+   nuova si assesta da una leggera profondità — lo stesso linguaggio di
+   motion di Le Sale. I browser senza supporto restano sul .page-fade qui
+   sopra (e dentro i VT il page-fade si spegne per non raddoppiare il moto). */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: routeOut .48s var(--ease) both;
+  }
+  ::view-transition-new(root) {
+    animation: routeIn .52s var(--ease) both;
+  }
+  @keyframes routeOut {
+    to { opacity: 0; transform: scale(1.05) translateY(-1.2%); }
+  }
+  @keyframes routeIn {
+    from { opacity: 0; transform: scale(.982) translateY(1%); }
+  }
+  @supports (view-transition-name: none) {
+    .page-fade { animation: none; }
+  }
+}
+
 /* Casa globale del dissolve dei lightbox: i blocchi lightbox/video-lightbox
    (ripolcati nelle pagine) vi fanno riferimento e devono trovarlo qui. */
 @keyframes lightboxDissolve {
