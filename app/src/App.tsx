@@ -10,7 +10,7 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { DATA, slugOf } from './lib/data'
-import type { GoFn } from './lib/data'
+import type { GoFn, Route as SiteRoute } from './lib/data'
 import TopBar from './components/TopBar'
 import { Cover } from './pages/Cover'
 import { Gallery, PhotoStory } from './pages/Gallery'
@@ -241,6 +241,89 @@ function AppShell() {
     location.pathname.startsWith('/videos') ||
     location.pathname.startsWith('/room') ||
     location.pathname.startsWith('/experience')
+
+  // ── Site carousel ─────────────────────────────────────────────────────────
+  // The main routes read as one continuous carousel (the reference site's
+  // feel): wheel/swipe at the very top/bottom of a page moves to the adjacent
+  // route with a View Transition, while the middle of a page scrolls
+  // normally. /experience, /story and /room are out — they have their own
+  // cameras and gesture surfaces.
+  useEffect(() => {
+    if (
+      location.pathname.startsWith('/experience') ||
+      location.pathname.startsWith('/story') ||
+      location.pathname.startsWith('/room')
+    ) {
+      return
+    }
+    const ORDER: SiteRoute[] = ['cover', 'gallery', 'videos', 'contact']
+    const current = ORDER.findIndex((r) =>
+      r === 'cover'
+        ? location.pathname === '/'
+        : location.pathname.startsWith('/' + r)
+    )
+    if (current < 0) return
+
+    const atTop = () => window.scrollY <= 2
+    const atBottom = () =>
+      window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
+    const blocked = () =>
+      document.querySelector('[aria-modal="true"], .lightbox, .video-lightbox')
+
+    let acc = 0
+    let lastWheel = 0
+    let lockUntil = 0
+    let touchStartY: number | null = null
+
+    const move = (dir: 1 | -1) => {
+      const nextIdx = (current + dir + ORDER.length) % ORDER.length
+      go(ORDER[nextIdx])
+    }
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || blocked()) return
+      const now = performance.now()
+      if (now < lockUntil) return
+      if (now - lastWheel > 180) acc = 0
+      lastWheel = now
+      acc += e.deltaY
+      // a deliberate flick (~2 detents) at a boundary turns the page; the
+      // cover is the carousel start — its flick goes forward right away
+      // (the footer would otherwise make the page "scrollable" by ~100px)
+      const canDown = current === 0 ? true : atBottom()
+      if (acc >= 240 && canDown) {
+        acc = 0
+        lockUntil = now + 1100
+        move(1)
+      } else if (acc <= -240 && atTop()) {
+        acc = 0
+        lockUntil = now + 1100
+        move(-1)
+      } else if (acc > 600 || acc < -600) {
+        acc = 0 // keep the buffer bounded without firing
+      }
+    }
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) touchStartY = e.touches[0].clientY
+    }
+    const onTouchEnd = (e: TouchEvent) => {
+      if (touchStartY === null) return
+      const dy = touchStartY - (e.changedTouches[0]?.clientY ?? touchStartY)
+      touchStartY = null
+      const now = performance.now()
+      if (now < lockUntil || blocked()) return
+      if (dy > 90 && atBottom()) move(1)
+      else if (dy < -90 && atTop()) move(-1)
+    }
+
+    window.addEventListener('wheel', onWheel, { passive: true })
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchend', onTouchEnd)
+    return () => {
+      window.removeEventListener('wheel', onWheel)
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [location.pathname, go])
   useEffect(() => {
     document.body.setAttribute('data-section', dark ? 'dark' : 'light')
   }, [dark])
