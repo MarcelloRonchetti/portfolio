@@ -156,49 +156,57 @@ button:disabled { cursor: default; }
 }
 
 /* ─── route transitions (View Transitions API) ───
-   Ogni navigazione di go() gira dentro document.startViewTransition:
-   la camera spinge attraverso la pagina che si lascia (zoom + fade + blur)
-   e la nuova si assesta da una leggera profondità con focus-pull — lo stesso
-   linguaggio di motion di Le Sale. Dietro le istantanee un bagliore bronzeo
-   attraversa lo sfondo (decor del carosello). I browser senza supporto
-   restano sul .page-fade qui sopra (e dentro i VT il page-fade si spegne
-   per non raddoppiare il moto). */
+   "Zoom-through": la camera ACCELERA attraverso la pagina che si lascia
+   (scala 1→2.8 con dissolve nel buio), un istante di vuoto scuro attraversato
+   dal bagliore bronzeo, e la pagina nuova EMERGE dal fondo (scala .24→1 con
+   focus-pull). La vecchia vola SOPRA la nuova che sbuca dal centro — come
+   passare una porta tra due stanze. I browser senza supporto restano sul
+   .page-fade qui sopra (e dentro i VT il page-fade si spegne). */
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition {
-    background: linear-gradient(
-      115deg,
-      transparent 40%,
-      rgba(154, 123, 80, 0.2) 49%,
-      rgba(194, 166, 120, 0.24) 51%,
-      transparent 62%
-    );
-    background-size: 240% 100%;
-    background-position: -120% 0;
-    animation: routeSweep 0.6s var(--ease) both;
+    /* il vuoto tra le stanze: velo scuro + sweep bronzeo */
+    background:
+      linear-gradient(
+        115deg,
+        transparent 38%,
+        rgba(154, 123, 80, 0.26) 49%,
+        rgba(194, 166, 120, 0.3) 51%,
+        transparent 62%
+      ),
+      radial-gradient(120% 90% at 50% 45%, rgba(10, 9, 7, 0) 0%, rgba(10, 9, 7, 0.6) 74%);
+    background-size: 100% 100%, 240% 100%;
+    background-position: 0 0, -120% 0;
+    animation:
+      vtVoid 0.8s var(--ease) both,
+      routeSweep 0.8s linear both;
   }
   ::view-transition-old(root) {
-    animation: routeOut .48s var(--ease) both;
+    z-index: 2; /* la pagina abbandonata inghiotte la nuova che sbuca */
+    animation: routeThrough 0.55s cubic-bezier(0.55, 0, 0.85, 0.36) both;
   }
   ::view-transition-new(root) {
-    animation: routeIn .52s var(--ease) both;
+    z-index: 1;
+    animation: routeEmerge 0.72s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
   }
-  @keyframes routeOut {
-    to {
-      opacity: 0;
-      transform: scale(1.05) translateY(-1.2%);
-      filter: blur(3px) brightness(.92);
-    }
+  @keyframes routeThrough {
+    0% { opacity: 1; transform: scale(1); filter: brightness(1) blur(0); }
+    45% { opacity: 1; transform: scale(1.32); filter: brightness(0.75) blur(1.5px); }
+    100% { opacity: 0; transform: scale(2.8); filter: brightness(0.1) blur(16px); }
   }
-  @keyframes routeIn {
-    from {
-      opacity: 0;
-      transform: scale(.982) translateY(1%);
-      filter: blur(2.5px);
-    }
+  @keyframes routeEmerge {
+    0% { opacity: 0; transform: scale(0.24) translateY(1.5%); filter: brightness(0.25) blur(18px); }
+    50% { opacity: 1; }
+    78% { filter: brightness(1.04) blur(0.5px); }
+    100% { opacity: 1; transform: scale(1); filter: brightness(1) blur(0); }
+  }
+  @keyframes vtVoid {
+    0% { background-color: rgba(10, 9, 7, 0); }
+    35%, 62% { background-color: rgba(10, 9, 7, 0.78); }
+    100% { background-color: rgba(10, 9, 7, 0); }
   }
   @keyframes routeSweep {
-    from { background-position: -120% 0; }
-    to { background-position: 240% 0; }
+    from { background-position: 0 0, -120% 0; }
+    to { background-position: 0 0, 240% 0; }
   }
   @supports selector(html:active-view-transition *) {
     /* Inside a running transition the inner crossfade would double the motion;

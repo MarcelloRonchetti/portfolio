@@ -11,6 +11,7 @@ import {
 } from 'react-router-dom'
 import { DATA, slugOf } from './lib/data'
 import type { GoFn, Route as SiteRoute } from './lib/data'
+import { vtNavigate } from './lib/vtNavigate'
 import TopBar from './components/TopBar'
 import { Cover } from './pages/Cover'
 import { Gallery, PhotoStory } from './pages/Gallery'
@@ -41,31 +42,30 @@ function initialTheme(): Theme {
 
 // Maps the semantic go() of the views onto real paths: the router is the source
 // of truth for the URL (deep-linkable, shareable, prerendered per page).
-// Every navigation runs inside a View Transition (camera-push language: the
-// page left behind zooms/fades, the new one settles from slight depth); on
-// browsers without support the router falls back to the plain .page-fade.
+// Every navigation runs inside a manual View Transition (vtNavigate — the
+// router's own viewTransition option never fired the API here): the camera
+// passes through the page being left into the new one.
 function useGo(): GoFn {
   const navigate = useNavigate()
   return useCallback<GoFn>(
     (next, ref, tag) => {
-      const vt = { viewTransition: true }
       if (next === 'story' && ref) {
-        navigate(
-          `/story/${encodeURIComponent(ref)}${tag ? `?t=${encodeURIComponent(tag)}` : ''}`,
-          vt
+        vtNavigate(
+          navigate,
+          `/story/${encodeURIComponent(ref)}${tag ? `?t=${encodeURIComponent(tag)}` : ''}`
         )
       } else if (next === 'gallery') {
-        navigate(ref ? `/gallery/${slugOf(ref)}` : '/gallery', vt)
+        vtNavigate(navigate, ref ? `/gallery/${slugOf(ref)}` : '/gallery')
       } else {
-        navigate(
+        vtNavigate(
+          navigate,
           next === 'videos'
             ? '/videos'
             : next === 'contact'
               ? '/contact'
               : next === 'experience'
                 ? '/experience'
-                : '/',
-          vt
+                : '/'
         )
       }
     },
@@ -307,12 +307,12 @@ function AppShell() {
       const canDown = current === 0 ? true : atBottom()
       if (acc >= 240 && canDown) {
         acc = 0
-        accRef.lockUntil = now + 650 // VT (~520ms) + margine; l'armed-ref gestisce la coda
+        accRef.lockUntil = now + 900 // zoom-through VT (~820ms) + margine
         accRef.navAt = now
         move(1)
       } else if (acc <= -240 && atTop()) {
         acc = 0
-        accRef.lockUntil = now + 650
+        accRef.lockUntil = now + 900
         accRef.navAt = now
         move(-1)
       } else if (acc > 600 || acc < -600) {
