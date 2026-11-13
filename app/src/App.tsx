@@ -22,7 +22,7 @@ import { categories, eventById, firstEventByTag } from './lib/events'
 import { useDriveContent } from './hooks/useDriveContent'
 import { useCvDownload } from './hooks/useCvDownload'
 
-// The 3D room pays for three.js in its own chunk — only its visitors load it.
+// The rooms page pays for its chunk only when someone visits it.
 const Experience = lazy(() => import('./pages/Experience'))
 
 type Theme = 'day' | 'night'
@@ -136,7 +136,9 @@ function GalleryRoute({ go }: { go: GoFn }) {
   // Static-category URLs (and the bare /gallery) never block on Drive.
   const driveSettled = !drive.configured || drive.content !== null || drive.error !== null
   useEffect(() => {
-    if (cat && !requested && driveSettled && !drive.error) navigate('/gallery', { replace: true })
+    if (cat && !requested && driveSettled && !drive.error) {
+      navigate('/gallery', { replace: true, viewTransition: true })
+    }
   }, [cat, requested, driveSettled, drive.error, navigate])
 
   const driveCollections = (drive.content?.photoCollections ?? []).filter(

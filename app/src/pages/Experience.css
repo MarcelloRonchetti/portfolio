@@ -151,6 +151,11 @@ body[data-immersive='1'] .site-footer {
   margin-top: 34px;
 }
 
+/* two-shot rooms don't leave a dead third column */
+.exp-shots.is-two {
+  grid-template-columns: 5fr 4fr;
+}
+
 .exp-shot {
   display: flex;
   flex-direction: column;
@@ -162,6 +167,7 @@ body[data-immersive='1'] .site-footer {
   display: block;
   overflow: hidden;
   border: 1px solid var(--hair-inverse);
+  background: var(--frame-bg-dark);
   transition: border-color 0.25s var(--ease);
 }
 
@@ -246,26 +252,46 @@ body[data-immersive='1'] .site-footer {
 
 .exp-hud-dots {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   justify-content: center;
 }
 
+/* The line is drawn by the ::after so the button itself keeps a 24px-tall
+   hit target (WCAG 2.5.8); .exp-hud is pointer-events:none, so the dot must
+   re-enable it explicitly. */
 .exp-dot {
-  width: 26px;
-  height: 2px;
+  position: relative;
+  width: 30px;
+  height: 24px;
   padding: 0;
   border: none;
-  background: var(--hair-inverse);
+  background: transparent;
   cursor: pointer;
-  transition: background 0.3s var(--ease), width 0.3s var(--ease);
+  pointer-events: auto;
 }
 
-.exp-dot:hover {
+.exp-dot::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: var(--hair-inverse);
+  transition: background 0.3s var(--ease);
+}
+
+.exp-dot:hover::after {
   background: var(--muted-inverse);
 }
 
 .exp-dot.is-on {
   width: 44px;
+}
+
+.exp-dot.is-on::after {
+  background: var(--dot-accent, var(--accent-inverse));
 }
 
 .exp-hud-room {
@@ -302,8 +328,7 @@ body[data-immersive='1'] .site-footer {
   color: var(--muted-inverse);
 }
 
-/* Screen-reader doors (rooms list + live announcements). */
-.exp-sr,
+/* Live announcements for assistive tech. */
 .exp-sr-live {
   position: absolute;
   width: 1px;
@@ -329,26 +354,58 @@ body[data-immersive='1'] .site-footer {
   }
 }
 
-/* ── Small screens: photos stack, title shrinks ────────────────────────── */
+/* ── Small screens: align to start, compact the rhythm — a centered 900px
+   room body inside a 100dvh overflow-hidden stage clips the title off-screen
+   and collides with the HUD band. On phones a room shows ONE large photo:
+   three stacked covers can never fit 100dvh without overlapping the HUD. ── */
 @media (max-width: 720px) {
+  .exp-page {
+    align-items: flex-start;
+  }
   .exp-room-body {
-    padding-top: 84px;
-    padding-bottom: 140px;
+    padding-top: 76px;
+    padding-bottom: 118px;
   }
   .exp-title {
-    font-size: clamp(44px, 12vw, 72px);
-  }
-  .exp-ghost {
-    font-size: clamp(120px, 34vw, 200px);
+    font-size: clamp(40px, 11vw, 64px);
+    margin: 10px 0 8px;
   }
   .exp-shots {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 20px;
   }
-  .exp-shot-0 {
-    grid-column: 1 / -1;
+  .exp-shot-frame img {
+    aspect-ratio: 16 / 10;
   }
   .exp-shot-1,
   .exp-shot-2 {
-    padding-top: 0;
+    display: none;
+  }
+  .exp-shot-title {
+    font-size: 15px;
+  }
+  .exp-cta {
+    margin-top: 18px;
+  }
+}
+
+/* short landscape viewports (phones rotated): same treatment */
+@media (max-height: 700px) and (min-width: 721px) {
+  .exp-page {
+    align-items: flex-start;
+  }
+  .exp-room-body {
+    padding-top: 84px;
+    padding-bottom: 118px;
+  }
+  .exp-title {
+    font-size: clamp(44px, 6vw, 72px);
+  }
+  .exp-shots {
+    margin-top: 22px;
+  }
+  .exp-shot-frame img {
+    aspect-ratio: 16 / 9;
   }
 }

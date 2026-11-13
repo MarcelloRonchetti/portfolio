@@ -75,10 +75,18 @@ const buildTopics = (): Topic[] => {
   const themed = [...map.values()].filter((t) => t.events.length >= 2)
   const strays = [...map.values()].filter((t) => t.events.length < 2).flatMap((t) => t.events)
   if (strays.length > 0) {
-    themed.push({ key: 'varie', label: 'Varie', accent: '#9a7b50', events: strays })
+    // key guard: a category literally named "Varie" must not collide
+    const key = map.has('varie') ? 'varie-alt' : 'varie'
+    themed.push({ key, label: 'Varie', accent: '#9a7b50', events: strays })
   }
   return themed
 }
+
+// Room shots prefer the first photo AFTER the cover: IG collages live in the
+// cover (AGENTS.md — giunzioni a più pannelli) while photos[1] is a single
+// panel; manual events without a cover in `photos` just fall back to it.
+const shotUrl = (e: Event) =>
+  e.photos.length > 1 ? photoUrl(e, e.photos[1] || e.cover) : photoUrl(e, e.cover)
 
 export default function Experience({ go }: { go: GoFn }) {
   const topics = useMemo(() => buildTopics(), [])
@@ -94,6 +102,18 @@ export default function Experience({ go }: { go: GoFn }) {
   const stageRef = useRef<HTMLDivElement>(null)
   const mxTRef = useRef(0)
   const myTRef = useRef(0)
+  // Live preference: flipping the OS setting must not require a remount.
+  const reducedRef = useRef(false)
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    if (!mq) return
+    const apply = () => {
+      reducedRef.current = mq.matches
+    }
+    apply()
+    mq.addEventListener?.('change', apply)
+    return () => mq.removeEventListener?.('change', apply)
+  }, [])
   const goRef = useRef(go)
   useEffect(() => {
     goRef.current = go
@@ -113,7 +133,6 @@ export default function Experience({ go }: { go: GoFn }) {
   // One rAF positions every room in depth from pos; React state only tracks
   // the rounded room for the HUD, dots and announcements.
   useEffect(() => {
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
     let raf = 0
     let last = performance.now()
     let mx = 0
@@ -154,6 +173,7 @@ export default function Experience({ go }: { go: GoFn }) {
           return
         }
         if (el.style.visibility !== 'visible') el.style.visibility = 'visible'
+        const reduced = reducedRef.current
         const z = reduced ? 0 : -d * DEPTH
         const scale = reduced ? 1 : 1 - Math.min(ad * 0.09, 0.2)
         const blur = reduced ? 0 : Math.min(ad * 6, 9)
@@ -261,6 +281,9 @@ export default function Experience({ go }: { go: GoFn }) {
                 pageRefs.current[i] = el
               }}
               className={`exp-page${i === room ? ' is-near' : ''}`}
+              // inert removes far rooms from the tab order and makes the
+              // aria-hidden honest (no focus stranded in a hidden subtree)
+              inert={i !== room || undefined}
               aria-hidden={i !== room || undefined}
               style={{ ['--room-accent' as string]: t.accent }}
             >
@@ -277,7 +300,9 @@ export default function Experience({ go }: { go: GoFn }) {
                   {t.events.length} {t.events.length === 1 ? 'raccolta' : 'raccolte'} ·{' '}
                   {t.events.reduce((n, e) => n + e.photos.length, 0)} foto
                 </p>
-                <div className="exp-shots">
+                <div
+                  className={`exp-shots${t.events.length === 2 ? ' is-two' : ''}`}
+                >
                   {t.events.slice(0, 3).map((e, k) => (
                     <Clickable
                       key={e.id}
@@ -285,12 +310,11 @@ export default function Experience({ go }: { go: GoFn }) {
                       onClick={() => goRef.current('story', e.id)}
                     >
                       <span className="exp-shot-frame">
-                        <img
-                          src={photoUrl(e, e.cover)}
-                          alt={e.title}
-                          loading={i === 0 ? 'eager' : 'lazy'}
-                          decoding="async"
-                        />
+                        {/* mounted only when the camera is near: lazy never
+                            fires on absolutely-positioned rooms */}
+                        {Math.abs(i - room) <= 1 && (
+                          <img src={shotUrl(e)} alt={e.title} decoding="async" />
+                        )}
                       </span>
                       <span className="exp-shot-title">{e.title}</span>
                     </Clickable>
@@ -313,26 +337,16 @@ export default function Experience({ go }: { go: GoFn }) {
         })}
       </div>
 
-      {/* Screen-reader door into the same content. */}
-      <nav className="exp-sr" aria-label="Sale tematiche">
-        {topics.map((t) => (
-          <button key={t.key} type="button" onClick={() => stepTo(topics.indexOf(t))}>
-            {t.label}
-          </button>
-        ))}
-      </nav>
-
       <div className="exp-hud">
-        <div className="exp-hud-dots" role="tablist" aria-label="Sale">
+        <div className="exp-hud-dots" aria-label="Sale">
           {topics.map((t, i) => (
             <button
               key={t.key}
               type="button"
-              role="tab"
-              aria-selected={i === room}
-              aria-label={`Sala ${i + 1}: ${t.label}`}
+              aria-current={i === room ? 'true' : undefined}
+              aria-label={`Vai alla sala ${i + 1}: ${t.label}`}
               className={`exp-dot${i === room ? ' is-on' : ''}`}
-              style={i === room ? { background: t.accent } : undefined}
+              style={i === room ? { ['--dot-accent' as string]: t.accent } : undefined}
               onClick={() => stepTo(i)}
             />
           ))}

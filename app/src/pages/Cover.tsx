@@ -4,8 +4,8 @@ import { DATA } from '../lib/data'
 import { featuredEvent, photoUrl } from '../lib/events'
 import './Cover.css'
 
-// Warms the lazy /experience chunk (three.js) before the first click — the
-// link then lands on the room with zero extra wait.
+// Warms the lazy /experience chunk before the first click — the link then
+// lands on the rooms with zero extra wait.
 const prefetchExperience = () => {
   void import('./Experience')
 }

@@ -350,5 +350,5 @@ if (!shellHtml.includes('property="og:title"')) {
 }
 
 console.log(
-  `seo: sitemap ${prunable.length} eventi + ${categories.length} categorie; ${prunable.length + categories.length + 3} pagine prerenderizzate; og:image da ${heroImage.split('/').slice(-2).join('/')}`
+  `seo: sitemap ${prunable.length} eventi + ${categories.length} categorie; ${prunable.length + categories.length + 4} pagine prerenderizzate; og:image da ${heroImage.split('/').slice(-2).join('/')}`
 )

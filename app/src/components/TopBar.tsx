@@ -23,10 +23,12 @@ export default function TopBar({
 }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  // Same camera-push language as go(): header navigation never hard-cuts.
+  const vt = { viewTransition: true }
 
   return (
     <header className="site-header">
-      <button className="brand" onClick={() => navigate('/')}>
+      <button className="brand" onClick={() => navigate('/', vt)}>
         {DATA.identity.name}
       </button>
       <nav aria-label="Navigazione principale">
@@ -34,7 +36,7 @@ export default function TopBar({
           <button
             key={it.path}
             data-active={it.active(pathname) || undefined}
-            onClick={() => navigate(it.path)}
+            onClick={() => navigate(it.path, vt)}
           >
             {it.label}
           </button>

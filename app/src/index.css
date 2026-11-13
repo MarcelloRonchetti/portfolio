@@ -175,7 +175,12 @@ button:disabled { cursor: default; }
     from { opacity: 0; transform: scale(.982) translateY(1%); }
   }
   @supports (view-transition-name: none) {
-    .page-fade { animation: none; }
+    /* Inside a running transition the inner crossfade would double the motion;
+       outside one (header navigations bypassing go(), redirects) it still
+       plays. :active-view-transition matches only while a VT is running. */
+    html:active-view-transition .page-fade {
+      animation: none;
+    }
   }
 }
 
