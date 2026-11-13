@@ -1,0 +1,331 @@
+/* /experience — "Le Sale". Fullscreen themed pages with cinematic page
+   transitions: DOM + CSS 3D only (perspective + translateZ), no WebGL.
+   Extends the shared base (index.css) without redefining it. */
+
+body[data-immersive='1'] .site-footer {
+  display: none;
+}
+
+/* ── Stage ──────────────────────────────────────────────────────────────── */
+.exp {
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-dark);
+}
+
+/* absolute (never fixed): a fixed descendant of .page-fade would be centered
+   on the document — the containing-block trap of the a784d72 fix. */
+.exp-stage {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+/* ── Themed pages ───────────────────────────────────────────────────────── */
+.exp-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  background: var(--bg-dark);
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    transform 1s var(--ease),
+    opacity 0.9s var(--ease),
+    visibility 0s linear 1s;
+  will-change: transform, opacity;
+}
+
+.exp-page.is-active {
+  pointer-events: auto;
+  visibility: visible;
+  transform: translateZ(0);
+  opacity: 1;
+  transition-delay: 0s;
+}
+
+/* The camera just passed through this room: it swells past the viewer. */
+.exp-page.is-past {
+  visibility: visible;
+  transform: translateZ(420px) scale(1.18);
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+/* The next room waits in depth and flies toward the camera. */
+.exp-page.is-far {
+  visibility: visible;
+  transform: translateZ(-1000px) scale(0.86);
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+/* Themed furniture: one soft accent glow + a floor hairline, nothing loud. */
+.exp-room-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(52% 44% at 24% 78%, color-mix(in srgb, var(--room-accent) 34%, transparent) 0%, transparent 72%),
+    radial-gradient(40% 34% at 82% 18%, color-mix(in srgb, var(--room-accent) 16%, transparent) 0%, transparent 70%),
+    linear-gradient(to top, rgba(20, 18, 15, 0.9), transparent 34%),
+    linear-gradient(to bottom, rgba(20, 18, 15, 0.75), transparent 26%);
+}
+
+.exp-room-glow::after {
+  /* the "floor line" of the room — one hairline, room accent */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, color-mix(in srgb, var(--room-accent) 55%, transparent) 30%, color-mix(in srgb, var(--room-accent) 55%, transparent) 70%, transparent);
+}
+
+.exp-room-body {
+  position: relative;
+  width: min(1200px, 100%);
+  margin: 0 auto;
+  padding: 96px var(--gutter) 120px; /* top clears the fixed TopBar */
+}
+
+.exp-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+}
+
+.exp-kicker::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 1px;
+  background: var(--room-accent);
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+.exp-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(56px, 9vw, 120px);
+  line-height: 0.98;
+  margin: 14px 0 10px;
+  color: var(--ink-inverse);
+}
+
+.exp-meta {
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+}
+
+/* ── The room's photographs: real covers, hairline frames ──────────────── */
+.exp-shots {
+  display: grid;
+  grid-template-columns: 5fr 3fr 3fr;
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.exp-shot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.exp-shot img {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border: 1px solid var(--hair-inverse);
+  transition: border-color 0.25s var(--ease), transform 0.25s var(--ease);
+}
+
+.exp-shot:hover img,
+.exp-shot:focus-visible img {
+  border-color: var(--room-accent);
+  transform: translateY(-3px);
+}
+
+.exp-shot-1,
+.exp-shot-2 {
+  padding-top: 26px; /* staggered strip — less grid-like, more editorial */
+}
+
+.exp-shot-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  color: var(--ink-inverse);
+  opacity: 0.85;
+}
+
+.exp-cta {
+  margin-top: 30px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.exp-cta .btn {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--room-accent) 70%, var(--ink-inverse));
+  color: var(--ink-inverse);
+}
+
+.exp-cta .btn:hover,
+.exp-cta .btn:focus-visible {
+  background: var(--room-accent);
+  border-color: var(--room-accent);
+  color: var(--accent-contrast);
+}
+
+.exp-cta-note {
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+}
+
+/* Content reveal: the active room's elements land in sequence. */
+.exp-room-body > * {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+}
+
+.exp-page.is-active .exp-room-body > * {
+  opacity: 1;
+  transform: none;
+}
+
+.exp-page.is-active .exp-room-body > *:nth-child(1) { transition-delay: 0.15s; }
+.exp-page.is-active .exp-room-body > *:nth-child(2) { transition-delay: 0.28s; }
+.exp-page.is-active .exp-room-body > *:nth-child(3) { transition-delay: 0.4s; }
+.exp-page.is-active .exp-room-body > *:nth-child(4) { transition-delay: 0.52s; }
+.exp-page.is-active .exp-room-body > *:nth-child(5) { transition-delay: 0.66s; }
+
+/* ── HUD ────────────────────────────────────────────────────────────────── */
+.exp-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  padding: 76px var(--gutter) 26px; /* top clears the fixed TopBar */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.exp-hud-dots {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.exp-dot {
+  width: 26px;
+  height: 2px;
+  padding: 0;
+  border: none;
+  background: var(--hair-inverse);
+  cursor: pointer;
+  transition: background 0.3s var(--ease), width 0.3s var(--ease);
+}
+
+.exp-dot.is-on {
+  width: 44px;
+}
+
+.exp-hud-room {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+}
+
+.exp-hud-back {
+  align-self: flex-end;
+  pointer-events: auto;
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+  cursor: pointer;
+  transition: color 0.2s var(--ease);
+}
+
+.exp-hud-back:hover,
+.exp-hud-back:focus-visible {
+  color: var(--ink-inverse);
+}
+
+.exp-hud-key {
+  margin-left: 6px;
+  padding: 2px 6px;
+  border: 1px solid var(--hair-inverse);
+  font-size: var(--t-micro);
+  color: var(--muted-inverse);
+}
+
+/* Screen-reader doors (rooms list + live announcements). */
+.exp-sr,
+.exp-sr-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Reduced motion: crossfade only, no 3D travel ──────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .exp-page,
+  .exp-room-body > *,
+  .exp-shot img {
+    transition-property: opacity;
+    transition-duration: 0.2s;
+  }
+  .exp-page.is-past,
+  .exp-page.is-far {
+    transform: none;
+  }
+  .exp-room-body > * {
+    transform: none;
+  }
+}
+
+/* ── Small screens: photos stack, title shrinks ────────────────────────── */
+@media (max-width: 720px) {
+  .exp-room-body {
+    padding-top: 84px;
+    padding-bottom: 140px;
+  }
+  .exp-title {
+    font-size: clamp(44px, 12vw, 72px);
+  }
+  .exp-shots {
+    grid-template-columns: 1fr 1fr;
+  }
+  .exp-shot-0 {
+    grid-column: 1 / -1;
+  }
+  .exp-shot-1,
+  .exp-shot-2 {
+    padding-top: 0;
+  }
+}

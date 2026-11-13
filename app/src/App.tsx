@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, lazy, Suspense } from 'react'
 import {
   BrowserRouter,
   Navigate,
@@ -21,6 +21,9 @@ import RoomPage from './pages/Room'
 import { categories, eventById, firstEventByTag } from './lib/events'
 import { useDriveContent } from './hooks/useDriveContent'
 import { useCvDownload } from './hooks/useCvDownload'
+
+// The 3D room pays for three.js in its own chunk — only its visitors load it.
+const Experience = lazy(() => import('./pages/Experience'))
 
 type Theme = 'day' | 'night'
 
@@ -49,7 +52,15 @@ function useGo(): GoFn {
       } else if (next === 'gallery') {
         navigate(ref ? `/gallery/${slugOf(ref)}` : '/gallery')
       } else {
-        navigate(next === 'videos' ? '/videos' : next === 'contact' ? '/contact' : '/')
+        navigate(
+          next === 'videos'
+            ? '/videos'
+            : next === 'contact'
+              ? '/contact'
+              : next === 'experience'
+                ? '/experience'
+                : '/'
+        )
       }
     },
     [navigate]
@@ -220,7 +231,8 @@ function AppShell() {
     location.pathname.startsWith('/gallery') ||
     location.pathname.startsWith('/story') ||
     location.pathname.startsWith('/videos') ||
-    location.pathname.startsWith('/room')
+    location.pathname.startsWith('/room') ||
+    location.pathname.startsWith('/experience')
   useEffect(() => {
     document.body.setAttribute('data-section', dark ? 'dark' : 'light')
   }, [dark])
@@ -246,6 +258,14 @@ function AppShell() {
           <Route path="/videos" element={<Videos />} />
           <Route path="/contact" element={<Contact cv={cv} />} />
           <Route path="/room/:roomId" element={<RoomPage />} />
+          <Route
+            path="/experience"
+            element={
+              <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#14120f' }} aria-hidden="true" />}>
+                <Experience go={go} />
+              </Suspense>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

@@ -53,6 +53,10 @@
    the brand bronze, like every other interactive element. */
 .hero-cta {
   margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
 }
 .hero-content .btn {
   background: transparent;
@@ -67,6 +71,30 @@
 }
 /* The global bronze outline is too dim over a photo. */
 .hero-content .btn:focus-visible {
+  outline-color: var(--accent-inverse);
+}
+
+/* The discreet 3D-room entry: a mono ghost link under the CTA, kept out of
+   the TopBar nav on purpose. */
+.hero-exp {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .55);
+  cursor: pointer;
+  transition: color .2s var(--ease);
+}
+.hero-exp:hover,
+.hero-exp:focus-visible {
+  color: rgba(255, 255, 255, .95);
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+.hero-exp:focus-visible {
   outline-color: var(--accent-inverse);
 }
 

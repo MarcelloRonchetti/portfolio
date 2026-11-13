@@ -266,6 +266,15 @@ page({
         <p>Instagram: <a href="${IDENTITY.instagram}">${escHtml(IDENTITY.instagram)}</a></p>
         <p>TikTok: <a href="${IDENTITY.tiktok}">${escHtml(IDENTITY.tiktok)}</a></p>`,
 })
+page({
+  dir: 'experience',
+  title: `Le Sale — Esperienza immersiva — ${IDENTITY.name}`,
+  description: `Le sale tematiche di ${IDENTITY.name}, fotografo di sport e motorsport: pagine immersive a tema (Ferrari, Lamborghini, Motorsport…) con transizioni cinematiche tra le fotografie più recenti.`,
+  canonical: `${SITE}/experience/`,
+  jsonLd: siteGraph(),
+  noscript: `<h1>Le Sale</h1>
+        <p>Le sale tematiche di ${escHtml(IDENTITY.name)} richiedono JavaScript. Le raccolte restano consultabili nella <a href="${SITE}/gallery/">galleria</a>.</p>`,
+})
 
 // ── 3. sitemap.xml — pretty URLs only ────────────────────────────────────────
 const entry = (loc, lastmod) =>
@@ -277,6 +286,7 @@ xml += entry(`${SITE}/gallery/`, today)
 for (const cat of categories) xml += entry(`${SITE}/gallery/${slugOf(cat)}/`, cats.get(cat).lastmod)
 xml += entry(`${SITE}/videos/`, today)
 xml += entry(`${SITE}/contact/`, today)
+xml += entry(`${SITE}/experience/`, today)
 for (const e of prunable) xml += entry(`${SITE}/story/${e.id}/`, e.date)
 xml += '</urlset>\n'
 fs.writeFileSync(path.join(DIST, 'sitemap.xml'), xml)

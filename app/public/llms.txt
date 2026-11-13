@@ -8,6 +8,7 @@
 - [Galleria](https://marcelloronchetti.github.io/portfolio/gallery/): tutte le raccolte fotografiche, con coperture reali e conteggio foto per raccolta.
 - [Video](https://marcelloronchetti.github.io/portfolio/videos/): i filmati dell'archivio, in qualità HD (minimo 720p), con player integrato; sezione aggiornata dinamicamente dall'archivio Drive dell'autore.
 - [Contatti](https://marcelloronchetti.github.io/portfolio/contact/): email, Instagram e TikTok ufficiali per commissioni e collaborazioni; include il pulsante per scaricare il CV in PDF.
+- [Le Sale](https://marcelloronchetti.github.io/portfolio/experience/): sale tematiche a schermo intero (Ferrari, Lamborghini, Motorsport…) con transizioni cinematiche tra le fotografie più recenti; raggiungibile anche dal link discreto in copertina.
 
 ## Gallerie per categoria
 

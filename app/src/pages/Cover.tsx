@@ -4,6 +4,12 @@ import { DATA } from '../lib/data'
 import { featuredEvent, photoUrl } from '../lib/events'
 import './Cover.css'
 
+// Warms the lazy /experience chunk (three.js) before the first click — the
+// link then lands on the room with zero extra wait.
+const prefetchExperience = () => {
+  void import('./Experience')
+}
+
 export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
   const featured = featuredEvent
 
@@ -39,6 +45,14 @@ export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
           <div className="hero-cta">
             <button className="btn" onClick={() => go('gallery')}>
               Vedi la galleria
+            </button>
+            <button
+              className="hero-exp"
+              onClick={() => go('experience')}
+              onMouseEnter={prefetchExperience}
+              onFocus={prefetchExperience}
+            >
+              Le sale immersive
             </button>
           </div>
         </div>
