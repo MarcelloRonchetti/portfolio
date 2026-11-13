@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, lazy, Suspense } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react'
 import {
   BrowserRouter,
   Navigate,
@@ -213,6 +213,8 @@ function AppShell() {
   const location = useLocation()
   const go = useGo()
   const [theme, setTheme] = useState<Theme>(initialTheme)
+  // Site-carousel guard state survives route changes (see the effect below).
+  const carouselRef = useRef({ lockUntil: 0, armed: true, navAt: 0, lastDir: 0 as 0 | 1 | -1, lastWheel: 0 })
   // One download state for the whole shell: the header's CV button and the
   // Contact row are two views of the same download.
   const cv = useCvDownload()
@@ -270,33 +272,48 @@ function AppShell() {
     const blocked = () =>
       document.querySelector('[aria-modal="true"], .lightbox, .video-lightbox')
 
+    // Lock + accumulator live in refs: a navigation re-runs this effect, and a
+    // closure-resident lock would die with the very navigation it guards
+    // (one trackpad flick cascaded through the whole carousel).
+    const accRef = carouselRef.current
     let acc = 0
-    let lastWheel = 0
-    let lockUntil = 0
     let touchStartY: number | null = null
 
     const move = (dir: 1 | -1) => {
       const nextIdx = (current + dir + ORDER.length) % ORDER.length
+      carouselRef.current.armed = false
+      carouselRef.current.lastDir = dir
       go(ORDER[nextIdx])
     }
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || blocked()) return
       const now = performance.now()
-      if (now < lockUntil) return
-      if (now - lastWheel > 180) acc = 0
-      lastWheel = now
-      acc += e.deltaY
+      if (now < accRef.lockUntil) return
+      // re-arm after a navigation: same-direction momentum tails must not
+      // re-fire — cross zero or survive a 400ms gap first
+      if (!accRef.armed) {
+        if (now - accRef.navAt > 400) accRef.armed = true
+        else if (accRef.lastDir && acc * accRef.lastDir < 0) accRef.armed = true
+        else return
+      }
+      if (now - accRef.lastWheel > 180) acc = 0
+      accRef.lastWheel = now
+      // Firefox reports lines, not pixels (deltaY ≈ 3 per notch)
+      const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY
+      acc += dy
       // a deliberate flick (~2 detents) at a boundary turns the page; the
       // cover is the carousel start — its flick goes forward right away
       // (the footer would otherwise make the page "scrollable" by ~100px)
       const canDown = current === 0 ? true : atBottom()
       if (acc >= 240 && canDown) {
         acc = 0
-        lockUntil = now + 1100
+        accRef.lockUntil = now + 650 // VT (~520ms) + margine; l'armed-ref gestisce la coda
+        accRef.navAt = now
         move(1)
       } else if (acc <= -240 && atTop()) {
         acc = 0
-        lockUntil = now + 1100
+        accRef.lockUntil = now + 650
+        accRef.navAt = now
         move(-1)
       } else if (acc > 600 || acc < -600) {
         acc = 0 // keep the buffer bounded without firing
@@ -310,18 +327,22 @@ function AppShell() {
       const dy = touchStartY - (e.changedTouches[0]?.clientY ?? touchStartY)
       touchStartY = null
       const now = performance.now()
-      if (now < lockUntil || blocked()) return
+      if (now < accRef.lockUntil || blocked()) return
       if (dy > 90 && atBottom()) move(1)
       else if (dy < -90 && atTop()) move(-1)
     }
 
     window.addEventListener('wheel', onWheel, { passive: true })
     window.addEventListener('touchstart', onTouchStart, { passive: true })
-    window.addEventListener('touchend', onTouchEnd)
+    window.addEventListener('touchend', onTouchEnd, { passive: true })
+    // the carousel owns page turns at the boundaries: no Android pull-to-refresh
+    // colliding with the top-boundary swipe
+    document.body.style.overscrollBehaviorY = 'none'
     return () => {
       window.removeEventListener('wheel', onWheel)
       window.removeEventListener('touchstart', onTouchStart)
       window.removeEventListener('touchend', onTouchEnd)
+      document.body.style.overscrollBehaviorY = ''
     }
   }, [location.pathname, go])
   useEffect(() => {
