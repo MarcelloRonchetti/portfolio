@@ -416,7 +416,7 @@ body[data-immersive='1'] .site-footer {
   }
   .exp-shot-frame img {
     aspect-ratio: 16 / 9;
-    max-height: calc(100dvh - 310px);
+    max-height: calc(100dvh - 325px);
   }
   .exp-shot-title {
     font-size: 14px;
@@ -426,6 +426,14 @@ body[data-immersive='1'] .site-footer {
   }
   .exp-ghost {
     display: none;
+  }
+  /* a 2-shot room never keeps the two-column grid in compact mode */
+  .exp-shots.is-two {
+    grid-template-columns: 1fr;
+  }
+  /* tablet widths need a deeper reserve than phones (wider HUD) */
+  .exp-shot-frame img {
+    max-height: calc(100dvh - 335px);
   }
   /* single-row HUD: the stacked dots+label band would collide with the CTA
      on short screens */
@@ -450,7 +458,7 @@ body[data-immersive='1'] .site-footer {
 
 @media (max-height: 460px) {
   .exp-room-body {
-    padding-top: 52px;
+    padding-top: 64px; /* clears the compressed single-row header */
     padding-bottom: 92px;
   }
   .exp-title {
@@ -461,13 +469,46 @@ body[data-immersive='1'] .site-footer {
     font-size: 11px;
   }
   .exp-shot-frame img {
-    max-height: calc(100dvh - 300px);
+    max-height: calc(100dvh - 310px);
+  }
+  .exp-cta {
+    margin-top: 8px;
   }
 }
 
-/* very narrow portrait phones: the wrapped header is ~100px tall */
-@media (max-width: 360px) {
+/* very narrow portrait phones: the wrapped header is ~100px tall; below
+   620px of height the photo cap deepens so the CTA still clears the HUD */
+@media (max-width: 460px) {
   .exp-room-body {
-    padding-top: 108px;
+    padding-top: 96px;
+  }
+}
+@media (max-width: 460px) and (max-height: 620px) {
+  .exp-shot-frame img {
+    max-height: calc(100dvh - 360px);
+  }
+}
+
+/* ── Desktop / tablet short windows: the round-1 failure mode (centered
+   multi-shot room overflows 100dvh) is alive on mainstream laptop heights
+   (768, 800) — align to start and cap the photos against the space left. ── */
+@media (min-width: 721px) and (max-height: 860px) {
+  .exp-page {
+    align-items: flex-start;
+  }
+  .exp-room-body {
+    padding-top: 84px;
+    padding-bottom: 104px;
+  }
+  .exp-title {
+    font-size: clamp(40px, 5vw, 64px);
+    margin: 10px 0 8px;
+  }
+  .exp-shots {
+    margin-top: 18px;
+  }
+  .exp-shot-frame img {
+    aspect-ratio: 16 / 9;
+    max-height: calc(100dvh - 420px);
   }
 }

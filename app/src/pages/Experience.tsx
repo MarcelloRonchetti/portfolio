@@ -129,20 +129,37 @@ export default function Experience({ go }: { go: GoFn }) {
     [count]
   )
 
-  // ── The camera loop ────────────────────────────────────────────────────────
-  // One rAF positions every room in depth from pos; React state only tracks
-  // the rounded room for the HUD, dots and announcements.
+  // ── The camera loop + one continuous gesture surface ───────────────────────
+  // A single rAF positions every room in depth from pos; React state only
+  // tracks the rounded room for the HUD, dots and announcements. The loop
+  // idles to a stop once everything has settled and any input wakes it —
+  // no forever-running 60fps rewrite on a static page.
   useEffect(() => {
+    const fine = window.matchMedia?.('(pointer: fine)').matches ?? false
     let raf = 0
+    let running = false
+    let idleFrames = 0
     let last = performance.now()
     let mx = 0
     let my = 0
-    const tick = (now: number) => {
+
+    const wake = () => {
+      if (running) return
+      running = true
+      idleFrames = 0
+      last = performance.now()
       raf = requestAnimationFrame(tick)
+    }
+
+    const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.1)
       last = now
-      if (document.hidden) return
+      if (document.hidden) {
+        running = false
+        return
+      }
 
+      const prevPos = posRef.current
       if (snapRef.current !== null) {
         const target = snapRef.current
         posRef.current += (target - posRef.current) * (1 - Math.exp(-dt * SNAP_S))
@@ -194,17 +211,22 @@ export default function Experience({ go }: { go: GoFn }) {
         setRoom(rounded)
         setAnnounce(`Sala ${rounded + 1} di ${count}: ${topics[rounded]?.label ?? ''}`)
       }
-    }
-    raf = requestAnimationFrame((n) => {
-      last = n
-      tick(n)
-    })
-    return () => cancelAnimationFrame(raf)
-  }, [count, topics])
 
-  // ── Input: one continuous gesture surface ─────────────────────────────────
-  useEffect(() => {
-    const fine = window.matchMedia?.('(pointer: fine)').matches ?? false
+      // settle detection: the camera, velocity and parallax are all at rest
+      const settled =
+        Math.abs(posRef.current - prevPos) < 0.0004 &&
+        Math.abs(mxTRef.current - mx) < 0.002 &&
+        Math.abs(myTRef.current - my) < 0.002 &&
+        Math.abs(velRef.current) < 0.001 &&
+        now - lastInputRef.current > IDLE_MS
+      idleFrames = settled ? idleFrames + 1 : 0
+      if (idleFrames > 20) {
+        running = false
+        return // styles are final; the next input calls wake()
+      }
+      raf = requestAnimationFrame(tick)
+    }
+
     const onWheel = (e: WheelEvent) => {
       // ctrl+wheel is the trackpad pinch-zoom — never hijack it (WCAG 1.4.4)
       if (e.ctrlKey) return
@@ -216,6 +238,7 @@ export default function Experience({ go }: { go: GoFn }) {
         Math.min(count - 1, posRef.current + e.deltaY * WHEEL_POS)
       )
       velRef.current += e.deltaY * WHEEL_VEL
+      wake()
     }
     let touchY: number | null = null
     const onTouchStart = (e: TouchEvent) => {
@@ -229,6 +252,7 @@ export default function Experience({ go }: { go: GoFn }) {
       touchY = y
       snapRef.current = null
       lastInputRef.current = performance.now()
+      wake()
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -244,24 +268,34 @@ export default function Experience({ go }: { go: GoFn }) {
       } else if (e.key === 'End') {
         stepTo(count - 1)
       }
+      wake()
     }
     const onPointer = (e: PointerEvent) => {
       mxTRef.current = (e.clientX / window.innerWidth) * 2 - 1
       myTRef.current = (e.clientY / window.innerHeight) * 2 - 1
+      wake()
     }
+    const onVisibility = () => {
+      if (!document.hidden) wake()
+    }
+
     window.addEventListener('wheel', onWheel, { passive: false })
     window.addEventListener('touchstart', onTouchStart, { passive: true })
     window.addEventListener('touchmove', onTouchMove, { passive: false })
     window.addEventListener('keydown', onKey)
     if (fine) window.addEventListener('pointermove', onPointer)
+    document.addEventListener('visibilitychange', onVisibility)
+    wake()
     return () => {
       window.removeEventListener('wheel', onWheel)
       window.removeEventListener('touchstart', onTouchStart)
       window.removeEventListener('touchmove', onTouchMove)
       window.removeEventListener('keydown', onKey)
       if (fine) window.removeEventListener('pointermove', onPointer)
+      document.removeEventListener('visibilitychange', onVisibility)
+      cancelAnimationFrame(raf)
     }
-  }, [count, stepTo])
+  }, [count, topics, stepTo])
 
   // Immersive mode hides the site footer (the page owns wheel/touch).
   useEffect(() => {

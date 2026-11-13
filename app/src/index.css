@@ -1067,3 +1067,42 @@ button:disabled { cursor: default; }
 @media (prefers-reduced-motion: reduce) {
   .room-proofbox { animation: none; }
 }
+
+/* ─── header a riga singola nelle larghezze intermedie ───
+   Il blocco ≤760px qui sopra manda l'header a capo (due righe ~77px): alle
+   larghezze intermedie lo teniamo su UNA riga compressa — le pagine
+   fullscreen (/experience) compensano con padding cieco altrimenti. Deve
+   stare DOPO quel blocco: stessa specificità, vince l'ultimo. */
+@media (max-width: 700px) and (min-width: 461px) {
+  .site-header {
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .site-header .brand {
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .site-header nav {
+    width: auto;
+    gap: 8px;
+  }
+  .site-header nav button {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 540px) and (min-width: 461px) {
+  .site-header .brand {
+    font-size: 13px;
+  }
+  .site-header nav {
+    gap: 6px;
+  }
+  .site-header nav button {
+    font-size: 9px;
+    letter-spacing: 0.04em;
+  }
+}
