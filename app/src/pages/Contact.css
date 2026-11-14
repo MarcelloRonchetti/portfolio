@@ -9,11 +9,14 @@
 
 /* Page scaffold: 120/90 matches the section rhythm of Gallery
    and Videos; min-height keeps the short page from ending
-   mid-air above the footer. */
+   mid-air above the footer. Nel rail la faccia è un pannello
+   sospeso nel vuoto scuro: deve dipingere la sua carta da sé
+   (il body è dark per tutto il rail). */
 .contact-main {
   padding-top: 120px;
   padding-bottom: 90px;
   min-height: 80vh;
+  background: var(--bg);
 }
 .contact-main .container { max-width: 680px; }
 

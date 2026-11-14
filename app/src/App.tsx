@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react'
+import { useCallback, useEffect, useMemo, useState, lazy, Suspense } from 'react'
 import {
   BrowserRouter,
   Navigate,
@@ -9,12 +9,13 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom'
-import { DATA, slugOf } from './lib/data'
-import type { GoFn, Route as SiteRoute } from './lib/data'
+import { DATA, slugOf, isRailPath } from './lib/data'
+import type { GoFn } from './lib/data'
 import { vtNavigate } from './lib/vtNavigate'
 import { consumeStoryHero } from './lib/vtHero'
 import TopBar from './components/TopBar'
 import DustCanvas from './components/DustCanvas'
+import SiteRail3d from './components/SiteRail3d'
 import { usePointerParallax } from './hooks/usePointerParallax'
 import { Cover } from './pages/Cover'
 import { Gallery, PhotoStory } from './pages/Gallery'
@@ -45,23 +46,22 @@ function initialTheme(): Theme {
 
 // Maps the semantic go() of the views onto real paths: the router is the source
 // of truth for the URL (deep-linkable, shareable, prerendered per page).
-// Every navigation runs inside a manual View Transition (vtNavigate — the
-// router's own viewTransition option never fired the API here): the camera
-// passes through the page being left into the new one.
+// Rail → rail (le quattro facce principali): navigate PLANA — la camera del
+// rail È la transizione. Entrare/uscire dal rail (storie, room, /experience):
+// manual View Transition (vtNavigate — l'opzione viewTransition del router non
+// ha mai chiamato l'API qui).
 function useGo(): GoFn {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   return useCallback<GoFn>(
     (next, ref, tag) => {
+      let path: string
       if (next === 'story' && ref) {
-        vtNavigate(
-          navigate,
-          `/story/${encodeURIComponent(ref)}${tag ? `?t=${encodeURIComponent(tag)}` : ''}`
-        )
+        path = `/story/${encodeURIComponent(ref)}${tag ? `?t=${encodeURIComponent(tag)}` : ''}`
       } else if (next === 'gallery') {
-        vtNavigate(navigate, ref ? `/gallery/${slugOf(ref)}` : '/gallery')
+        path = ref ? `/gallery/${slugOf(ref)}` : '/gallery'
       } else {
-        vtNavigate(
-          navigate,
+        path =
           next === 'videos'
             ? '/videos'
             : next === 'contact'
@@ -69,10 +69,11 @@ function useGo(): GoFn {
               : next === 'experience'
                 ? '/experience'
                 : '/'
-        )
       }
+      if (isRailPath(path) && isRailPath(pathname)) navigate(path)
+      else vtNavigate(navigate, path)
     },
-    [navigate]
+    [navigate, pathname]
   )
 }
 
@@ -87,8 +88,7 @@ function safeDecode(value: string): string {
   }
 }
 
-function GalleryRoute({ go }: { go: GoFn }) {
-  const { cat } = useParams()
+function GalleryRoute({ go, cat, active = true }: { go: GoFn; cat?: string; active?: boolean }) {
   const navigate = useNavigate()
   const drive = useDriveContent()
 
@@ -137,12 +137,11 @@ function GalleryRoute({ go }: { go: GoFn }) {
   // wait for it before declaring the slug unknown. An error counts as settled —
   // the page renders the error state with a retry instead of hanging blank.
   // Static-category URLs (and the bare /gallery) never block on Drive.
+  // Il redirect resta nel rail (plano): la camera non deve saltare.
   const driveSettled = !drive.configured || drive.content !== null || drive.error !== null
   useEffect(() => {
     if (cat && !requested && driveSettled && !drive.error) {
-      // Redirect dentro la stessa VT manuale di tutto il sito: l'opzione
-      // viewTransition del router qui non ha mai chiamato l'API.
-      vtNavigate(navigate, '/gallery', { replace: true })
+      navigate('/gallery', { replace: true })
     }
   }, [cat, requested, driveSettled, drive.error, navigate])
 
@@ -193,6 +192,7 @@ function GalleryRoute({ go }: { go: GoFn }) {
       driveError={drive.error}
       onDriveRetry={drive.refresh}
       onCategory={(c) => go('gallery', c)}
+      live={active}
     />
   )
 }
@@ -219,18 +219,55 @@ function StoryRoute({ go }: { go: GoFn }) {
   return <PhotoStory key={decoded} eventId={decoded} tag={tag} go={go} />
 }
 
+// Footer per-faccia del rail: vive DENTRO ogni faccia (la faccia è una pagina
+// intera che scorre); fuori dal rail il footer globale torna di casa sua.
+function SiteFooter() {
+  return (
+    <footer className="site-footer">
+      <span>© {new Date().getFullYear()} {DATA.identity.name}</span>
+      <span>{DATA.identity.location}</span>
+      <a className="link-ext" href={`mailto:${DATA.identity.email}`}>Email</a>
+      <span className="footer-note">
+        Nessun cookie, nessun tracciamento · foto e video dell'archivio serviti dai CDN di Google Drive
+      </span>
+    </footer>
+  )
+}
+
 function AppShell() {
   const location = useLocation()
   const go = useGo()
+  const navigate = useNavigate()
   const [theme, setTheme] = useState<Theme>(initialTheme)
-  // Site-carousel guard state survives route changes (see the effect below).
-  const carouselRef = useRef({ lockUntil: 0, armed: true, navAt: 0, lastDir: 0 as 0 | 1 | -1, lastWheel: 0 })
   // One download state for the whole shell: the header's CV button and the
   // Contact row are two views of the same download.
   const cv = useCvDownload()
   // Parallasse del puntatore: scrive --px/--py su <body> per le pozze
   // (.ambient), l'hero di Cover e i bagliori delle storie.
   usePointerParallax()
+
+  // Il rail 3D è il guscio delle quattro facce principali. Chi viaggia con
+  // prefers-reduced-motion resta sul sito instradato classico (page-fade):
+  // deciso una volta per sessione, al mount.
+  const [railEnabled] = useState(
+    () => !(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
+  )
+  const railActive = railEnabled && isRailPath(location.pathname)
+
+  // Navigazione consapevole del rail (header): rail → rail la camera fa già
+  // la transizione; fuori e dentro il rail passa dalla View Transition.
+  const navTo = useCallback(
+    (path: string) => {
+      if (isRailPath(path) && isRailPath(location.pathname)) navigate(path)
+      else vtNavigate(navigate, path)
+    },
+    [navigate, location.pathname]
+  )
+
+  // La categoria galleria arriva dal path (deep link /gallery/<slug>): fuori
+  // dalle Routes non c'è useParams, si parsa qui.
+  const catMatch = location.pathname.match(/^\/gallery\/([^/]+)/)
+  const catParam = catMatch ? safeDecode(catMatch[1]) : undefined
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -250,114 +287,15 @@ function AppShell() {
 
   // The body follows the section (dark for gallery/story/videos) so route swaps
   // crossfade instead of flashing — see body[data-section] in index.css.
+  // Nel rail il vuoto fra le facce è sempre scuro, copertina inclusa.
   const dark =
+    railActive ||
     location.pathname.startsWith('/gallery') ||
     location.pathname.startsWith('/story') ||
     location.pathname.startsWith('/videos') ||
     location.pathname.startsWith('/room') ||
     location.pathname.startsWith('/experience')
 
-  // ── Site carousel ─────────────────────────────────────────────────────────
-  // The main routes read as one continuous carousel (the reference site's
-  // feel): wheel/swipe at the very top/bottom of a page moves to the adjacent
-  // route with a View Transition, while the middle of a page scrolls
-  // normally. /experience, /story and /room are out — they have their own
-  // cameras and gesture surfaces.
-  useEffect(() => {
-    if (
-      location.pathname.startsWith('/experience') ||
-      location.pathname.startsWith('/story') ||
-      location.pathname.startsWith('/room')
-    ) {
-      return
-    }
-    const ORDER: SiteRoute[] = ['cover', 'gallery', 'videos', 'contact']
-    const current = ORDER.findIndex((r) =>
-      r === 'cover'
-        ? location.pathname === '/'
-        : location.pathname.startsWith('/' + r)
-    )
-    if (current < 0) return
-
-    const atTop = () => window.scrollY <= 2
-    const atBottom = () =>
-      window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
-    const blocked = () =>
-      document.querySelector('[aria-modal="true"], .lightbox, .video-lightbox')
-
-    // Lock + accumulator live in refs: a navigation re-runs this effect, and a
-    // closure-resident lock would die with the very navigation it guards
-    // (one trackpad flick cascaded through the whole carousel).
-    const accRef = carouselRef.current
-    let acc = 0
-    let touchStartY: number | null = null
-
-    const move = (dir: 1 | -1) => {
-      const nextIdx = (current + dir + ORDER.length) % ORDER.length
-      carouselRef.current.armed = false
-      carouselRef.current.lastDir = dir
-      go(ORDER[nextIdx])
-    }
-    const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || blocked()) return
-      const now = performance.now()
-      if (now < accRef.lockUntil) return
-      // re-arm after a navigation: same-direction momentum tails must not
-      // re-fire — cross zero or survive a 400ms gap first
-      if (!accRef.armed) {
-        if (now - accRef.navAt > 400) accRef.armed = true
-        else if (accRef.lastDir && acc * accRef.lastDir < 0) accRef.armed = true
-        else return
-      }
-      if (now - accRef.lastWheel > 180) acc = 0
-      accRef.lastWheel = now
-      // Firefox reports lines, not pixels (deltaY ≈ 3 per notch)
-      const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY
-      acc += dy
-      // a deliberate flick (~2 detents) at a boundary turns the page; the
-      // cover is the carousel start — its flick goes forward right away
-      // (the footer would otherwise make the page "scrollable" by ~100px)
-      const canDown = current === 0 ? true : atBottom()
-      if (acc >= 240 && canDown) {
-        acc = 0
-        accRef.lockUntil = now + 1050 // zoom-through VT (~1.0s) + margine
-        accRef.navAt = now
-        move(1)
-      } else if (acc <= -240 && atTop()) {
-        acc = 0
-        accRef.lockUntil = now + 1050
-        accRef.navAt = now
-        move(-1)
-      } else if (acc > 600 || acc < -600) {
-        acc = 0 // keep the buffer bounded without firing
-      }
-    }
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) touchStartY = e.touches[0].clientY
-    }
-    const onTouchEnd = (e: TouchEvent) => {
-      if (touchStartY === null) return
-      const dy = touchStartY - (e.changedTouches[0]?.clientY ?? touchStartY)
-      touchStartY = null
-      const now = performance.now()
-      if (now < accRef.lockUntil || blocked()) return
-      if (dy > 90 && atBottom()) move(1)
-      else if (dy < -90 && atTop()) move(-1)
-    }
-
-    window.addEventListener('wheel', onWheel, { passive: true })
-    window.addEventListener('touchstart', onTouchStart, { passive: true })
-    window.addEventListener('touchend', onTouchEnd, { passive: true })
-    // the carousel owns page turns at the boundaries: no Android pull-to-refresh
-    // colliding with the top-boundary swipe
-    document.body.style.overscrollBehaviorY = 'none'
-    return () => {
-      window.removeEventListener('wheel', onWheel)
-      window.removeEventListener('touchstart', onTouchStart)
-      window.removeEventListener('touchend', onTouchEnd)
-      document.body.style.overscrollBehaviorY = ''
-    }
-  }, [location.pathname, go])
   useEffect(() => {
     document.body.setAttribute('data-section', dark ? 'dark' : 'light')
   }, [dark])
@@ -373,6 +311,29 @@ function AppShell() {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [location.pathname])
 
+  // Le quattro facce del rail: sempre montate (la faccia uscente resta in
+  // scena mentre la camera se ne va), ognuna chiude con il proprio footer —
+  // tranne la copertina: è un manifesto a tutta faccia, il suo footer sarebbe
+  // irraggiungibile (ogni input in avanti gira la camera) e le info vivono
+  // nella faccia contatti.
+  // La faccia viva (per l'eager/LCP della galleria): stampata dal path al
+  // mount, poi tenuta al passo da SiteRail3d via onActiveChange.
+  const [railFace, setRailFace] = useState<number>(() =>
+    location.pathname.startsWith('/gallery')
+      ? 1
+      : location.pathname.startsWith('/videos')
+        ? 2
+        : location.pathname.startsWith('/contact')
+          ? 3
+          : 0
+  )
+  const railFaces = [
+    <Cover go={go} />,
+    <GalleryRoute go={go} cat={catParam} active={railFace === 1} />,
+    <><Videos /><SiteFooter /></>,
+    <><Contact cv={cv} /><SiteFooter /></>,
+  ]
+
   return (
     <>
       {/* Primo elemento focusabile: la scorciatoia da tastiera salta la
@@ -386,35 +347,32 @@ function AppShell() {
           azzerano mai navigando. */}
       <div className="ambient" aria-hidden="true" />
       <DustCanvas />
-      <TopBar theme={theme} onToggleTheme={toggleTheme} cv={cv} />
-      <div key={location.pathname} className="page-fade" id="contenuto" tabIndex={-1}>
-        <Routes>
-          <Route path="/" element={<Cover go={go} />} />
-          <Route path="/gallery" element={<GalleryRoute go={go} />} />
-          <Route path="/gallery/:cat" element={<GalleryRoute go={go} />} />
-          <Route path="/story/:id" element={<StoryRoute go={go} />} />
-          <Route path="/videos" element={<Videos />} />
-          <Route path="/contact" element={<Contact cv={cv} />} />
-          <Route path="/room/:roomId" element={<RoomPage />} />
-          <Route
-            path="/experience"
-            element={
-              <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#14120f' }} aria-hidden="true" />}>
-                <Experience go={go} />
-              </Suspense>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
-      <footer className="site-footer">
-        <span>© {new Date().getFullYear()} {DATA.identity.name}</span>
-        <span>{DATA.identity.location}</span>
-        <a className="link-ext" href={`mailto:${DATA.identity.email}`}>Email</a>
-        <span className="footer-note">
-          Nessun cookie, nessun tracciamento · foto e video dell'archivio serviti dai CDN di Google Drive
-        </span>
-      </footer>
+      <TopBar theme={theme} onToggleTheme={toggleTheme} cv={cv} navTo={navTo} />
+      {railActive ? (
+        <SiteRail3d faces={railFaces} onActiveChange={setRailFace} />
+      ) : (
+        <div key={location.pathname} className="page-fade" id="contenuto" tabIndex={-1}>
+          <Routes>
+            <Route path="/" element={<Cover go={go} />} />
+            <Route path="/gallery" element={<GalleryRoute go={go} cat={catParam} />} />
+            <Route path="/gallery/:cat" element={<GalleryRoute go={go} cat={catParam} />} />
+            <Route path="/story/:id" element={<StoryRoute go={go} />} />
+            <Route path="/videos" element={<Videos />} />
+            <Route path="/contact" element={<Contact cv={cv} />} />
+            <Route path="/room/:roomId" element={<RoomPage />} />
+            <Route
+              path="/experience"
+              element={
+                <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#14120f' }} aria-hidden="true" />}>
+                  <Experience go={go} />
+                </Suspense>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <SiteFooter />
+        </div>
+      )}
     </>
   )
 }

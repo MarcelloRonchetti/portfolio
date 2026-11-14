@@ -17,15 +17,20 @@ export default function TopBar({
   theme,
   onToggleTheme,
   cv,
+  navTo,
 }: {
   theme: Theme
   onToggleTheme: () => void
   cv: CvState
+  /** Navigazione rail-aware dal guscio (rail → rail = camera; fuori = VT).
+   *  Se assente (non dovrebbe mai, il TopBar vive solo in AppShell) ricade
+   *  sulla View Transition manuale. */
+  navTo?: (path: string) => void
 }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   // Same camera-push language as go(): header navigation never hard-cuts.
-  const vt = (path: string) => vtNavigate(navigate, path)
+  const vt = (path: string) => (navTo ? navTo(path) : vtNavigate(navigate, path))
 
   return (
     <header className="site-header">

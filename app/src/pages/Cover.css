@@ -116,6 +116,12 @@
   }
 }
 
+/* Nel rail l'HUD indice vive in basso a sinistra: il blocco hero si alza
+   per non poggiarci sopra. */
+body[data-rail="1"] .hero-content {
+  bottom: clamp(96px, 16vh, 148px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-content .btn { transition: none; }
 }

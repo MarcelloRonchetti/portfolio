@@ -1,0 +1,98 @@
+/* ───────────────────────────────────────────────────────────
+   Rail 3D del sito — le quattro facce principali come pannelli
+   inclinati in uno spazio prospettico. La camera (SiteRail3d.tsx)
+   scrive transform/opacity/filter per frame; qui c'è solo la
+   scena, il HUD indice e le regole body[data-rail].
+   Il vuoto fra le facce è il --bg-dark: il body passa a data-
+   section="dark" per tutto il rail (anche sulla faccia copertina,
+   che resta un hero fotografico a tutta faccia).
+─────────────────────────────────────────────────────────── */
+
+/* La scena: prospettiva condivisa, il vuoto si vede intorno alle facce. */
+.rail {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  outline: none;
+}
+.rail-stage {
+  position: absolute;
+  inset: 0;
+  perspective: 1500px;
+  perspective-origin: 50% 42%;
+  transform-style: preserve-3d;
+}
+
+/* Le facce: pannelli a tutta scena che scorrono DENTRO di sé. Il HUD e la
+   camera li smorzano (opacity/filter via JS); qui solo la base. */
+.rail-face {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.rail-face::-webkit-scrollbar { display: none; }
+/* La pagina dentro la faccia occupa almeno tutta l'altezza: il footer
+   per-faccia chiude il pannello in fondo, come una pagina vera. */
+.rail-face > * { flex: 0 0 auto; }
+.rail-face > :first-child { flex: 1 0 auto; }
+
+/* HUD indice — la lista fissa in basso a sinistra del riferimento:
+   [01] Copertina … la faccia viva porta il bronzo. Un velo scuro dietro
+   (blur + tinta del vuoto) la rende leggibile sopra qualunque contenuto. */
+.rail-hud {
+  position: fixed;
+  left: var(--gutter);
+  bottom: 22px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  background: rgba(12, 10, 7, .55);
+  border: var(--line) solid var(--hair-inverse);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.rail-hud-item {
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+  text-align: left;
+  transition: color .2s var(--ease);
+}
+.rail-hud-item .rail-hud-num { letter-spacing: .08em; }
+.rail-hud-item:hover,
+.rail-hud-item:focus-visible { color: var(--ink-inverse); }
+.rail-hud-item[data-active="true"] {
+  color: var(--accent-inverse);
+}
+.rail-hud-item[data-active="true"]::before {
+  content: "→ ";
+}
+
+/* Modalità rail: il body non scorre (scorrono le facce) e il footer globale
+   lascia il posto a quello dentro ogni faccia. */
+body[data-rail="1"] {
+  overflow: hidden;
+}
+body[data-rail="1"] .site-footer { display: none; }
+
+/* Fuori dal rail lo stage non esiste: niente altro da fare. */
+
+@media (max-width: 640px) {
+  .rail-hud {
+    bottom: 16px;
+    gap: 4px;
+  }
+  .rail-hud-item { font-size: var(--t-micro); }
+}
+
+/* ── reduced motion: il rail non viene montato (fallback routed pages) ── */
