@@ -33,7 +33,7 @@ function markImgLoaded(img: HTMLImageElement | null) {
   if (img && img.complete && img.naturalWidth > 0) img.dataset.loaded = 'true'
 }
 
-function CollectionCard({ c, go, eager = false, priority = false, live = false }: { c: Collection; go: GoFn; eager?: boolean; priority?: boolean; live?: boolean }) {
+function CollectionCard({ c, go, eager = false, priority = false }: { c: Collection; go: GoFn; eager?: boolean; priority?: boolean }) {
   const rep = eventById(c.representativeId)
   // Il morph card → storia (view-transition-name: story-hero): il nome va
   // sull'img DI QUESTA card in modo sincrono, prima che vtNavigate scatti la
@@ -62,11 +62,10 @@ function CollectionCard({ c, go, eager = false, priority = false, live = false }
             src={photoUrl(rep, rep.cover)}
             alt={c.tag}
             // Le prime coperture sono il LCP della pagina: fuori dal differimento
-            // lazy SOLO quando la faccia galleria è viva (nel rail è montata
-            // sempre, ma dietro non deve gareggiare con l'hero della copertina);
-            // la priorità alta sta solo sulla prima card viva.
-            loading={eager && live ? 'eager' : 'lazy'}
-            fetchPriority={priority && live ? 'high' : undefined}
+            // lazy; la priorità alta però sta solo sulla prima card (su mobile
+            // le altre "eager" sono sotto la piega e non devono gareggiare col LCP).
+            loading={eager ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : undefined}
             decoding="async"
             onLoad={(e) => {
               e.currentTarget.dataset.loaded = 'true'
@@ -90,7 +89,7 @@ function CollectionCard({ c, go, eager = false, priority = false, live = false }
 
 // Card for a Drive-backed collection: same layout as CollectionCard, image and
 // count come straight from the archive listing.
-function DriveCollectionCard({ c, go, eager = false, priority = false, live = false }: { c: DrivePhotoCollection; go: GoFn; eager?: boolean; priority?: boolean; live?: boolean }) {
+function DriveCollectionCard({ c, go, eager = false, priority = false }: { c: DrivePhotoCollection; go: GoFn; eager?: boolean; priority?: boolean }) {
   const imgRef = useRef<HTMLImageElement>(null)
 
   return (
@@ -111,8 +110,8 @@ function DriveCollectionCard({ c, go, eager = false, priority = false, live = fa
           }}
           src={c.cover}
           alt={c.title}
-          loading={eager && live ? 'eager' : 'lazy'}
-          fetchPriority={priority && live ? 'high' : undefined}
+          loading={eager ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : undefined}
           decoding="async"
           onLoad={(e) => {
             e.currentTarget.dataset.loaded = 'true'
@@ -141,7 +140,6 @@ export function Gallery({
   driveError = null,
   onDriveRetry,
   onCategory,
-  live = true,
 }: {
   go: GoFn
   category: string
@@ -150,8 +148,6 @@ export function Gallery({
   driveError?: string | null
   onDriveRetry?: () => void
   onCategory: (c: string) => void
-  /** La faccia galleria è quella viva (rail): governa eager/priority delle coperture. */
-  live?: boolean
 }) {
   // App owns the active category (persisted, deep-linkable); Gallery renders it.
   const activeCategory = category
@@ -295,7 +291,6 @@ export function Gallery({
                 go={go}
                 eager={i < eagerCount}
                 priority={i === 0}
-                live={live}
               />
             ))}
             {driveCollections.map((c, i) => {
@@ -307,7 +302,6 @@ export function Gallery({
                   go={go}
                   eager={pos < eagerCount}
                   priority={pos === 0}
-                  live={live}
                 />
               )
             })}

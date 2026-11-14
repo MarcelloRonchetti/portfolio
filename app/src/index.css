@@ -1006,19 +1006,6 @@ button:disabled { cursor: default; }
    attorno a un wrapper che non è un controllo. */
 .page-fade:focus { outline: none; }
 
-/* Utility per il vivo ma invisibile (annunci aria-live del rail). */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 /* ─── reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
   .page-fade, .lightbox, .story-entrance { animation: none; }

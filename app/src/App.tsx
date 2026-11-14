@@ -9,13 +9,12 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom'
-import { DATA, slugOf, isRailPath } from './lib/data'
+import { DATA, slugOf } from './lib/data'
 import type { GoFn } from './lib/data'
 import { vtNavigate } from './lib/vtNavigate'
 import { consumeStoryHero } from './lib/vtHero'
 import TopBar from './components/TopBar'
 import DustCanvas from './components/DustCanvas'
-import SiteRail3d from './components/SiteRail3d'
 import { usePointerParallax } from './hooks/usePointerParallax'
 import { Cover } from './pages/Cover'
 import { Gallery, PhotoStory } from './pages/Gallery'
@@ -46,22 +45,23 @@ function initialTheme(): Theme {
 
 // Maps the semantic go() of the views onto real paths: the router is the source
 // of truth for the URL (deep-linkable, shareable, prerendered per page).
-// Rail → rail (le quattro facce principali): navigate PLANA — la camera del
-// rail È la transizione. Entrare/uscire dal rail (storie, room, /experience):
-// manual View Transition (vtNavigate — l'opzione viewTransition del router non
-// ha mai chiamato l'API qui).
+// Every navigation runs inside a manual View Transition (vtNavigate — the
+// router's own viewTransition option never fired the API here): the camera
+// passes through the page being left into the new one.
 function useGo(): GoFn {
   const navigate = useNavigate()
-  const { pathname } = useLocation()
   return useCallback<GoFn>(
     (next, ref, tag) => {
-      let path: string
       if (next === 'story' && ref) {
-        path = `/story/${encodeURIComponent(ref)}${tag ? `?t=${encodeURIComponent(tag)}` : ''}`
+        vtNavigate(
+          navigate,
+          `/story/${encodeURIComponent(ref)}${tag ? `?t=${encodeURIComponent(tag)}` : ''}`
+        )
       } else if (next === 'gallery') {
-        path = ref ? `/gallery/${slugOf(ref)}` : '/gallery'
+        vtNavigate(navigate, ref ? `/gallery/${slugOf(ref)}` : '/gallery')
       } else {
-        path =
+        vtNavigate(
+          navigate,
           next === 'videos'
             ? '/videos'
             : next === 'contact'
@@ -69,11 +69,10 @@ function useGo(): GoFn {
               : next === 'experience'
                 ? '/experience'
                 : '/'
+        )
       }
-      if (isRailPath(path) && isRailPath(pathname)) navigate(path)
-      else vtNavigate(navigate, path)
     },
-    [navigate, pathname]
+    [navigate]
   )
 }
 
@@ -88,7 +87,8 @@ function safeDecode(value: string): string {
   }
 }
 
-function GalleryRoute({ go, cat, active = true }: { go: GoFn; cat?: string; active?: boolean }) {
+function GalleryRoute({ go }: { go: GoFn }) {
+  const { cat } = useParams()
   const navigate = useNavigate()
   const drive = useDriveContent()
 
@@ -137,7 +137,6 @@ function GalleryRoute({ go, cat, active = true }: { go: GoFn; cat?: string; acti
   // wait for it before declaring the slug unknown. An error counts as settled —
   // the page renders the error state with a retry instead of hanging blank.
   // Static-category URLs (and the bare /gallery) never block on Drive.
-  // Il redirect resta nel rail (plano): la camera non deve saltare.
   const driveSettled = !drive.configured || drive.content !== null || drive.error !== null
   useEffect(() => {
     if (cat && !requested && driveSettled && !drive.error) {
@@ -192,7 +191,6 @@ function GalleryRoute({ go, cat, active = true }: { go: GoFn; cat?: string; acti
       driveError={drive.error}
       onDriveRetry={drive.refresh}
       onCategory={(c) => go('gallery', c)}
-      live={active}
     />
   )
 }
@@ -219,25 +217,9 @@ function StoryRoute({ go }: { go: GoFn }) {
   return <PhotoStory key={decoded} eventId={decoded} tag={tag} go={go} />
 }
 
-// Footer per-faccia del rail: vive DENTRO ogni faccia (la faccia è una pagina
-// intera che scorre); fuori dal rail il footer globale torna di casa sua.
-function SiteFooter() {
-  return (
-    <footer className="site-footer">
-      <span>© {new Date().getFullYear()} {DATA.identity.name}</span>
-      <span>{DATA.identity.location}</span>
-      <a className="link-ext" href={`mailto:${DATA.identity.email}`}>Email</a>
-      <span className="footer-note">
-        Nessun cookie, nessun tracciamento · foto e video dell'archivio serviti dai CDN di Google Drive
-      </span>
-    </footer>
-  )
-}
-
 function AppShell() {
   const location = useLocation()
   const go = useGo()
-  const navigate = useNavigate()
   const [theme, setTheme] = useState<Theme>(initialTheme)
   // One download state for the whole shell: the header's CV button and the
   // Contact row are two views of the same download.
@@ -245,29 +227,6 @@ function AppShell() {
   // Parallasse del puntatore: scrive --px/--py su <body> per le pozze
   // (.ambient), l'hero di Cover e i bagliori delle storie.
   usePointerParallax()
-
-  // Il rail 3D è il guscio delle quattro facce principali. Chi viaggia con
-  // prefers-reduced-motion resta sul sito instradato classico (page-fade):
-  // deciso una volta per sessione, al mount.
-  const [railEnabled] = useState(
-    () => !(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
-  )
-  const railActive = railEnabled && isRailPath(location.pathname)
-
-  // Navigazione consapevole del rail (header): rail → rail la camera fa già
-  // la transizione; fuori e dentro il rail passa dalla View Transition.
-  const navTo = useCallback(
-    (path: string) => {
-      if (isRailPath(path) && isRailPath(location.pathname)) navigate(path)
-      else vtNavigate(navigate, path)
-    },
-    [navigate, location.pathname]
-  )
-
-  // La categoria galleria arriva dal path (deep link /gallery/<slug>): fuori
-  // dalle Routes non c'è useParams, si parsa qui.
-  const catMatch = location.pathname.match(/^\/gallery\/([^/]+)/)
-  const catParam = catMatch ? safeDecode(catMatch[1]) : undefined
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -287,9 +246,7 @@ function AppShell() {
 
   // The body follows the section (dark for gallery/story/videos) so route swaps
   // crossfade instead of flashing — see body[data-section] in index.css.
-  // Nel rail il vuoto fra le facce è sempre scuro, copertina inclusa.
   const dark =
-    railActive ||
     location.pathname.startsWith('/gallery') ||
     location.pathname.startsWith('/story') ||
     location.pathname.startsWith('/videos') ||
@@ -311,29 +268,6 @@ function AppShell() {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [location.pathname])
 
-  // Le quattro facce del rail: sempre montate (la faccia uscente resta in
-  // scena mentre la camera se ne va), ognuna chiude con il proprio footer —
-  // tranne la copertina: è un manifesto a tutta faccia, il suo footer sarebbe
-  // irraggiungibile (ogni input in avanti gira la camera) e le info vivono
-  // nella faccia contatti.
-  // La faccia viva (per l'eager/LCP della galleria): stampata dal path al
-  // mount, poi tenuta al passo da SiteRail3d via onActiveChange.
-  const [railFace, setRailFace] = useState<number>(() =>
-    location.pathname.startsWith('/gallery')
-      ? 1
-      : location.pathname.startsWith('/videos')
-        ? 2
-        : location.pathname.startsWith('/contact')
-          ? 3
-          : 0
-  )
-  const railFaces = [
-    <Cover go={go} />,
-    <GalleryRoute go={go} cat={catParam} active={railFace === 1} />,
-    <><Videos /><SiteFooter /></>,
-    <><Contact cv={cv} /><SiteFooter /></>,
-  ]
-
   return (
     <>
       {/* Primo elemento focusabile: la scorciatoia da tastiera salta la
@@ -347,32 +281,35 @@ function AppShell() {
           azzerano mai navigando. */}
       <div className="ambient" aria-hidden="true" />
       <DustCanvas />
-      <TopBar theme={theme} onToggleTheme={toggleTheme} cv={cv} navTo={navTo} />
-      {railActive ? (
-        <SiteRail3d faces={railFaces} onActiveChange={setRailFace} />
-      ) : (
-        <div key={location.pathname} className="page-fade" id="contenuto" tabIndex={-1}>
-          <Routes>
-            <Route path="/" element={<Cover go={go} />} />
-            <Route path="/gallery" element={<GalleryRoute go={go} cat={catParam} />} />
-            <Route path="/gallery/:cat" element={<GalleryRoute go={go} cat={catParam} />} />
-            <Route path="/story/:id" element={<StoryRoute go={go} />} />
-            <Route path="/videos" element={<Videos />} />
-            <Route path="/contact" element={<Contact cv={cv} />} />
-            <Route path="/room/:roomId" element={<RoomPage />} />
-            <Route
-              path="/experience"
-              element={
-                <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#14120f' }} aria-hidden="true" />}>
-                  <Experience go={go} />
-                </Suspense>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          <SiteFooter />
-        </div>
-      )}
+      <TopBar theme={theme} onToggleTheme={toggleTheme} cv={cv} />
+      <div key={location.pathname} className="page-fade" id="contenuto" tabIndex={-1}>
+        <Routes>
+          <Route path="/" element={<Cover go={go} />} />
+          <Route path="/gallery" element={<GalleryRoute go={go} />} />
+          <Route path="/gallery/:cat" element={<GalleryRoute go={go} />} />
+          <Route path="/story/:id" element={<StoryRoute go={go} />} />
+          <Route path="/videos" element={<Videos />} />
+          <Route path="/contact" element={<Contact cv={cv} />} />
+          <Route path="/room/:roomId" element={<RoomPage />} />
+          <Route
+            path="/experience"
+            element={
+              <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#14120f' }} aria-hidden="true" />}>
+                <Experience go={go} />
+              </Suspense>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+      <footer className="site-footer">
+        <span>© {new Date().getFullYear()} {DATA.identity.name}</span>
+        <span>{DATA.identity.location}</span>
+        <a className="link-ext" href={`mailto:${DATA.identity.email}`}>Email</a>
+        <span className="footer-note">
+          Nessun cookie, nessun tracciamento · foto e video dell'archivio serviti dai CDN di Google Drive
+        </span>
+      </footer>
     </>
   )
 }
