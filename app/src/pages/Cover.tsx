@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ComponentType } from 'react'
 import type { Route } from '../lib/data'
 import { DATA } from '../lib/data'
-import { events, featuredEvent, photoUrl } from '../lib/events'
+import { featuredEvent, photoUrl } from '../lib/events'
+import { FLY_TARGETS, webglSupported } from '../lib/flyTargets'
 import Clickable from '../components/Clickable'
+import FlyDeck from './FlyDeck'
 import './Cover.css'
 
 // Warms the lazy /experience chunk before the first click — the link then
@@ -11,67 +14,24 @@ const prefetchExperience = () => {
   void import('./Experience')
 }
 
-// ── Il flythrough: le pagine del sito come pannelli 3D ───────────────────────
-// La lingua del riferimento (fojcikdominik.com): si atterra sulla home, si
-// scrorre verso il basso e dentro una sezione sticky la camera scende attraverso
-// i pannelli di anteprima delle pagine — solo immagini di riferimento, NON si
-// entra nelle pagine — e un click su un pannello porta alla pagina (con la
-// zoom-through). Il moto è VERTICALE e guidato dallo scroll: p ∈ [0..1] sul
-// rettangolo della sezione, ogni pannello a quota (i − p·reach) · spacing.
-// Motion ridotto: niente sticky né 3D — lista statica di link, sempre cliccabile.
+// ── L'indice della home: la camera oscura ───────────────────────────────────
+// La pagina NON scorre: la sezione è alta esattamente una viewport e la
+// navigazione È la camera (fojcikdominik.com, analisi nel vault). FlyThrough
+// possiede lo stato (attivo, ingresso) e TUTTI i driver: rotella (con
+// RILASCIO ai bordi — nessuna trappola di scroll), trascinamento orizzontale,
+// frecce, lista HUD. La scena è WebGL (HomeScene, chunk separato con three.js)
+// quando il dispositivo la regge; la pila CSS (FlyDeck) fa da riserva mentre
+// il chunk carica e per sempre dove la scena non arriva. Motion ridotto:
+// lista statica di link. Le anteprime sono segnaposto finché le animazioni
+// non sono chiuse: sostituirle = campo `img` in lib/flyTargets.ts.
 
-type FlyTarget = {
-  route: Route
-  label: string
-  note: string
-  img: string
-}
-
-function buildFlyTargets(): FlyTarget[] {
-  // Quattro coperture distinte dall'archivio locale (ordine: più recente
-  // prima), escludendo l'evento in hero — la sua immagine è già sopra.
-  const pool = [...events]
-    .filter((e) => e.id !== featuredEvent?.id)
-    .sort((a, b) => b.date.localeCompare(a.date))
-  const cover = (i: number) => {
-    const e = pool[i % Math.max(1, pool.length)]
-    return e ? photoUrl(e, e.cover) : ''
-  }
-  return [
-    {
-      route: 'gallery',
-      label: 'Galleria',
-      note: 'Le raccolte per categoria',
-      img: cover(0),
-    },
-    {
-      route: 'videos',
-      label: 'Video',
-      note: 'I filmati dell’archivio',
-      img: cover(1),
-    },
-    {
-      route: 'experience',
-      label: 'Le sale immersive',
-      note: 'Il percorso 3D per tema',
-      img: cover(2),
-    },
-    {
-      route: 'contact',
-      label: 'Contatti',
-      note: 'Commissioni e collaborazioni',
-      img: cover(3),
-    },
-  ]
-}
+type SceneComponent = ComponentType<{ active: number; onPick: (i: number) => void }>
 
 function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
-  const targets = useMemo(() => buildFlyTargets(), [])
+  const targets = FLY_TARGETS
   const n = targets.length
   const sectionRef = useRef<HTMLElement>(null)
-  const stickyRef = useRef<HTMLDivElement>(null)
-  const slotRefs = useRef<(HTMLDivElement | null)[]>([])
-  // Live: il toggle OS a sessione aperta commuta fra camera 3D e lista statica.
+  // Live: il toggle OS a sessione aperta commuta fra scena e lista statica.
   const [reduced, setReduced] = useState(
     () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
   )
@@ -81,88 +41,182 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
     mq.addEventListener?.('change', onChange)
     return () => mq.removeEventListener?.('change', onChange)
   }, [])
-  const [active, setActive] = useState(0)
-  const activeRef = useRef(0)
 
-  // Driver dello scroll: un rAF per frame di scroll riscrive le trasformazioni
-  // dei pannelli e si spegne; il loop non gira mai a riposo.
+  const [active, setActive] = useState(0)
+  // Specchio per i listener (wheel/drag): mai una chiusura stantia sullo stato.
+  const activeRef = useRef(0)
+  // Un trascinamento oltre soglia ingoia il click che il pointerup genera.
+  const movedRef = useRef(false)
+  const [entered, setEntered] = useState(false)
+  const [entering, setEntering] = useState(false)
+  const glOk = useMemo(() => webglSupported(), [])
+  // Il chunk WebGL si precarica subito (prima che serva), la scena si monta
+  // solo quando la sezione entra in campo. Fallimento = la pila resta.
+  const [Scene, setScene] = useState<SceneComponent | null>(null)
+
+  const step = useCallback(
+    (dir: 1 | -1) => {
+      setActive((prev) => {
+        const next = Math.min(n - 1, Math.max(0, prev + dir))
+        activeRef.current = next
+        return next
+      })
+    },
+    [n]
+  )
+
+  // HUD e stampa laterale: selezionare quella già davanti = entrare.
+  const select = useCallback(
+    (i: number) => {
+      if (i === activeRef.current) {
+        go(targets[i].route)
+        return
+      }
+      activeRef.current = i
+      setActive(i)
+    },
+    [go, targets]
+  )
+
+  // Rotella: accumulo con decay + lock — un gesto = un passo. Ai bordi
+  // del percorso NON preventDefault: la pagina torna a scorrere.
   useEffect(() => {
     if (reduced || n === 0) return
     const section = sectionRef.current
     if (!section) return
-    let raf = 0
-    let running = false
-
-    const write = () => {
-      running = false
-      const rect = section.getBoundingClientRect()
-      const sticky = stickyRef.current
-      if (!sticky) return
-      const vh = window.innerHeight
-      const travel = rect.height - vh
-      if (travel <= 0) return
-      const p = Math.min(1, Math.max(0, -rect.top / travel))
-      // Passo corto: i pannelli si sovrappongono leggermente ai bordi — il
-      // riferimento è denso, il vuoto fra uno e l'altro è minimo, e la
-      // profondità (retreat) tiene leggibile la sovrapposizione.
-      const spacing = vh * 0.8
-      const reach = n - 1
-      // Il clip-out REALE dipende dalla proiezione 3D (viewport +Dimensioni
-      // del pannello): una soglia fissa su |d| spoppa su desktop e lascia
-      // tabittàre pannelli fuori campo su mobile. Si misura il rettangolo
-      // PROIETTATO di ogni slot contro quello dello sticky — 4 letture a
-      // frame di scroll, layout già flushato dalle scritture sopra.
-      const stageRect = sticky.getBoundingClientRect()
-      slotRefs.current.forEach((el, i) => {
-        if (!el) return
-        const d = i - p * reach
-        const ad = Math.abs(d)
-        // Scrivi SEMPRE la trasformazione: un cutoff che salta la scrittura
-        // congela il pannello all'ultima posizione in campo (a metà schermo)
-        // mentre p prosegue — il pannello deve continuare il suo moto oltre
-        // la soglia.
-        const x = (i % 2 === 0 ? -1 : 1) * window.innerWidth * 0.05
-        const y = d * spacing
-        const z = -ad * 420
-        const ry = (i % 2 === 0 ? 1 : -1) * 11
-        const scale = 1 - Math.min(ad * 0.09, 0.2)
-        el.style.transform = `translate(-50%, -50%) translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateX(4deg) rotateY(${ry.toFixed(2)}deg) scale(${scale.toFixed(4)})`
-        const op = Math.max(0, 1 - ad * 0.6)
-        el.style.opacity = String(op)
-        // Blur QUANTIZZATO a passi da 1px: un raggio che cambia di continuo
-        // forza il re-filter del layer a ogni frame — a scatti no.
-        const blur = Math.round(Math.min(ad * 6, 9))
-        el.style.filter = blur > 0 ? `blur(${blur}px)` : 'none'
-        // Fuori dallo sticky (proiezione reale, 8px di margine) il pannello
-        // esce da tab order e hit-test: niente focus in pannelli invisibili,
-        // e sotto il 30% di opacità i click non vengono intercettati nella
-        // fascia di sovrapposizione fra pannelli.
-        const r = el.getBoundingClientRect()
-        const off = r.bottom < stageRect.top - 8 || r.top > stageRect.bottom + 8
-        const vis = off ? 'hidden' : 'visible'
-        if (el.style.visibility !== vis) el.style.visibility = vis
-        el.style.pointerEvents = op < 0.3 ? 'none' : ''
-      })
-      const rounded = Math.max(0, Math.min(n - 1, Math.round(p * reach)))
-      if (rounded !== activeRef.current) {
-        activeRef.current = rounded
-        setActive(rounded)
+    let acc = 0
+    let lockUntil = 0
+    let lastWheel = 0
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return // pinch-zoom non è navigazione
+      const now = performance.now()
+      if (now - lastWheel > 200) acc = 0
+      lastWheel = now
+      const dy = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX
+      if (now < lockUntil) {
+        e.preventDefault()
+        return
+      }
+      if (
+        (activeRef.current === 0 && dy < 0) ||
+        (activeRef.current === n - 1 && dy > 0)
+      ) {
+        return // bordo: la pagina scorre
+      }
+      e.preventDefault()
+      acc += dy
+      if (Math.abs(acc) >= 48) {
+        step(acc > 0 ? 1 : -1)
+        acc = 0
+        lockUntil = now + 520
       }
     }
-    const onScroll = () => {
-      if (running) return
-      running = true
-      raf = requestAnimationFrame(write)
+    section.addEventListener('wheel', onWheel, { passive: false })
+    return () => section.removeEventListener('wheel', onWheel)
+  }, [reduced, n, step])
+
+  // Trascinamento orizzontale (mouse e touch): swipe = un passo. touch-action
+  // pan-y lascia lo scroll verticale al browser — pointercancel lo chiude.
+  useEffect(() => {
+    if (reduced || n === 0) return
+    const section = sectionRef.current
+    if (!section) return
+    let dragging = false
+    let startX = 0
+    let pid = -1
+    const down = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      dragging = true
+      pid = e.pointerId
+      startX = e.clientX
+      movedRef.current = false
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
-    write()
+    const move = (e: PointerEvent) => {
+      if (!dragging || e.pointerId !== pid) return
+      if (Math.abs(e.clientX - startX) > 12) movedRef.current = true
+    }
+    const end = (e: PointerEvent) => {
+      if (!dragging || e.pointerId !== pid) return
+      dragging = false
+      const dx = e.clientX - startX
+      if (Math.abs(dx) >= 48) {
+        step(dx < 0 ? 1 : -1)
+        movedRef.current = true
+      }
+    }
+    const cancel = (e: PointerEvent) => {
+      if (e.pointerId === pid) dragging = false
+    }
+    section.addEventListener('pointerdown', down)
+    window.addEventListener('pointermove', move, { passive: true })
+    window.addEventListener('pointerup', end)
+    window.addEventListener('pointercancel', cancel)
     return () => {
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
-      cancelAnimationFrame(raf)
+      section.removeEventListener('pointerdown', down)
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', end)
+      window.removeEventListener('pointercancel', cancel)
+    }
+  }, [reduced, n, step])
+
+  // Ingresso: la prima volta che la sezione entra in campo la camera parte
+  // dal fondo e le stampe si accendono (la scena gestisce il proprio esordio;
+  // data-entering scaglionava la pila di riserva).
+  useEffect(() => {
+    if (reduced || n === 0) return
+    const section = sectionRef.current
+    if (!section) return
+    let timer = 0
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((en) => en.isIntersecting)) {
+          setEntered(true)
+          setEntering(true)
+          io.disconnect()
+          timer = window.setTimeout(() => setEntering(false), 2100)
+        }
+      },
+      { threshold: 0.35 }
+    )
+    io.observe(section)
+    return () => {
+      io.disconnect()
+      if (timer) window.clearTimeout(timer)
     }
   }, [reduced, n])
+
+  useEffect(() => {
+    if (reduced || !glOk) return
+    let alive = true
+    import('./HomeScene')
+      .then((m) => {
+        if (alive) setScene(() => m.default)
+      })
+      .catch(() => {
+        /* chunk irraggiungibile: resta la pila CSS */
+      })
+    return () => {
+      alive = false
+    }
+  }, [reduced, glOk])
+
+  // Posizione lungo il corridoio: 0 = davanti, poi le successive (raw
+  // 0..n-1; raw > n/2 rientra come negativo — con n=4: 0,1,2,-1).
+  const offsets = targets.map((_, i) => {
+    const raw = (((i - active) % n) + n) % n
+    return raw > n / 2 ? raw - n : raw
+  })
+
+  const guardPick = useCallback(
+    (i: number) => {
+      if (movedRef.current) {
+        movedRef.current = false
+        return
+      }
+      select(i)
+    },
+    [select]
+  )
 
   // Motion ridotto: niente camera — le anteprime sono una lista statica di
   // link, pienamente cliccabile e leggibile.
@@ -173,10 +227,17 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
           <p className="t-meta fly-kicker">Le pagine del sito</p>
           <div className="fly-fallback-list">
             {targets.map((t, i) => (
-              <Clickable key={t.route} className="fly-fallback-item" onClick={() => go(t.route)}>
+              <Clickable
+                key={t.route}
+                className="fly-fallback-item"
+                onClick={() => go(t.route)}
+                onMouseEnter={t.route === 'experience' ? prefetchExperience : undefined}
+                onFocus={t.route === 'experience' ? prefetchExperience : undefined}
+              >
                 <img src={t.img} alt="" loading="lazy" decoding="async" />
                 <span className="fly-fallback-caption t-meta">
-                  [0{i + 1}] {t.label}
+                  <span className="fly-fallback-num">0{i + 1}</span> {t.label}
+                  <span className="fly-fallback-note">{t.note}</span>
                 </span>
               </Clickable>
             ))}
@@ -190,54 +251,90 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
     <section
       ref={sectionRef}
       className="fly"
-      style={{ height: `${100 + (n - 1) * 112}vh` }}
-      aria-label="Le pagine del sito — scorri fra le anteprime e clicca per entrare"
+      data-entered={entered || undefined}
+      data-entering={entering || undefined}
+      aria-label="Le pagine del sito"
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowRight') {
+          e.preventDefault()
+          step(1)
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault()
+          step(-1)
+        }
+      }}
     >
-      <div ref={stickyRef} className="fly-sticky">
-        {/* HUD indice, la lista fissa del riferimento: la voce della fascia
-            centrata si accende in bronzo; click = vola alla pagina. */}
-        <div className="fly-hud">
+      <div className="fly-stage">
+        <div className="fly-horizon" aria-hidden="true" />
+
+        <header className="fly-head">
           <p className="t-meta fly-kicker">Le pagine del sito</p>
-          {targets.map((t, i) => (
+        </header>
+
+        {Scene && entered ? (
+          <Scene active={active} onPick={guardPick} />
+        ) : (
+          <FlyDeck
+            targets={targets}
+            offsets={offsets}
+            movedRef={movedRef}
+            onPick={guardPick}
+            onPrefetchExperience={prefetchExperience}
+          />
+        )}
+
+        {/* HUD: lista-indice a sinistra (seleziona / entra), contatore e frecce
+            a destra. La voce attiva è sottolineata in bronzo. */}
+        <div className="fly-hud">
+          <div className="fly-hud-list">
+            {targets.map((t, i) => (
+              <button
+                key={t.route}
+                type="button"
+                className="fly-hud-item"
+                data-active={i === active || undefined}
+                aria-current={i === active ? 'true' : undefined}
+                onClick={() => select(i)}
+                onMouseEnter={t.route === 'experience' ? prefetchExperience : undefined}
+                onFocus={t.route === 'experience' ? prefetchExperience : undefined}
+              >
+                <span className="fly-hud-num">0{i + 1}</span>
+                <span className="fly-hud-label">{t.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="fly-hud-nav">
+            <p className="fly-count" aria-live="polite">
+              <span className="fly-sr">{targets[active].label} — </span>
+              {String(active + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}
+            </p>
             <button
-              key={t.route}
               type="button"
-              className="fly-hud-item t-meta"
-              data-active={i === active || undefined}
-              aria-current={i === active ? 'true' : undefined}
-              onClick={() => go(t.route)}
-              onMouseEnter={t.route === 'experience' ? prefetchExperience : undefined}
-              onFocus={t.route === 'experience' ? prefetchExperience : undefined}
+              className="fly-arrow"
+              onClick={() => step(-1)}
+              disabled={active === 0}
+              aria-label="Collegamento precedente"
             >
-              [0{i + 1}] {t.label}
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M10 2 4 8l6 6" />
+              </svg>
             </button>
-          ))}
+            <button
+              type="button"
+              className="fly-arrow"
+              onClick={() => step(1)}
+              disabled={active === n - 1}
+              aria-label="Collegamento successivo"
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M6 2l6 6-6 6" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <div className="fly-world">
-          {targets.map((t, i) => (
-            <div
-              key={t.route}
-              ref={(el) => {
-                slotRefs.current[i] = el
-              }}
-              className="fly-slot"
-            >
-              <Clickable
-                className="fly-plane"
-                onClick={() => go(t.route)}
-                aria-label={`Apri ${t.label}`}
-              >
-                {t.img && (
-                  <img src={t.img} alt="" loading="lazy" decoding="async" draggable={false} />
-                )}
-                <span className="fly-plane-caption" aria-hidden="true">
-                  <span className="fly-plane-num">[0{i + 1}]</span> {t.label}
-                  <span className="fly-plane-note">{t.note}</span>
-                </span>
-              </Clickable>
-            </div>
-          ))}
+        <div className="fly-progress" aria-hidden="true">
+          <span style={{ width: `${((active + 1) / n) * 100}%` }} />
         </div>
       </div>
     </section>
