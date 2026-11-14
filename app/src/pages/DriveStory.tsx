@@ -1,6 +1,6 @@
 import './Story.css'
-import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { createPortal, flushSync } from 'react-dom'
 import { Navigate } from 'react-router-dom'
 import Clickable from '../components/Clickable'
 import PhotoFrame from '../components/PhotoFrame'
@@ -11,6 +11,8 @@ import { useDialogA11y } from '../hooks/useDialogA11y'
 import type { DrivePhotoCollection } from '../lib/drive'
 import type { GoFn } from '../lib/data'
 import { formatDate } from '../lib/format'
+import { consumeStoryHero } from '../lib/vtHero'
+import { vtTransition } from '../lib/vtNavigate'
 
 // Must stay in sync with the lightboxDissolve animation duration in index.css.
 const LIGHTBOX_DISSOLVE_MS = 300
@@ -67,6 +69,19 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
 
   const [activeIdx, setActiveIdx] = useState(0)
   const [lightbox, setLightbox] = useState<'closed' | 'open' | 'closing'>('closed')
+  // Morph card → storia (stesso patto di PhotoStory): l'id arriva solo dalla
+  // card giusta; morphIncoming è costante e story-hero si ritira dopo la VT.
+  const [heroId] = useState(() => consumeStoryHero())
+  const morphIncoming = heroId === collectionId
+  const [heroLive, setHeroLive] = useState(morphIncoming)
+  useEffect(() => {
+    if (!heroLive) return
+    const t = window.setTimeout(() => setHeroLive(false), 1150)
+    return () => window.clearTimeout(t)
+  }, [heroLive])
+  // Arming del morph verso il lightbox (vedi PhotoStory): vive solo nella
+  // finestra fra il flushSync e la snapshot nuova dentro la VT.
+  const [armLightbox, setArmLightbox] = useState(false)
   // Remembered at open time so closing can hand keyboard focus back to the
   // frame that opened the lightbox.
   const openerRef = useRef<HTMLElement | null>(null)
@@ -114,7 +129,13 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
 
   const openLightbox = useCallback(() => {
     openerRef.current = document.activeElement as HTMLElement | null
-    setLightbox('open')
+    // Espansione col morph (coppia lightbox-hero): arming in flushSync prima
+    // della cattura, ritiro nel nuovo snapshot — come in PhotoStory.
+    flushSync(() => setArmLightbox(true))
+    vtTransition(() => {
+      setArmLightbox(false)
+      setLightbox('open')
+    }, 'lightbox')
   }, [])
 
   // Step clamped at the ends — the carousel doesn't wrap (like Instagram).
@@ -179,8 +200,40 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
     .filter((x) => x.category === c.category && x.id !== c.id)
     .slice(0, 12)
 
+  // view-transition-name sullo stage (stesso patto di PhotoStory): a regime
+  // senza nomi — lightbox-hero solo nel window di arming, story-hero solo nel
+  // morph in arrivo.
+  const stageHero =
+    lightbox !== 'closed'
+      ? undefined
+      : armLightbox
+        ? 'lightbox-hero'
+        : heroLive
+          ? 'story-hero'
+          : undefined
+
+  // Cascata d'ingresso (vedi PhotoStory): col morph in arrivo non esiste —
+  // l'emersione della VT È l'ingresso. Guardata da morphIncoming (costante).
+  const en = (i: number, base?: string) =>
+    morphIncoming
+      ? base
+        ? { className: base }
+        : undefined
+      : {
+          className: base ? `${base} story-entrance` : 'story-entrance',
+          style: { '--i': i } as CSSProperties,
+        }
+
   return (
     <main className="section section-dark story-page">
+      {/* Sfondo del post: la prima foto della raccolta sbiadita dal blur
+          (Assoluto dentro .story-page, MAI fixed — vedi PhotoStory). */}
+      <div className="story-ambient" aria-hidden="true">
+        <div
+          className="story-ambient-glow"
+          style={{ backgroundImage: `url("${c.photos[0].thumbUrl ?? c.photos[0].displayUrl ?? c.photos[0].fullUrl}")` }}
+        />
+      </div>
       <div className="container">
         <button onClick={() => go('gallery', c.category)} className="t-meta gl-back">
           ← Galleria
@@ -198,45 +251,52 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
             the media reclaims its column (story-grid-solo). */}
         <div className={related.length > 0 ? 'story-grid' : 'story-grid story-grid-solo'}>
           <div className="story-main">
-            <StoryCarousel
-              slides={slides}
-              activeIdx={shownIdx}
-              onActiveChange={setActiveIdx}
-              maxH={Math.min(vp.h * 0.78, 1100)}
-              caption={{ right: `${pad2(shownIdx + 1)} / ${pad2(photos.length)}` }}
-              onActivate={openLightbox}
-              activateLabel={`Ingrandisci ${c.title}`}
-              arrows
-              label={c.title}
-            />
+            <div {...en(0)}>
+              <StoryCarousel
+                slides={slides}
+                activeIdx={shownIdx}
+                onActiveChange={setActiveIdx}
+                maxH={Math.min(vp.h * 0.78, 1100)}
+                caption={{ right: `${pad2(shownIdx + 1)} / ${pad2(photos.length)}` }}
+                onActivate={openLightbox}
+                activateLabel={`Ingrandisci ${c.title}`}
+                arrows
+                heroName={stageHero}
+                label={c.title}
+              />
+            </div>
 
             {photos.length > 1 && (
-              <div className="thumbstrip">
-                {photos.map((p, i) => (
-                  <Clickable
-                    key={p.id}
-                    onClick={() => setActiveIdx(i)}
-                    className="thumb"
-                    data-active={i === shownIdx || undefined}
-                    aria-current={i === shownIdx ? 'true' : undefined}
-                    aria-label={`Foto ${i + 1}`}
-                  >
-                    <PhotoFrame src={p.thumbUrl} alt={`${c.title} — foto ${i + 1}`} />
-                  </Clickable>
-                ))}
+              <div {...en(1)}>
+                <div className="thumbstrip">
+                  {photos.map((p, i) => (
+                    <Clickable
+                      key={p.id}
+                      onClick={() => setActiveIdx(i)}
+                      className="thumb"
+                      data-active={i === shownIdx || undefined}
+                      aria-current={i === shownIdx ? 'true' : undefined}
+                      aria-label={`Foto ${i + 1}`}
+                    >
+                      <PhotoFrame src={p.thumbUrl} alt={`${c.title} — foto ${i + 1}`} />
+                    </Clickable>
+                  ))}
+                </div>
               </div>
             )}
 
-            <div className="stack" style={{ gap: 10, marginTop: 28 }}>
-              <h1 className="t-h1" style={{ margin: 0 }}><DriveTitle title={c.title} /></h1>
-              <div className="t-meta" style={{ color: 'var(--accent-inverse)' }}>
-                {([c.date ? formatDate(c.date) : null, c.category].filter(Boolean) as string[]).join(' · ')}
+            <div {...en(2)}>
+              <div className="stack" style={{ gap: 10, marginTop: 28 }}>
+                <h1 className="t-h1" style={{ margin: 0 }}><DriveTitle title={c.title} /></h1>
+                <div className="t-meta" style={{ color: 'var(--accent-inverse)' }}>
+                  {([c.date ? formatDate(c.date) : null, c.category].filter(Boolean) as string[]).join(' · ')}
+                </div>
               </div>
             </div>
           </div>
 
           {related.length > 0 && (
-            <aside className="story-related">
+            <aside {...en(3, 'story-related')}>
               <h2 className="t-meta" style={{ margin: '0 0 10px', color: 'var(--muted-inverse)' }}>
                 Altre raccolte
               </h2>
@@ -303,6 +363,7 @@ export default function DriveStory({ collectionId, go }: { collectionId: string;
               onActiveChange={setActiveIdx}
               maxW={Math.round(vp.w * 0.95)}
               maxH={Math.round(vp.h * 0.95)}
+              heroName="lightbox-hero"
               label={c.title}
             />
             {photos.length > 1 && (

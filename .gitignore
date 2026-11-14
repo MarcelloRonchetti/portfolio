@@ -94,3 +94,4 @@ out/
 
 # stato hook video2code (locale, mai nella repo)
 .v2c/
+/transizione-zoomthrough.webm

@@ -1,6 +1,6 @@
 import './Gallery.css'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { createPortal, flushSync } from 'react-dom'
 import type { Route } from '../lib/data'
 import { DATA } from '../lib/data'
 import type { Collection, Event } from '../lib/events'
@@ -19,6 +19,8 @@ import StoryCarousel from '../components/StoryCarousel'
 import useViewportSize from '../hooks/useViewportSize'
 import { useDialogA11y } from '../hooks/useDialogA11y'
 import { formatDate } from '../lib/format'
+import { setStoryHero, consumeStoryHero } from '../lib/vtHero'
+import { vtTransition } from '../lib/vtNavigate'
 
 type GoFn = (next: Route, ref?: string, tag?: string) => void
 
@@ -33,16 +35,30 @@ function markImgLoaded(img: HTMLImageElement | null) {
 
 function CollectionCard({ c, go, eager = false, priority = false }: { c: Collection; go: GoFn; eager?: boolean; priority?: boolean }) {
   const rep = eventById(c.representativeId)
+  // Il morph card → storia (view-transition-name: story-hero): il nome va
+  // sull'img DI QUESTA card in modo sincrono, prima che vtNavigate scatti la
+  // View Transition — la coppia vecchio/nuovo snapshot si forma sola.
+  const imgRef = useRef<HTMLImageElement>(null)
 
   return (
     <Clickable
-      onClick={() => go('story', c.representativeId, c.tag)}
+      onClick={() => {
+        if (rep) {
+          const img = imgRef.current
+          if (img) img.style.viewTransitionName = 'story-hero'
+          setStoryHero(rep.id)
+        }
+        go('story', c.representativeId, c.tag)
+      }}
       className="card gl-card"
     >
       <div className="card-photo">
         {rep && (
           <img
-            ref={markImgLoaded}
+            ref={(el) => {
+              markImgLoaded(el)
+              imgRef.current = el
+            }}
             src={photoUrl(rep, rep.cover)}
             alt={c.tag}
             // Le prime coperture sono il LCP della pagina: fuori dal differimento
@@ -74,14 +90,24 @@ function CollectionCard({ c, go, eager = false, priority = false }: { c: Collect
 // Card for a Drive-backed collection: same layout as CollectionCard, image and
 // count come straight from the archive listing.
 function DriveCollectionCard({ c, go, eager = false, priority = false }: { c: DrivePhotoCollection; go: GoFn; eager?: boolean; priority?: boolean }) {
+  const imgRef = useRef<HTMLImageElement>(null)
+
   return (
     <Clickable
-      onClick={() => go('story', c.id)}
+      onClick={() => {
+        const img = imgRef.current
+        if (img) img.style.viewTransitionName = 'story-hero'
+        setStoryHero(c.id)
+        go('story', c.id)
+      }}
       className="card gl-card"
     >
       <div className="card-photo">
         <img
-          ref={markImgLoaded}
+          ref={(el) => {
+            markImgLoaded(el)
+            imgRef.current = el
+          }}
           src={c.cover}
           alt={c.title}
           loading={eager ? 'eager' : 'lazy'}
@@ -126,6 +152,7 @@ export function Gallery({
   // App owns the active category (persisted, deep-linkable); Gallery renders it.
   const activeCategory = category
   const catnavRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
 
   // Edge fades for the scrollable tab row: "left" / "right" / "both" say
   // which sides still have hidden content; undefined means everything fits.
@@ -176,6 +203,27 @@ export function Gallery({
     .reduce((acc, e) => acc + Math.max(1, e.photos.length), 0) +
     driveCollections.reduce((acc, c) => acc + (c.photos?.length ?? 0), 0)
   const totalCollections = filteredCollections.length + driveCollections.length
+
+  // Spotlight sulle card (il pattern "SpotlightCard" di React Bits, riscritto
+  // nell'idioma del sito): UN listener delegato sulla griglia scrive
+  // --sx/--sy sulla card sotto il cursore; il ::after in Gallery.css disegna
+  // il bagliore bronzeo che segue il puntatore. Solo puntatori fini: l'effetto
+  // vive nel @media (pointer: fine).
+  useEffect(() => {
+    const grid = gridRef.current
+    if (!grid) return
+    const fine = window.matchMedia?.('(pointer: fine)').matches ?? false
+    if (!fine) return
+    const onMove = (e: PointerEvent) => {
+      const card = (e.target as HTMLElement | null)?.closest?.('.gl-card') as HTMLElement | null
+      if (!card) return
+      const r = card.getBoundingClientRect()
+      card.style.setProperty('--sx', `${((((e.clientX - r.left) / r.width) * 100)).toFixed(1)}%`)
+      card.style.setProperty('--sy', `${((((e.clientY - r.top) / r.height) * 100)).toFixed(1)}%`)
+    }
+    grid.addEventListener('pointermove', onMove, { passive: true })
+    return () => grid.removeEventListener('pointermove', onMove)
+  }, [totalCollections])
 
   // Coperture fuori dal lazy: ~una riga di card. Su mobile una riga è UNA card
   // (flex-basis 270px) — quattro "eager" sarebbero quattro schermate sotto la
@@ -235,7 +283,7 @@ export function Gallery({
             )}
           </div>
         ) : (
-          <div className="grid-cards">
+          <div className="grid-cards" ref={gridRef}>
             {filteredCollections.map((c, i) => (
               <CollectionCard
                 key={c.tag}
@@ -299,6 +347,27 @@ export function PhotoStory({
   const [activeIdx, setActiveIdx] = useState(0)
   // 'closing' keeps the overlay mounted while the dissolve-out plays.
   const [lightbox, setLightbox] = useState<'closed' | 'open' | 'closing'>('closed')
+  // Morph card → storia (view-transition-name: story-hero): l'id arriva solo
+  // se la navigazione è partita dalla card giusta (deep link e rail hop non
+  // consumano nulla). `morphIncoming` è una costante del mount (heroId non
+  // cambia mai) — decide la cascata, non può lampeggiare a metà vita.
+  const [heroId] = useState(() => consumeStoryHero())
+  const morphIncoming = heroId === eventId
+  // Il nome story-hero vive SOLO il tempo della VT in arrivo (il timer da
+  // 1150ms copre con margine la zoom-through ~1.0s): dopo, lo stage torna
+  // senza nomi — le VT di percorso (storia → galleria, rail hop) non devono
+  // catturare la foto come elemento condiviso per sbaglio. Il flip avviene
+  // una volta sola, a VT conclusa: nessun flicker possibile.
+  const [heroLive, setHeroLive] = useState(morphIncoming)
+  useEffect(() => {
+    if (!heroLive) return
+    const t = window.setTimeout(() => setHeroLive(false), 1150)
+    return () => window.clearTimeout(t)
+  }, [heroLive])
+  // Arming del morph verso il lightbox: vive SOLO nella finestra fra il
+  // flushSync che arma lo stage e la snapshot nuova dentro la VT — mai come
+  // prop permanente (vedi stageHero).
+  const [armLightbox, setArmLightbox] = useState(false)
 
   // The hooks below read the photo list (keyboard stepping, prefetch), so it
   // is derived before the early return; with no event the list is empty and
@@ -333,7 +402,17 @@ export function PhotoStory({
 
   const openLightbox = useCallback(() => {
     openerRef.current = document.activeElement as HTMLElement | null
-    setLightbox('open')
+    // Espansione col morph (coppia lightbox-hero): lo stage viene ARMATO in
+    // un flushSync dedicato — lo snapshot VECCHIO deve già portare il nome —
+    // e dentro la VT la prop torna undefined: nel nuovo snapshot il nome sta
+    // SOLO sull'immagine del lightbox, mai su due elementi vivi. La VT È
+    // l'ingresso (il dissolve si spegne da CSS mentre è attiva); la chiusura
+    // resta sul dissolve-out a data-closing, senza VT.
+    flushSync(() => setArmLightbox(true))
+    vtTransition(() => {
+      setArmLightbox(false)
+      setLightbox('open')
+    }, 'lightbox')
   }, [])
 
   // Step clamped at the ends — the carousel doesn't wrap (like Instagram);
@@ -401,8 +480,48 @@ export function PhotoStory({
   const ctxTag = tag && f.tags.includes(tag) ? tag : undefined
   const related = relatedEvents(f.id, { tag: ctxTag, category: f.category })
 
+  // view-transition-name sullo stage via prop: lightbox-hero SOLO nella
+  // finestra di arming di openLightbox (precede l'afterglow del morph in
+  // arrivo: entro i ~150ms finali del timer un'apertura precoce deve comunque
+  // trovare la coppia giusta), story-hero solo nel morph in arrivo — a regime
+  // lo stage NON porta nomi, così nessuna VT di percorso estrae la foto.
+  const stageHero =
+    lightbox !== 'closed'
+      ? undefined
+      : armLightbox
+        ? 'lightbox-hero'
+        : heroLive
+          ? 'story-hero'
+          : undefined
+
+  // Wrapper della cascata d'ingresso (stage → strip → titolo → prose/rail):
+  // un solo momento orchestrato per mount. Col morph in arrivo la cascata
+  // non esiste — l'emersione della VT È l'ingresso, e un'immagine a opacity 0
+  // non può portare il nome nella snapshot. `base` fonde una classe già
+  // presente. Guardato da morphIncoming (costante): il flip di heroLive a
+  // 1.15s non deve montare una cascata a metà pagina.
+  const en = (i: number, base?: string) =>
+    morphIncoming
+      ? base
+        ? { className: base }
+        : undefined
+      : {
+          className: base ? `${base} story-entrance` : 'story-entrance',
+          style: { '--i': i } as CSSProperties,
+        }
+
   return (
     <main className="section section-dark story-page">
+      {/* Sfondo del post: la cover della storia sbiadita dal blur vive dietro
+          il layout — la stampa sul tavolo della darkroom. Assoluto dentro
+          .story-page, MAI fixed (il wrapper .page-fade tiene un transform:
+          i fixed figli si centrerebbero sul documento). */}
+      <div className="story-ambient" aria-hidden="true">
+        <div
+          className="story-ambient-glow"
+          style={{ backgroundImage: `url("${photoUrl(f, f.cover)}")` }}
+        />
+      </div>
       <div className="container">
         <button
           onClick={() => go('gallery', f.category)}
@@ -413,72 +532,83 @@ export function PhotoStory({
 
         <div className={related.length > 0 ? 'story-grid' : 'story-grid story-grid-solo'}>
           <div className="story-main">
-            <StoryCarousel
-              slides={slides}
-              activeIdx={shownIdx}
-              onActiveChange={setActiveIdx}
-              maxH={Math.min(vp.h * 0.78, 1100)}
-              caption={{ right: `${pad2(shownIdx + 1)} / ${pad2(photos.length)}` }}
-              onActivate={openLightbox}
-              activateLabel={`Ingrandisci ${f.title}`}
-              arrows
-              label={f.title}
-            />
+            <div {...en(0)}>
+              <StoryCarousel
+                slides={slides}
+                activeIdx={shownIdx}
+                onActiveChange={setActiveIdx}
+                maxH={Math.min(vp.h * 0.78, 1100)}
+                caption={{ right: `${pad2(shownIdx + 1)} / ${pad2(photos.length)}` }}
+                onActivate={openLightbox}
+                activateLabel={`Ingrandisci ${f.title}`}
+                arrows
+                heroName={stageHero}
+                label={f.title}
+              />
+            </div>
 
             {photos.length > 1 && (
-              <div className="thumbstrip">
-                {photos.map((file, i) => (
-                  <Clickable
-                    key={file}
-                    onClick={() => setActiveIdx(i)}
-                    className="thumb"
-                    data-active={i === shownIdx || undefined}
-                    aria-current={i === shownIdx ? 'true' : undefined}
-                    aria-label={`Foto ${i + 1}`}
-                  >
-                    <PhotoFrame event={f} file={file} alt={`${f.title} — foto ${i + 1}`} />
-                  </Clickable>
-                ))}
+              <div {...en(1)}>
+                <div className="thumbstrip">
+                  {photos.map((file, i) => (
+                    <Clickable
+                      key={file}
+                      onClick={() => setActiveIdx(i)}
+                      className="thumb"
+                      data-active={i === shownIdx || undefined}
+                      aria-current={i === shownIdx ? 'true' : undefined}
+                      aria-label={`Foto ${i + 1}`}
+                    >
+                      <PhotoFrame event={f} file={file} alt={`${f.title} — foto ${i + 1}`} />
+                    </Clickable>
+                  ))}
+                </div>
               </div>
             )}
 
-            <div className="stack" style={{ gap: 10, marginTop: 28 }}>
-              <h1 className="t-h1" style={{ margin: 0 }}>
-                <DisplayTitle title={f.title} />
-              </h1>
-              <div className="t-meta" style={{ color: 'var(--accent-inverse)' }}>
-                {([
-                  formatDate(f.date),
-                  f.location && !f.title.toLowerCase().includes(f.location.toLowerCase()) ? f.location : null,
-                  !f.title.toLowerCase().includes(f.tag.toLowerCase()) ? f.tag : null,
-                ].filter(Boolean) as string[]).join(' · ')}
+            <div {...en(2)}>
+              <div className="stack" style={{ gap: 10, marginTop: 28 }}>
+                <h1 className="t-h1" style={{ margin: 0 }}>
+                  <DisplayTitle title={f.title} />
+                </h1>
+                <div className="t-meta" style={{ color: 'var(--accent-inverse)' }}>
+                  {([
+                    formatDate(f.date),
+                    f.location && !f.title.toLowerCase().includes(f.location.toLowerCase()) ? f.location : null,
+                    !f.title.toLowerCase().includes(f.tag.toLowerCase()) ? f.tag : null,
+                  ].filter(Boolean) as string[]).join(' · ')}
+                </div>
+                {f.specs && (
+                  <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>{f.specs}</div>
+                )}
               </div>
-              {f.specs && (
-                <div className="t-meta" style={{ color: 'var(--muted-inverse)' }}>{f.specs}</div>
-              )}
             </div>
 
             {f.description_it && (
-              <p className="prose" style={{ color: 'var(--muted-inverse)', margin: '18px 0 0' }}>
-                {f.description_it}
-              </p>
+              <div {...en(3)}>
+                <p className="prose" style={{ color: 'var(--muted-inverse)', margin: '18px 0 0' }}>
+                  {f.description_it}
+                </p>
+              </div>
             )}
 
             {f.links?.instagram_url && (
-              <a
-                className="link-ext"
-                style={{ color: 'var(--ink-inverse)', marginTop: 24, alignSelf: 'flex-start' }}
-                href={f.links.instagram_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Instagram ↗
-              </a>
+              <div {...en(3)}>
+                <a
+                  className="link-ext"
+                  style={{ color: 'var(--ink-inverse)', marginTop: 24, alignSelf: 'flex-start' }}
+                  href={f.links.instagram_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Instagram ↗
+                </a>
+              </div>
             )}
           </div>
 
           {related.length > 0 && (
-            <aside className="story-related">
+            <aside {...en(3, 'story-related')}>
               <h2 className="t-meta" style={{ margin: '0 0 10px', color: 'var(--muted-inverse)' }}>
                 Altre raccolte
               </h2>
@@ -545,6 +675,7 @@ export function PhotoStory({
               onActiveChange={setActiveIdx}
               maxW={Math.round(vp.w * 0.95)}
               maxH={Math.round(vp.h * 0.95)}
+              heroName="lightbox-hero"
               label={f.title}
             />
             {photos.length > 1 && (

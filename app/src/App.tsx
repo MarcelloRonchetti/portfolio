@@ -12,7 +12,10 @@ import {
 import { DATA, slugOf } from './lib/data'
 import type { GoFn, Route as SiteRoute } from './lib/data'
 import { vtNavigate } from './lib/vtNavigate'
+import { consumeStoryHero } from './lib/vtHero'
 import TopBar from './components/TopBar'
+import DustCanvas from './components/DustCanvas'
+import { usePointerParallax } from './hooks/usePointerParallax'
 import { Cover } from './pages/Cover'
 import { Gallery, PhotoStory } from './pages/Gallery'
 import DriveStory from './pages/DriveStory'
@@ -137,7 +140,9 @@ function GalleryRoute({ go }: { go: GoFn }) {
   const driveSettled = !drive.configured || drive.content !== null || drive.error !== null
   useEffect(() => {
     if (cat && !requested && driveSettled && !drive.error) {
-      navigate('/gallery', { replace: true, viewTransition: true })
+      // Redirect dentro la stessa VT manuale di tutto il sito: l'opzione
+      // viewTransition del router qui non ha mai chiamato l'API.
+      vtNavigate(navigate, '/gallery', { replace: true })
     }
   }, [cat, requested, driveSettled, drive.error, navigate])
 
@@ -204,8 +209,13 @@ function StoryRoute({ go }: { go: GoFn }) {
   }
 
   const known = decoded !== '' && (eventById(decoded) || firstEventByTag(decoded))
-  // Unknown ids (stale links, typos) never render an empty story page.
-  if (!known) return <Navigate to="/gallery" replace />
+  // Unknown ids (stale links, typos) never render an empty story page. A
+  // morph id left by a card click is discarded here: a stale id must never
+  // leak into the next story mount.
+  if (!known) {
+    consumeStoryHero()
+    return <Navigate to="/gallery" replace />
+  }
   return <PhotoStory key={decoded} eventId={decoded} tag={tag} go={go} />
 }
 
@@ -218,6 +228,9 @@ function AppShell() {
   // One download state for the whole shell: the header's CV button and the
   // Contact row are two views of the same download.
   const cv = useCvDownload()
+  // Parallasse del puntatore: scrive --px/--py su <body> per le pozze
+  // (.ambient), l'hero di Cover e i bagliori delle storie.
+  usePointerParallax()
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -307,12 +320,12 @@ function AppShell() {
       const canDown = current === 0 ? true : atBottom()
       if (acc >= 240 && canDown) {
         acc = 0
-        accRef.lockUntil = now + 900 // zoom-through VT (~820ms) + margine
+        accRef.lockUntil = now + 1050 // zoom-through VT (~1.0s) + margine
         accRef.navAt = now
         move(1)
       } else if (acc <= -240 && atTop()) {
         acc = 0
-        accRef.lockUntil = now + 900
+        accRef.lockUntil = now + 1050
         accRef.navAt = now
         move(-1)
       } else if (acc > 600 || acc < -600) {
@@ -349,6 +362,13 @@ function AppShell() {
     document.body.setAttribute('data-section', dark ? 'dark' : 'light')
   }, [dark])
 
+  // Le sale immersive portano la propria luce: le pozze generiche e la
+  // polvere si ritirano (la grana resta — è pellicola, ovunque).
+  const ownLight = location.pathname.startsWith('/experience')
+  useEffect(() => {
+    document.body.setAttribute('data-ambient', ownLight ? 'off' : 'on')
+  }, [ownLight])
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [location.pathname])
@@ -360,6 +380,12 @@ function AppShell() {
       <a className="skip-link" href="#contenuto">
         Vai al contenuto
       </a>
+      {/* Strati ambientali FISSI fuori dal wrapper .page-fade (che tiene un
+          transform: i fixed figli si centrerebbero sul documento, non sulla
+          viewport) e fuori dal remount per route: pozze e polvere non si
+          azzerano mai navigando. */}
+      <div className="ambient" aria-hidden="true" />
+      <DustCanvas />
       <TopBar theme={theme} onToggleTheme={toggleTheme} cv={cv} />
       <div key={location.pathname} className="page-fade" id="contenuto" tabIndex={-1}>
         <Routes>

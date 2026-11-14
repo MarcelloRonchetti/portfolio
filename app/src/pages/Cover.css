@@ -98,6 +98,24 @@
   outline-color: var(--accent-inverse);
 }
 
+/* ── parallasse dell'eroe ──
+   La foto respira contro il puntatore (--px/--py su body, scritti dall'hook
+   usePointerParallax): la foto scappa piano, il nome la segue a metà —
+   profondità senza teatro. Solo puntatori fini; la base al 106% copre la
+   corsa del translate senza mai scoprire i bordi. La .hero-shade resta ferma:
+   la luce non si muove con la mano. */
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .hero .hero-photo img {
+    transform: scale(1.06)
+      translate3d(calc(var(--px, 0) * -10px), calc(var(--py, 0) * -8px), 0);
+    will-change: transform;
+  }
+  .hero .hero-content {
+    transform: translate3d(calc(var(--px, 0) * 6px), calc(var(--py, 0) * 4px), 0);
+    will-change: transform;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-content .btn { transition: none; }
 }
