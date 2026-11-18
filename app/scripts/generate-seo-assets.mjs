@@ -295,9 +295,9 @@ fs.writeFileSync(path.join(DIST, 'sitemap.xml'), xml)
 // The hero is always the latest Instagram post that is not a VIDEO (same rule
 // as src/lib/events.ts featuredEvent); fall back to the newest event. Instagram
 // caps the source at 1080px, which pixelates on a full-screen banner, so the
-// build writes a 3× enhanced version (denoise → Lanczos → unsharp) as hero.jpg
+// build writes a 3× enhanced version (Lanczos + unsharp) as hero.jpg
 // next to the cover. Cover.tsx serves hero.jpg and falls back to the original
-// cover when it's missing (dev server, or ffmpeg absent — this step is
+// cover when it's missing (or ffmpeg absent — this step is
 // non-fatal and just keeps the 1080 hero).
 const heroEvent =
   events.find((e) => e.source.provider === 'instagram' && e.source.media_type !== 'VIDEO') ??
@@ -306,32 +306,42 @@ let heroImage = `${SITE}/photos/${heroEvent.id}/${heroEvent.cover}`
 
 const heroSrc = path.join(PHOTOS, heroEvent.id, heroEvent.cover)
 const heroOutDir = path.join(DIST, 'photos', heroEvent.id)
-if (fs.existsSync(heroSrc) && !fs.existsSync(path.join(heroOutDir, 'hero.jpg'))) {
-  const probe = spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' })
-  if (probe.error) {
-    console.warn('seo: ffmpeg non disponibile — la copertina hero resta a 1080px')
-  } else {
-    fs.mkdirSync(heroOutDir, { recursive: true })
-    const out = path.join(heroOutDir, 'hero.jpg')
-    const res = spawnSync(
-      'ffmpeg',
-      [
-        '-y',
-        '-loglevel', 'error',
-        '-i', heroSrc,
-        '-vf',
-        'vaguedenoiser=threshold=1.2:method=soft,scale=3240:4320:flags=lanczos,unsharp=5:5:0.45:5:5:0',
-        '-q:v', '3',
-        out,
-      ],
-      { stdio: 'ignore' }
-    )
-    if (res.status === 0 && fs.existsSync(out) && fs.statSync(out).size > 0) {
-      heroImage = `${SITE}/photos/${heroEvent.id}/hero.jpg`
-      console.log(`seo: hero.jpg 3× generato per ${heroEvent.id}`)
+const heroDistOut = path.join(heroOutDir, 'hero.jpg')
+const heroPublicOut = path.join(PHOTOS, heroEvent.id, 'hero.jpg')
+
+if (fs.existsSync(heroSrc)) {
+  fs.mkdirSync(heroOutDir, { recursive: true })
+  if (fs.existsSync(heroPublicOut) && !fs.existsSync(heroDistOut)) {
+    fs.copyFileSync(heroPublicOut, heroDistOut)
+  }
+  if (!fs.existsSync(heroDistOut)) {
+    const probe = spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' })
+    if (probe.error) {
+      console.warn('seo: ffmpeg non disponibile — la copertina hero resta a 1080px')
     } else {
-      console.warn('seo: ffmpeg ha fallito — la copertina hero resta a 1080px')
+      const res = spawnSync(
+        'ffmpeg',
+        [
+          '-y',
+          '-loglevel', 'error',
+          '-i', heroSrc,
+          '-vf',
+          'scale=iw*3:ih*3:flags=lanczos+accurate_rnd,unsharp=3:3:0.6:3:3:0',
+          '-q:v', '2',
+          heroDistOut,
+        ],
+        { stdio: 'ignore' }
+      )
+      if (res.status === 0 && fs.existsSync(heroDistOut) && fs.statSync(heroDistOut).size > 0) {
+        fs.copyFileSync(heroDistOut, heroPublicOut)
+        heroImage = `${SITE}/photos/${heroEvent.id}/hero.jpg`
+        console.log(`seo: hero.jpg 3× generato per ${heroEvent.id}`)
+      } else {
+        console.warn('seo: ffmpeg ha fallito — la copertina hero resta a 1080px')
+      }
     }
+  } else {
+    heroImage = `${SITE}/photos/${heroEvent.id}/hero.jpg`
   }
 }
 
