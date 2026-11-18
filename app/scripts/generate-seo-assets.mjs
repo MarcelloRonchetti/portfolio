@@ -292,56 +292,103 @@ xml += '</urlset>\n'
 fs.writeFileSync(path.join(DIST, 'sitemap.xml'), xml)
 
 // ── 4. Hero banner upscale ───────────────────────────────────────────────────
-// The hero is always the latest Instagram post that is not a VIDEO (same rule
-// as src/lib/events.ts featuredEvent); fall back to the newest event. Instagram
-// caps the source at 1080px, which pixelates on a full-screen banner, so the
-// build writes a 3× enhanced version (Lanczos + unsharp) as hero.jpg
-// next to the cover. Cover.tsx serves hero.jpg and falls back to the original
-// cover when it's missing (or ffmpeg absent — this step is
-// non-fatal and just keeps the 1080 hero).
-const heroEvent =
-  events.find((e) => e.source.provider === 'instagram' && e.source.media_type !== 'VIDEO') ??
-  events[0]
-let heroImage = `${SITE}/photos/${heroEvent.id}/${heroEvent.cover}`
+// Check for custom high-resolution camera masters in public/hero/ first.
+// If present, generates responsive variants for each master.
+// If absent, fall back to the newest Instagram post with 3× Lanczos upscale.
+const CUSTOM_HERO_DIR = path.join(ROOT, 'public/hero')
+const DIST_HERO_DIR = path.join(DIST, 'hero')
 
-const heroSrc = path.join(PHOTOS, heroEvent.id, heroEvent.cover)
-const heroOutDir = path.join(DIST, 'photos', heroEvent.id)
-const heroDistOut = path.join(heroOutDir, 'hero.jpg')
-const heroPublicOut = path.join(PHOTOS, heroEvent.id, 'hero.jpg')
+let customMasters = []
+if (fs.existsSync(CUSTOM_HERO_DIR)) {
+  const files = fs.readdirSync(CUSTOM_HERO_DIR)
+  customMasters = files.filter(
+    (f) => !/-(1440|2560|3840)\./i.test(f) && /\.(jpg|jpeg|png|webp|avif)$/i.test(f)
+  )
+}
 
-if (fs.existsSync(heroSrc)) {
-  fs.mkdirSync(heroOutDir, { recursive: true })
-  if (fs.existsSync(heroPublicOut) && !fs.existsSync(heroDistOut)) {
-    fs.copyFileSync(heroPublicOut, heroDistOut)
-  }
-  if (!fs.existsSync(heroDistOut)) {
-    const probe = spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' })
-    if (probe.error) {
-      console.warn('seo: ffmpeg non disponibile — la copertina hero resta a 1080px')
-    } else {
-      const res = spawnSync(
-        'ffmpeg',
-        [
-          '-y',
-          '-loglevel', 'error',
-          '-i', heroSrc,
-          '-vf',
-          'scale=iw*3:ih*3:flags=lanczos+accurate_rnd,unsharp=3:3:0.6:3:3:0',
-          '-q:v', '2',
-          heroDistOut,
-        ],
-        { stdio: 'ignore' }
-      )
-      if (res.status === 0 && fs.existsSync(heroDistOut) && fs.statSync(heroDistOut).size > 0) {
-        fs.copyFileSync(heroDistOut, heroPublicOut)
-        heroImage = `${SITE}/photos/${heroEvent.id}/hero.jpg`
-        console.log(`seo: hero.jpg 3× generato per ${heroEvent.id}`)
-      } else {
-        console.warn('seo: ffmpeg ha fallito — la copertina hero resta a 1080px')
+let heroImage = ''
+
+if (customMasters.length > 0) {
+  fs.mkdirSync(DIST_HERO_DIR, { recursive: true })
+  const probe = spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' })
+
+  for (const master of customMasters) {
+    const masterSrc = path.join(CUSTOM_HERO_DIR, master)
+    const masterDist = path.join(DIST_HERO_DIR, master)
+    fs.copyFileSync(masterSrc, masterDist)
+
+    const baseName = path.basename(master, path.extname(master))
+    const ext = path.extname(master).slice(1) || 'jpg'
+
+    if (!probe.error) {
+      for (const w of [1440, 2560, 3840]) {
+        const outPublic = path.join(CUSTOM_HERO_DIR, `${baseName}-${w}.${ext}`)
+        const outDist = path.join(DIST_HERO_DIR, `${baseName}-${w}.${ext}`)
+        if (!fs.existsSync(outDist)) {
+          spawnSync(
+            'ffmpeg',
+            [
+              '-y',
+              '-loglevel', 'error',
+              '-i', masterSrc,
+              '-vf', `scale='min(iw,${w})':-1:flags=lanczos+accurate_rnd,unsharp=3:3:0.5:3:3:0`,
+              '-q:v', '2',
+              outDist,
+            ],
+            { stdio: 'ignore' }
+          )
+          if (fs.existsSync(outDist)) {
+            fs.copyFileSync(outDist, outPublic)
+          }
+        }
       }
     }
-  } else {
-    heroImage = `${SITE}/photos/${heroEvent.id}/hero.jpg`
+  }
+
+  heroImage = `${SITE}/hero/${customMasters[0]}`
+  console.log(`seo: ${customMasters.length} hero in alta risoluzione configurati da public/hero/ (scelta casuale al caricamento)`)
+} else {
+  // Fallback to Instagram featured event
+  const heroEvent =
+    events.find((e) => e.source.provider === 'instagram' && e.source.media_type !== 'VIDEO') ??
+    events[0]
+  heroImage = `${SITE}/photos/${heroEvent.id}/${heroEvent.cover}`
+
+  const heroSrc = path.join(PHOTOS, heroEvent.id, heroEvent.cover)
+  const heroOutDir = path.join(DIST, 'photos', heroEvent.id)
+  const heroDistOut = path.join(heroOutDir, 'hero.jpg')
+  const heroPublicOut = path.join(PHOTOS, heroEvent.id, 'hero.jpg')
+
+  if (fs.existsSync(heroSrc)) {
+    fs.mkdirSync(heroOutDir, { recursive: true })
+    if (fs.existsSync(heroPublicOut) && !fs.existsSync(heroDistOut)) {
+      fs.copyFileSync(heroPublicOut, heroDistOut)
+    }
+    if (!fs.existsSync(heroDistOut)) {
+      const probe = spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' })
+      if (!probe.error) {
+        const res = spawnSync(
+          'ffmpeg',
+          [
+            '-y',
+            '-loglevel', 'error',
+            '-i', heroSrc,
+            '-vf',
+            'scale=iw*3:ih*3:flags=lanczos+accurate_rnd,unsharp=3:3:0.6:3:3:0',
+            '-q:v', '2',
+            heroDistOut,
+          ],
+          { stdio: 'ignore' }
+        )
+        if (res.status === 0 && fs.existsSync(heroDistOut) && fs.statSync(heroDistOut).size > 0) {
+          fs.copyFileSync(heroDistOut, heroPublicOut)
+          heroImage = `${SITE}/photos/${heroEvent.id}/hero.jpg`
+          console.log(`seo: hero.jpg 3× generato per ${heroEvent.id}`)
+        }
+      }
+    } else {
+      heroImage = `${SITE}/photos/${heroEvent.id}/hero.jpg`
+    }
   }
 }
 

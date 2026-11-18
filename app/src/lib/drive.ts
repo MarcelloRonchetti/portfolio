@@ -93,10 +93,22 @@ export type DriveCv = {
   sizeBytes?: string
 } | null
 
+export type DriveHero = {
+  id: string
+  name: string
+  /** Original camera bytes from Google CDN (full resolution). */
+  fullUrl: string
+  /** 2K / 1440p baseline display URL. */
+  displayUrl: string
+  /** Responsive srcSet for 1440w, 2560w, 3840w (4K). */
+  srcSet: string
+} | null
+
 export type DriveContent = {
   videos: DriveVideo[] // sorted by createdTime desc, already quality-filtered
   photoCollections: DrivePhotoCollection[] // sorted by date desc
   cv: DriveCv
+  hero: DriveHero
   fetchedAt: number
   /** Non-fatal notes (e.g. a subfolder failed to list). */
   errors: string[]
@@ -413,7 +425,33 @@ async function walkRoot(): Promise<Omit<DriveContent, 'fetchedAt'>> {
 
   if (!cv) cv = pickCv(files.filter((f) => DRIVE_CONFIG.cvFilePattern.test(f.name)))
 
-  return { videos, photoCollections, cv, errors }
+  // Hero photo: a file named hero.* in root, or an image inside a hero/ folder in root
+  const heroFile = files.find((f) => isImage(f) && nameOf(f).startsWith('hero'))
+  const heroDir = dirs.find((d) => nameOf(d) === 'hero')
+  let hero: DriveHero = null
+  if (heroFile) {
+    hero = {
+      id: heroFile.id,
+      name: heroFile.name,
+      fullUrl: lhUrl(heroFile.id, 's0'),
+      displayUrl: lhUrl(heroFile.id, 'w2560'),
+      srcSet: `${lhUrl(heroFile.id, 'w1440')} 1440w, ${lhUrl(heroFile.id, 'w2560')} 2560w, ${lhUrl(heroFile.id, 'w3840')} 3840w`,
+    }
+  } else if (heroDir) {
+    const heroDirFiles = await apiList(heroDir.id).catch(() => [])
+    const firstImg = heroDirFiles.filter(isImage).sort(byName)[0]
+    if (firstImg) {
+      hero = {
+        id: firstImg.id,
+        name: firstImg.name,
+        fullUrl: lhUrl(firstImg.id, 's0'),
+        displayUrl: lhUrl(firstImg.id, 'w2560'),
+        srcSet: `${lhUrl(firstImg.id, 'w1440')} 1440w, ${lhUrl(firstImg.id, 'w2560')} 2560w, ${lhUrl(firstImg.id, 'w3840')} 3840w`,
+      }
+    }
+  }
+
+  return { videos, photoCollections, cv, hero, errors }
 }
 
 // ── Cache + single-flight ─────────────────────────────────────────────────────

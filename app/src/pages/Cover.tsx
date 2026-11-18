@@ -4,6 +4,8 @@ import type { Route } from '../lib/data'
 import { DATA } from '../lib/data'
 import { featuredEvent, photoUrl } from '../lib/events'
 import { FLY_TARGETS, webglSupported } from '../lib/flyTargets'
+import { getCustomHero } from '../lib/customHero'
+import { useDriveContent } from '../hooks/useDriveContent'
 import Clickable from '../components/Clickable'
 import FlyDeck from './FlyDeck'
 import './Cover.css'
@@ -51,8 +53,11 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
   const [entering, setEntering] = useState(false)
   const glOk = useMemo(() => webglSupported(), [])
   // Il chunk WebGL si precarica subito (prima che serva), la scena si monta
-  // solo quando la sezione entra in campo. Fallimento = la pila resta.
+  // solo quando la sezione entra in campo. Fallimento = la pila resta PER
+  // SEMPRE come interfaccia vera (e deve restare accessibile), non come
+  // segnaposto transitorio.
   const [Scene, setScene] = useState<SceneComponent | null>(null)
+  const [chunkFailed, setChunkFailed] = useState(false)
 
   const step = useCallback(
     (dir: 1 | -1) => {
@@ -78,8 +83,13 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
     [go, targets]
   )
 
-  // Rotella: accumulo con decay + lock — un gesto = un passo. Ai bordi
-  // del percorso NON preventDefault: la pagina torna a scorrere.
+  // Rotella: accumulo con decay + lock — un gesto = un passo. Il delta è
+  // NORMALIZZATO a pixel (Firefox riporta le tacche del mouse in righe,
+  // deltaY≈3: senza normalizzazione un passo costerebbe ~16 tacche). La
+  // camera prende il comando SOLO a sezione intera (top ≤ 0 e bottom ≥ vh):
+  // con una soglia parziale la prima tacca utile parcheggerebbe la pagina
+  // a metà sezione e l'HUD resterebbe sotto il fold. Ai bordi del percorso
+  // NON preventDefault: la pagina torna a scorrere, nessuna trappola.
   useEffect(() => {
     if (reduced || n === 0) return
     const section = sectionRef.current
@@ -89,10 +99,15 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
     let lastWheel = 0
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey) return // pinch-zoom non è navigazione
+      const rect = section.getBoundingClientRect()
+      const vh = window.innerHeight
+      if (rect.top > 0 || rect.bottom < vh) return // non intera: scrolla
       const now = performance.now()
       if (now - lastWheel > 200) acc = 0
       lastWheel = now
-      const dy = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX
+      const raw = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX
+      const dy =
+        e.deltaMode === 1 ? raw * 16 : e.deltaMode === 2 ? raw * window.innerHeight : raw
       if (now < lockUntil) {
         e.preventDefault()
         return
@@ -193,7 +208,8 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
         if (alive) setScene(() => m.default)
       })
       .catch(() => {
-        /* chunk irraggiungibile: resta la pila CSS */
+        /* chunk irraggiungibile: la pila CSS diventa l'interfaccia definitiva */
+        setChunkFailed(true)
       })
     return () => {
       alive = false
@@ -216,6 +232,22 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
       select(i)
     },
     [select]
+  )
+
+  // Stessa guardia per l'HUD e le frecce: un trascinamento che inizia e
+  // finisce su un bottone genera un click — non deve navigare né doppiare
+  // il passo. Le frecce passano -1/-2 e vengono smistate qui.
+  const guardSelect = useCallback(
+    (i: number) => {
+      if (movedRef.current) {
+        movedRef.current = false
+        return
+      }
+      if (i === -1) step(-1)
+      else if (i === -2) step(1)
+      else select(i)
+    },
+    [select, step]
   )
 
   // Motion ridotto: niente camera — le anteprime sono una lista statica di
@@ -251,10 +283,14 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
     <section
       ref={sectionRef}
       className="fly"
+      tabIndex={0}
       data-entered={entered || undefined}
       data-entering={entering || undefined}
-      aria-label="Le pagine del sito"
+      aria-label="Le pagine del sito — usa le frecce per muoverti"
       onKeyDown={(e) => {
+        // Il keyboard non è mai un trascinamento: se un drag è finito senza
+        // consumare il proprio flag, da qui in poi non deve mangiare nulla.
+        movedRef.current = false
         if (e.key === 'ArrowRight') {
           e.preventDefault()
           step(1)
@@ -280,11 +316,17 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
             movedRef={movedRef}
             onPick={guardPick}
             onPrefetchExperience={prefetchExperience}
+            // Transitorio SOLO mentre il chunk WebGL è in arrivo: se la scena
+            // non arriverà mai, la pila è l'interfaccia vera e resta
+            // raggiungibile da tastiera e screen reader.
+            ariaHidden={glOk && !chunkFailed}
           />
         )}
 
         {/* HUD: lista-indice a sinistra (seleziona / entra), contatore e frecce
-            a destra. La voce attiva è sottolineata in bronzo. */}
+            a destra. La voce attiva è sottolineata in bronzo. I click passano
+            tutti da guardSelect: un trascinamento che finisce su un bottone
+            non deve navigare. */}
         <div className="fly-hud">
           <div className="fly-hud-list">
             {targets.map((t, i) => (
@@ -294,24 +336,26 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
                 className="fly-hud-item"
                 data-active={i === active || undefined}
                 aria-current={i === active ? 'true' : undefined}
-                onClick={() => select(i)}
+                aria-label={`0${i + 1} ${t.label}`}
+                onClick={() => guardSelect(i)}
                 onMouseEnter={t.route === 'experience' ? prefetchExperience : undefined}
                 onFocus={t.route === 'experience' ? prefetchExperience : undefined}
               >
-                <span className="fly-hud-num">0{i + 1}</span>
+                <span className="fly-hud-num" aria-hidden="true">
+                  0{i + 1}
+                </span>
                 <span className="fly-hud-label">{t.label}</span>
               </button>
             ))}
           </div>
           <div className="fly-hud-nav">
-            <p className="fly-count" aria-live="polite">
-              <span className="fly-sr">{targets[active].label} — </span>
+            <p className="fly-count" aria-hidden="true">
               {String(active + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}
             </p>
             <button
               type="button"
               className="fly-arrow"
-              onClick={() => step(-1)}
+              onClick={() => guardSelect(-1)}
               disabled={active === 0}
               aria-label="Collegamento precedente"
             >
@@ -322,7 +366,7 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
             <button
               type="button"
               className="fly-arrow"
-              onClick={() => step(1)}
+              onClick={() => guardSelect(-2)}
               disabled={active === n - 1}
               aria-label="Collegamento successivo"
             >
@@ -333,6 +377,13 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
           </div>
         </div>
 
+        {/* Annuncio vivo: fuori dal contatore visibile (che su mobile è
+            display:none) così la Lettore di schermo lo sente a ogni
+            larghezza. */}
+        <p className="fly-sr" aria-live="polite">
+          {targets[active].label}, pagina {active + 1} di {n}
+        </p>
+
         <div className="fly-progress" aria-hidden="true">
           <span style={{ width: `${((active + 1) / n) * 100}%` }} />
         </div>
@@ -342,25 +393,51 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
 }
 
 export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
+  const customHero = useMemo(() => getCustomHero(), [])
+  const { content: driveContent } = useDriveContent()
+  const driveHero = driveContent?.hero ?? null
   const featured = featuredEvent
 
-  // The build writes a 3× upscale (hero.jpg) of the featured cover for the
-  // full-screen banner; the original 1080px cover.jpg stays the fallback when
-  // the upscale is missing (dev server, or a build without ffmpeg).
   const [heroFailed, setHeroFailed] = useState(false)
-  const src = featured
-    ? heroFailed
-      ? photoUrl(featured, featured.cover)
-      : photoUrl(featured, 'hero.jpg')
-    : undefined
+
+  // Priority order for the full-screen landing banner:
+  // 1. Local custom camera master placed in public/hero/ (e.g. hero.jpg)
+  // 2. Google Drive hero (hero.jpg or in hero/ folder in root of Drive archive)
+  // 3. Featured event with 3× Lanczos upscale (fallback to original 1080px cover)
+  const heroImage = useMemo(() => {
+    if (customHero) {
+      return {
+        src: customHero.src,
+        srcSet: customHero.srcSet,
+      }
+    }
+    if (driveHero) {
+      return {
+        src: driveHero.displayUrl,
+        srcSet: driveHero.srcSet,
+      }
+    }
+    if (featured) {
+      const src = heroFailed
+        ? photoUrl(featured, featured.cover)
+        : photoUrl(featured, 'hero.jpg')
+      return {
+        src,
+        srcSet: undefined,
+      }
+    }
+    return null
+  }, [customHero, driveHero, featured, heroFailed])
 
   return (
     <main>
       <section className="hero">
         <div className="hero-photo">
-          {featured && (
+          {heroImage && (
             <img
-              src={src}
+              src={heroImage.src}
+              srcSet={heroImage.srcSet}
+              sizes="100vw"
               alt={DATA.identity.role}
               fetchPriority="high"
               decoding="async"
