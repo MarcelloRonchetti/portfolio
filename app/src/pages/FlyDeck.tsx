@@ -13,6 +13,9 @@ type FlyDeckProps = {
   movedRef: RefObject<boolean>
   onPick: (i: number) => void
   onPrefetchExperience: () => void
+  /** true = la pila è solo un attesa del chunk WebGL (aria-hidden + inert);
+      false = è l'interfaccia definitiva e resta pienamente accessibile. */
+  ariaHidden?: boolean
 }
 
 export default function FlyDeck({
@@ -21,9 +24,14 @@ export default function FlyDeck({
   movedRef,
   onPick,
   onPrefetchExperience,
+  ariaHidden = false,
 }: FlyDeckProps) {
   return (
-    <div className="fly-world" aria-hidden="true">
+    <div
+      className="fly-world"
+      aria-hidden={ariaHidden || undefined}
+      inert={ariaHidden || undefined}
+    >
       {targets.map((t, i) => {
         const off = offsets[i]
         const front = off === 0

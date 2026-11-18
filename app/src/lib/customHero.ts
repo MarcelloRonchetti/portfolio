@@ -1,6 +1,6 @@
 // Checks for custom high-resolution hero images placed in app/public/hero/.
 // Any camera masters placed in public/hero/ (e.g. porsche.jpg, ferrari.jpg, 01.jpg)
-// will be detected, and one will be randomly chosen whenever a user enters the home page.
+// will be detected for the home-page carousel and the 3D print corridor.
 
 const heroModules = import.meta.glob(
   '/public/hero/*.{jpg,jpeg,png,webp,avif}',

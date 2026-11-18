@@ -4,7 +4,8 @@ import type { Route } from '../lib/data'
 import { DATA } from '../lib/data'
 import { featuredEvent, photoUrl } from '../lib/events'
 import { FLY_TARGETS, webglSupported } from '../lib/flyTargets'
-import { getCustomHero } from '../lib/customHero'
+import { getAllCustomHeroes } from '../lib/customHero'
+import { moveHeroIndex } from '../lib/heroSequence'
 import { useDriveContent } from '../hooks/useDriveContent'
 import Clickable from '../components/Clickable'
 import FlyDeck from './FlyDeck'
@@ -393,12 +394,47 @@ function FlyThrough({ go }: { go: (next: Route, ref?: string) => void }) {
 }
 
 export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
-  const customHero = useMemo(() => getCustomHero(), [])
+  const customHeroes = useMemo(() => getAllCustomHeroes(), [])
+  const [customHeroIndex, setCustomHeroIndex] = useState(() =>
+    customHeroes.length > 0 ? Math.floor(Math.random() * customHeroes.length) : 0
+  )
   const { content: driveContent } = useDriveContent()
   const driveHero = driveContent?.hero ?? null
   const featured = featuredEvent
 
   const [heroFailed, setHeroFailed] = useState(false)
+  const [reduced, setReduced] = useState(
+    () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  )
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const onChange = () => setReduced(mq.matches)
+    mq.addEventListener?.('change', onChange)
+    return () => mq.removeEventListener?.('change', onChange)
+  }, [])
+
+  useEffect(() => {
+    if (reduced || customHeroes.length < 2) return
+    const timer = window.setInterval(() => {
+      setCustomHeroIndex((current) =>
+        moveHeroIndex(current, 1, customHeroes.length)
+      )
+    }, 8000)
+    return () => window.clearInterval(timer)
+  }, [customHeroes.length, reduced])
+
+  const moveCustomHero = useCallback(
+    (direction: number) => {
+      setCustomHeroIndex((current) =>
+        moveHeroIndex(current, direction, customHeroes.length)
+      )
+      setHeroFailed(false)
+    },
+    [customHeroes.length]
+  )
+
+  const customHero = customHeroes[customHeroIndex] ?? null
 
   // Priority order for the full-screen landing banner:
   // 1. Local custom camera master placed in public/hero/ (e.g. hero.jpg)
@@ -435,6 +471,7 @@ export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
         <div className="hero-photo">
           {heroImage && (
             <img
+              key={customHero ? customHero.name : heroImage.src}
               src={heroImage.src}
               srcSet={heroImage.srcSet}
               sizes="100vw"
@@ -446,6 +483,34 @@ export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
           )}
         </div>
         <div className="hero-shade" />
+        {customHeroes.length > 1 && (
+          <div className="hero-carousel" aria-label="Fotografie in evidenza">
+            <button
+              type="button"
+              className="hero-carousel-arrow"
+              onClick={() => moveCustomHero(-1)}
+              aria-label="Fotografia precedente"
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M10 2 4 8l6 6" />
+              </svg>
+            </button>
+            <div className="hero-carousel-count" aria-live="polite">
+              {String(customHeroIndex + 1).padStart(2, '0')}
+              <span> / {String(customHeroes.length).padStart(2, '0')}</span>
+            </div>
+            <button
+              type="button"
+              className="hero-carousel-arrow"
+              onClick={() => moveCustomHero(1)}
+              aria-label="Fotografia successiva"
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M6 2l6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+        )}
         <div className="hero-content">
           <div className="hero-role">{DATA.identity.role}</div>
           <h1 className="hero-name">{DATA.identity.name}</h1>

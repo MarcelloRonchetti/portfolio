@@ -1,4 +1,6 @@
 import type { Route } from './data'
+import { getAllCustomHeroes } from './customHero'
+import { createHeroSequence } from './heroSequence'
 
 // ── L'indice della home: le pagine del sito come stampe ─────────────────────
 // Condiviso da Cover (orchestratore + HUD), FlyDeck (riserva CSS) e HomeScene
@@ -13,9 +15,8 @@ export type FlyTarget = {
   img: string
 }
 
-// Segnaposto: studi di luce SVG inline (nessuna immagine reale, nessun
-// download) — stessa notte, stessa grana, angolo del bagliore diverso per
-// pagina, così le quattro stampe non sono gemelle.
+// Riserva: usa un unico SVG finché non ci sono foto locali nella cartella
+// hero/. Quando le foto sono presenti, le 4 stampe ricevono immagini reali.
 function flyPlaceholder(i: number): string {
   const angle = -16 + i * 8
   const glowX = 36 + i * 9
@@ -50,40 +51,52 @@ function flyPlaceholder(i: number): string {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
 
+const customHeroUrls = createHeroSequence(
+  getAllCustomHeroes().map((hero) => hero.src),
+  4
+)
+
 export const FLY_TARGETS: FlyTarget[] = [
   {
     route: 'gallery',
     label: 'Galleria',
     note: 'Le raccolte per categoria',
-    img: flyPlaceholder(0),
+    img: customHeroUrls[0] ?? flyPlaceholder(0),
   },
   {
     route: 'videos',
     label: 'Video',
     note: 'I filmati dell’archivio',
-    img: flyPlaceholder(1),
+    img: customHeroUrls[1] ?? flyPlaceholder(1),
   },
   {
     route: 'experience',
     label: 'Le sale immersive',
     note: 'Il percorso 3D per tema',
-    img: flyPlaceholder(2),
+    img: customHeroUrls[2] ?? flyPlaceholder(2),
   },
   {
     route: 'contact',
     label: 'Contatti',
     note: 'Commissioni e collaborazioni',
-    img: flyPlaceholder(3),
+    img: customHeroUrls[3] ?? flyPlaceholder(3),
   },
 ]
 
 // La scena WebGL parte solo se il dispositivo ha un contesto GL: altrimenti
-// resta la pila CSS (FlyDeck), che è già un degradamento accettabile.
+// resta la pila CSS (FlyDeck), che è già un degradamento accettabile. La
+// sonda rilascia il proprio contesto (i browser ne contano pochi per pagina)
+// e il risultato è memoizzato: Cover monta una volta sola.
+let glProbeCache: boolean | null = null
 export function webglSupported(): boolean {
+  if (glProbeCache !== null) return glProbeCache
   try {
     const probe = document.createElement('canvas')
-    return Boolean(probe.getContext('webgl2') ?? probe.getContext('webgl'))
+    const gl = probe.getContext('webgl2') ?? probe.getContext('webgl')
+    glProbeCache = Boolean(gl)
+    if (gl) gl.getExtension('WEBGL_lose_context')?.loseContext()
   } catch {
-    return false
+    glProbeCache = false
   }
+  return glProbeCache
 }

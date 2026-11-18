@@ -346,7 +346,7 @@ if (customMasters.length > 0) {
   }
 
   heroImage = `${SITE}/hero/${customMasters[0]}`
-  console.log(`seo: ${customMasters.length} hero in alta risoluzione configurati da public/hero/ (scelta casuale al caricamento)`)
+  console.log(`seo: ${customMasters.length} hero in alta risoluzione configurati da public/hero/ (sequenza carousel)`)
 } else {
   // Fallback to Instagram featured event
   const heroEvent =

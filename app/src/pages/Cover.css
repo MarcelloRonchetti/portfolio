@@ -138,6 +138,78 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, .55), transparent);
   animation: scrollcue 2.2s var(--ease) infinite;
 }
+
+/* Sequence controls for the local multi-hero. They sit against the lower
+   right edge, outside the copy block and below the main CTA hierarchy. */
+.hero-carousel {
+  position: absolute;
+  right: clamp(24px, 4vw, 64px);
+  bottom: 26px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, .82);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: .12em;
+}
+.hero-carousel-arrow {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 50%;
+  background: rgba(10, 9, 7, .18);
+  color: rgba(255, 255, 255, .88);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: border-color .2s var(--ease), background .2s var(--ease);
+}
+.hero-carousel-arrow:hover,
+.hero-carousel-arrow:focus-visible {
+  border-color: var(--accent-inverse);
+  background: rgba(10, 9, 7, .48);
+}
+.hero-carousel-arrow:focus-visible {
+  outline: 2px solid var(--accent-inverse);
+  outline-offset: 3px;
+}
+.hero-carousel-arrow svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hero-carousel-count {
+  min-width: 68px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.hero-carousel-count span {
+  color: rgba(255, 255, 255, .48);
+}
+@media (max-width: 640px) {
+  .hero-carousel {
+    right: 16px;
+    bottom: 18px;
+  }
+  .hero-carousel-count {
+    display: none;
+  }
+  .hero-carousel-arrow {
+    width: 34px;
+    height: 34px;
+  }
+  .hero-scrollcue {
+    bottom: 18px;
+  }
+}
 @keyframes scrollcue {
   0% { transform: scaleY(0); transform-origin: top; opacity: 0; }
   35% { transform: scaleY(1); opacity: 1; }
@@ -154,6 +226,12 @@
 .fly {
   background: var(--bg-dark);
   --fly-ease: cubic-bezier(.19, 1, .22, 1);
+}
+/* La sezione è focusabile (le frecce del carosello vivono qui): un'ombra
+   bronzo sottile dice DOVE si è arrivati, senza cornice pesante. */
+.fly:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px rgba(194, 166, 120, .35);
 }
 .fly-stage {
   position: relative;
@@ -187,6 +265,7 @@
   top: 68%;
   height: 1px;
   z-index: 0;
+  pointer-events: none;
   background: linear-gradient(
     90deg,
     transparent,
@@ -238,7 +317,9 @@
 }
 
 /* La scena WebGL (HomeScene): riempie lo stage, sotto l'HUD. Il canvas è
-   dimensionato da renderer.setSize(..., false) e steso via CSS. */
+   dimensionato da renderer.setSize(..., false) e steso via CSS. Il cursore
+   hover arriva da data-hover (scritto dalla scena per frame): il :active
+   del trascinamento deve poter vincere — specificity più alta e dopo. */
 .fly-canvas {
   position: absolute;
   inset: 0;
@@ -246,6 +327,8 @@
   touch-action: pan-y; /* lo swipe orizzontale è del carosello, il verticale resta della pagina */
   cursor: grab;
 }
+.fly-canvas[data-hover="pointer"] { cursor: pointer; }
+.fly-stage:active .fly-canvas { cursor: grabbing; }
 .fly-canvas canvas {
   display: block;
   width: 100%;
@@ -417,7 +500,10 @@
   transform: translateX(4px);
 }
 
-/* HUD: lista-indice a sinistra, contatore e frecce a destra. */
+/* HUD: lista-indice a sinistra, contatore e frecce a destra. Il WRAPPER non
+   prende eventi (non deve mai coprire il canvas all'hover); li prendono solo
+   lista e frecce. La selezione del testo è spenta: un trascinamento che
+   parte qui non deve scrivere righe blu. */
 .fly-hud {
   position: absolute;
   left: var(--gutter);
@@ -428,6 +514,13 @@
   justify-content: space-between;
   align-items: flex-end;
   gap: 18px;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.fly-hud-list,
+.fly-hud-nav {
+  pointer-events: auto;
 }
 .fly-hud-list {
   display: flex;
@@ -548,6 +641,7 @@
   height: 2px;
   z-index: 30;
   background: rgba(255, 255, 255, .07);
+  pointer-events: none;
 }
 .fly-progress span {
   display: block;

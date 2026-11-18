@@ -29,13 +29,14 @@ const CAM_DIST = 6.2
 
 // Le stampe sono APPESSE ALLE PARETI del corridoio, alternate nei lati e
 // ruotate verso il percorso: la camera viaggia al centro e le sfiora senza
-// attraversarle (ry positivo = bordo destro arretra → la stampa guarda il
-// centro del corridoio).
+// attraversarle. La normale di un piano ruotato di ry è (sin ry, 0, cos ry):
+// per guardare il centro, parete sinistra (x<0) vuole ry POSITIVO, parete
+// destra negativo — i versi giusti, non quelli dell'intuizione.
 const POSES = [
-  { x: -2.7, y: 0, ry: -0.3 },
-  { x: 3.0, y: 0.15, ry: 0.3 },
-  { x: -3.0, y: -0.1, ry: -0.3 },
-  { x: 2.8, y: 0.12, ry: 0.28 },
+  { x: -2.7, y: 0, ry: 0.3 },
+  { x: 3.0, y: 0.15, ry: -0.3 },
+  { x: -3.0, y: -0.1, ry: 0.3 },
+  { x: 2.8, y: 0.12, ry: -0.28 },
 ]
 
 type SceneRefs = {
@@ -49,7 +50,12 @@ const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 
 // Una stampa: fondo notturno, bagliore bronzo, fascia di luce, grana,
 // vignetta, cornice e tipografia cotta (Italiana + JetBrains Mono).
-function makePrintTexture(index: number, maxAniso: number): THREE.CanvasTexture {
+// Redraw: le texture partono con i font disponibili e vengono RIDISegnate
+// quando i font veri arrivano — la scena non aspetta mai i font per partire.
+function makePrintTexture(
+  index: number,
+  maxAniso: number
+): { tex: THREE.CanvasTexture; redraw: () => void } {
   const w = 1024
   const h = 640
   const cv = document.createElement('canvas')
@@ -57,84 +63,123 @@ function makePrintTexture(index: number, maxAniso: number): THREE.CanvasTexture 
   cv.height = h
   const ctx = cv.getContext('2d')!
   const t = FLY_TARGETS[index]
+  let photo: HTMLImageElement | null = null
 
-  const bg = ctx.createLinearGradient(0, 0, w, h)
-  bg.addColorStop(0, '#3d3428')
-  bg.addColorStop(0.55, '#241d17')
-  bg.addColorStop(1, '#14100c')
-  ctx.fillStyle = bg
-  ctx.fillRect(0, 0, w, h)
-
-  const gx = w * (0.36 + index * 0.07)
-  const glow = ctx.createRadialGradient(gx, h * 0.3, 0, gx, h * 0.3, w * 0.5)
-  glow.addColorStop(0, 'rgba(212,183,138,.38)')
-  glow.addColorStop(1, 'rgba(212,183,138,0)')
-  ctx.fillStyle = glow
-  ctx.fillRect(0, 0, w, h)
-
-  ctx.save()
-  ctx.translate(w / 2, h / 2)
-  ctx.rotate(((-16 + index * 8) * Math.PI) / 180)
-  const beam = ctx.createLinearGradient(-w, 0, w, 0)
-  beam.addColorStop(0.38, 'rgba(255,240,218,0)')
-  beam.addColorStop(0.5, 'rgba(255,240,218,.13)')
-  beam.addColorStop(0.62, 'rgba(255,240,218,0)')
-  ctx.fillStyle = beam
-  ctx.fillRect(-w, -h * 0.18, w * 2, h * 0.36)
-  ctx.restore()
-
-  // grana: tile 128px ripetuto — la grana resta a 1px, non si ingrandisce
-  const gcv = document.createElement('canvas')
-  gcv.width = 128
-  gcv.height = 128
-  const gctx = gcv.getContext('2d')!
-  const img = gctx.createImageData(128, 128)
-  for (let p = 0; p < img.data.length; p += 4) {
-    img.data[p] = 255
-    img.data[p + 1] = 255
-    img.data[p + 2] = 255
-    img.data[p + 3] = Math.random() * 14
+  if (!t.img.startsWith('data:image/svg+xml,')) {
+    photo = new Image()
+    photo.decoding = 'async'
   }
-  gctx.putImageData(img, 0, 0)
-  ctx.fillStyle = ctx.createPattern(gcv, 'repeat')!
-  ctx.fillRect(0, 0, w, h)
 
-  const vig = ctx.createRadialGradient(w / 2, h * 0.46, h * 0.3, w / 2, h * 0.46, w * 0.72)
-  vig.addColorStop(0, 'rgba(0,0,0,0)')
-  vig.addColorStop(1, 'rgba(0,0,0,.44)')
-  ctx.fillStyle = vig
-  ctx.fillRect(0, 0, w, h)
+  const draw = () => {
+    ctx.clearRect(0, 0, w, h)
 
-  ctx.strokeStyle = 'rgba(255,255,255,.12)'
-  ctx.lineWidth = 2
-  ctx.strokeRect(12.5, 12.5, w - 25, h - 25)
-  ctx.strokeStyle = 'rgba(255,255,255,.04)'
-  ctx.lineWidth = 1
-  ctx.strokeRect(24.5, 24.5, w - 49, h - 49)
+    const bg = ctx.createLinearGradient(0, 0, w, h)
+    bg.addColorStop(0, '#3d3428')
+    bg.addColorStop(0.55, '#241d17')
+    bg.addColorStop(1, '#14100c')
+    ctx.fillStyle = bg
+    ctx.fillRect(0, 0, w, h)
 
-  ctx.textAlign = 'right'
-  ctx.font = '280px Italiana, serif'
-  ctx.fillStyle = 'rgba(255,255,255,.07)'
-  ctx.fillText(`0${index + 1}`, w - 56, 250)
-  ctx.textAlign = 'left'
+    if (photo?.complete && photo.naturalWidth > 0) {
+      const scale = Math.max(w / photo.naturalWidth, h / photo.naturalHeight)
+      const dw = photo.naturalWidth * scale
+      const dh = photo.naturalHeight * scale
+      ctx.drawImage(photo, (w - dw) / 2, (h - dh) / 2, dw, dh)
 
-  ctx.shadowColor = 'rgba(0,0,0,.55)'
-  ctx.shadowBlur = 18
-  ctx.fillStyle = 'rgba(245,243,238,.96)'
-  ctx.font = '72px Italiana, serif'
-  ctx.fillText(t.label, 64, h - 138)
-  ctx.shadowBlur = 0
-  const spaced = ctx as CanvasRenderingContext2D & { letterSpacing?: string }
-  spaced.letterSpacing = '6px'
-  ctx.font = '400 21px "JetBrains Mono", monospace'
-  ctx.fillStyle = 'rgba(176,169,158,.92)'
-  ctx.fillText(t.note.toUpperCase(), 66, h - 92)
-  spaced.letterSpacing = '0px'
+      const photoShade = ctx.createLinearGradient(0, 0, 0, h)
+      photoShade.addColorStop(0, 'rgba(10,9,7,.16)')
+      photoShade.addColorStop(.48, 'rgba(10,9,7,.05)')
+      photoShade.addColorStop(1, 'rgba(10,9,7,.82)')
+      ctx.fillStyle = photoShade
+      ctx.fillRect(0, 0, w, h)
+    }
+
+    const gx = w * (0.36 + index * 0.07)
+    const glow = ctx.createRadialGradient(gx, h * 0.3, 0, gx, h * 0.3, w * 0.5)
+    glow.addColorStop(0, 'rgba(212,183,138,.38)')
+    glow.addColorStop(1, 'rgba(212,183,138,0)')
+    ctx.fillStyle = glow
+    ctx.fillRect(0, 0, w, h)
+
+    ctx.save()
+    ctx.translate(w / 2, h / 2)
+    ctx.rotate(((-16 + index * 8) * Math.PI) / 180)
+    const beam = ctx.createLinearGradient(-w, 0, w, 0)
+    beam.addColorStop(0.38, 'rgba(255,240,218,0)')
+    beam.addColorStop(0.5, 'rgba(255,240,218,.13)')
+    beam.addColorStop(0.62, 'rgba(255,240,218,0)')
+    ctx.fillStyle = beam
+    ctx.fillRect(-w, -h * 0.18, w * 2, h * 0.36)
+    ctx.restore()
+
+    // grana: tile 128px ripetuto — la grana resta a 1px, non si ingrandisce
+    const gcv = document.createElement('canvas')
+    gcv.width = 128
+    gcv.height = 128
+    const gctx = gcv.getContext('2d')!
+    const img = gctx.createImageData(128, 128)
+    for (let p = 0; p < img.data.length; p += 4) {
+      img.data[p] = 255
+      img.data[p + 1] = 255
+      img.data[p + 2] = 255
+      img.data[p + 3] = Math.random() * 14
+    }
+    gctx.putImageData(img, 0, 0)
+    ctx.fillStyle = ctx.createPattern(gcv, 'repeat')!
+    ctx.fillRect(0, 0, w, h)
+
+    const vig = ctx.createRadialGradient(w / 2, h * 0.46, h * 0.3, w / 2, h * 0.46, w * 0.72)
+    vig.addColorStop(0, 'rgba(0,0,0,0)')
+    vig.addColorStop(1, 'rgba(0,0,0,.44)')
+    ctx.fillStyle = vig
+    ctx.fillRect(0, 0, w, h)
+
+    ctx.strokeStyle = 'rgba(255,255,255,.12)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(12.5, 12.5, w - 25, h - 25)
+    ctx.strokeStyle = 'rgba(255,255,255,.04)'
+    ctx.lineWidth = 1
+    ctx.strokeRect(24.5, 24.5, w - 49, h - 49)
+
+    ctx.textAlign = 'right'
+    ctx.font = '280px Italiana, serif'
+    ctx.fillStyle = 'rgba(255,255,255,.07)'
+    ctx.fillText(`0${index + 1}`, w - 56, 250)
+    ctx.textAlign = 'left'
+
+    ctx.shadowColor = 'rgba(0,0,0,.55)'
+    ctx.shadowBlur = 18
+    ctx.fillStyle = 'rgba(245,243,238,.96)'
+    ctx.font = '72px Italiana, serif'
+    ctx.fillText(t.label, 64, h - 138)
+    ctx.shadowBlur = 0
+    const spaced = ctx as CanvasRenderingContext2D & { letterSpacing?: string }
+    spaced.letterSpacing = '6px'
+    ctx.font = '400 21px "JetBrains Mono", monospace'
+    ctx.fillStyle = 'rgba(176,169,158,.92)'
+    ctx.fillText(t.note.toUpperCase(), 66, h - 92)
+    spaced.letterSpacing = '0px'
+  }
+  draw()
 
   const tex = new THREE.CanvasTexture(cv)
   tex.colorSpace = THREE.SRGBColorSpace
   tex.anisotropy = maxAniso
-  return tex
+
+  if (photo) {
+    photo.onload = () => {
+      draw()
+      tex.needsUpdate = true
+    }
+    photo.src = t.img
+  }
+  return {
+    tex,
+    redraw: () => {
+      draw()
+      tex.needsUpdate = true
+    },
+  }
 }
 
 // Alpha per i riflessi: bianco verso il pavimento, nero in profondità.
@@ -218,9 +263,11 @@ function initScene(host: HTMLElement, refs: SceneRefs): () => void {
   const prints: THREE.Mesh[] = []
   const printMats: THREE.MeshBasicMaterial[] = []
   const mirrorMats: THREE.MeshBasicMaterial[] = []
+  const redrawPrints: Array<() => void> = []
 
   FLY_TARGETS.forEach((_, i) => {
-    const tex = makePrintTexture(i, renderer.capabilities.getMaxAnisotropy())
+    const { tex, redraw } = makePrintTexture(i, renderer.capabilities.getMaxAnisotropy())
+    redrawPrints.push(redraw)
     const pose = POSES[i % POSES.length]
     const z = FIRST_Z - i * STEP
 
@@ -348,19 +395,41 @@ function initScene(host: HTMLElement, refs: SceneRefs): () => void {
   const onClick = () => {
     if (state.hover >= 0) refs.pickRef.current(state.hover)
   }
+  // Touch: niente pointerleave affidabile — al tap il hover deve svanire,
+  // altrimenti l'ultima stampa toccata resta accesa fino al gesto dopo.
+  const onUp = (e: PointerEvent) => {
+    if (e.pointerType !== 'mouse') {
+      ndc.set(-2, -2)
+      swayTX = 0
+      swayTY = 0
+    }
+  }
   host.addEventListener('pointermove', onMove)
   host.addEventListener('pointerleave', onLeave)
+  host.addEventListener('pointerup', onUp)
   host.addEventListener('click', onClick)
 
   let raf = 0
   let running = false
   let last = performance.now()
+  let lastRender = last
+
+  // Guardiano: se il loop è "attivo" ma il frame non arriva (ambiente che
+  // tace su rAF pur dichiarandosi visible), lo riaccende — un wake perso
+  // non deve mai lasciare la scena congelata per sempre.
+  const watchdog = window.setInterval(() => {
+    if (running && performance.now() - lastRender > 1500) {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(tick)
+    }
+  }, 1000)
 
   const tick = (now: number) => {
     if (!running) return
     raf = requestAnimationFrame(tick)
     const dt = Math.min((now - last) / 1000, 0.05)
     last = now
+    lastRender = now
     const e = easeOutCubic(Math.min(1, (now - t0) / 2000))
 
     const i = Math.min(n - 1, Math.max(0, refs.activeRef.current))
@@ -382,18 +451,20 @@ function initScene(host: HTMLElement, refs: SceneRefs): () => void {
     camera.lookAt(state.lookX, state.lookY, state.lookZ)
 
     // Hover per raycast: il puntatore resta fermo ma la camera si muove —
-    // il test va rifatto a ogni frame, non solo al pointermove.
+    // il test va rifatto a ogni frame, non solo al pointermove. Il cursore
+    // passa da un data-attribute (non da uno stile inline): così il CSS può
+    // farglielo togliere di mezzo con :active durante il trascinamento.
     if (ndc.x > -1.5) {
       raycaster.setFromCamera(ndc, camera)
       const hit = raycaster.intersectObjects(prints, false)[0]
       const hovered = hit ? (hit.object.userData.index as number) : -1
       if (hovered !== state.hover) {
         state.hover = hovered
-        host.style.cursor = hovered >= 0 ? 'pointer' : 'grab'
+        host.dataset.hover = hovered >= 0 ? 'pointer' : 'grab'
       }
     } else if (state.hover !== -1) {
       state.hover = -1
-      host.style.cursor = 'grab'
+      host.dataset.hover = 'grab'
     }
 
     prints.forEach((mesh, k) => {
@@ -435,17 +506,22 @@ function initScene(host: HTMLElement, refs: SceneRefs): () => void {
     cancelAnimationFrame(raf)
   }
 
-  // Il loop vive solo mentre la scena è visibile e il tab attivo.
+  // Il loop vive solo mentre la scena è visibile E il tab è attivo: il flag
+  // dell'IO resta l'unica fonte di verità — il visibilitychange da solo può
+  // solo addormentare, mai risvegliare (altrimenti un alt-tab rimette in
+  // moto una scena fuori schermo e l'IO non la riaddormenta mai più).
+  let visible = false
   const io = new IntersectionObserver(
     (entries) => {
-      if (entries.some((en) => en.isIntersecting)) wake()
+      visible = entries.some((en) => en.isIntersecting)
+      if (visible && !document.hidden) wake()
       else sleep()
     },
     { threshold: 0.05 }
   )
   io.observe(host)
   const onVisibility = () => {
-    if (document.hidden) sleep()
+    if (document.hidden || !visible) sleep()
     else wake()
   }
   document.addEventListener('visibilitychange', onVisibility)
@@ -454,6 +530,7 @@ function initScene(host: HTMLElement, refs: SceneRefs): () => void {
     const w = host.clientWidth
     const h = host.clientHeight
     if (!w || !h) return
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.setSize(w, h, false)
     camera.aspect = w / h
     const portrait = camera.aspect < 0.9
@@ -466,14 +543,31 @@ function initScene(host: HTMLElement, refs: SceneRefs): () => void {
   ro.observe(host)
   resize()
 
+  // Le texture SONO nate con i font disponibili al momento della creazione:
+  // vengono ridisegnate al primo font disponibile (via veloce) e DI NUOVO
+  // quando i font veri del sito arrivano, comunque tardi — la seconda passa
+  // è idempotente, così la tipografia cotta non resta mai quella di riserva.
+  const fontsReady = Promise.all([
+    document.fonts.load('280px Italiana'),
+    document.fonts.load('400 21px "JetBrains Mono"'),
+  ]).catch(() => undefined)
+  void Promise.race([fontsReady, new Promise((res) => setTimeout(res, 1500))]).then(() => {
+    redrawPrints.forEach((redraw) => redraw())
+  })
+  void fontsReady.then(() => {
+    redrawPrints.forEach((redraw) => redraw())
+  })
+
   wake()
 
   return () => {
+    window.clearInterval(watchdog)
     io.disconnect()
     ro.disconnect()
     document.removeEventListener('visibilitychange', onVisibility)
     host.removeEventListener('pointermove', onMove)
     host.removeEventListener('pointerleave', onLeave)
+    host.removeEventListener('pointerup', onUp)
     host.removeEventListener('click', onClick)
     sleep()
     scene.traverse((obj) => {
@@ -487,6 +581,9 @@ function initScene(host: HTMLElement, refs: SceneRefs): () => void {
       }
     })
     renderer.dispose()
+    // Rilascia il contesto GL adesso, non alla GC: i browser ne contano pochi
+    // per pagina e un contesto zombi può spremere quello di /experience.
+    renderer.forceContextLoss()
     renderer.domElement.remove()
   }
 }
@@ -511,24 +608,11 @@ export default function HomeScene({ active, onPick }: HomeSceneProps) {
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
-    let disposed = false
-    let teardown: (() => void) | null = null
-
-    // Le texture cuciono la tipografia del sito: aspetta i font (o rinuncia
-    // dopo 1.5s — la stampa esce con il serif di riserva, non blocca mai).
-    const fontsReady = Promise.all([
-      document.fonts.load('280px Italiana'),
-      document.fonts.load('400 21px "JetBrains Mono"'),
-    ]).catch(() => undefined)
-    void Promise.race([fontsReady, new Promise((res) => setTimeout(res, 1500))]).then(() => {
-      if (disposed || !host.isConnected) return
-      teardown = initScene(host, { activeRef, pickRef })
-    })
-
-    return () => {
-      disposed = true
-      teardown?.()
-    }
+    // La scena parte SUBITO (le texture nascono con i font disponibili e
+    // vengono ridisegnate quando i veri arrivano): nessuna finestra morta
+    // fra l'ingresso della sezione e il primo frame.
+    const teardown = initScene(host, { activeRef, pickRef })
+    return teardown
   }, [])
 
   return <div ref={hostRef} className="fly-canvas" aria-hidden="true" />
