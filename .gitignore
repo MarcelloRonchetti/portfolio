@@ -11,6 +11,11 @@ build/
 out/
 .output/
 **/hero.jpg
+**/photos/**/hero.jpg
+**/hero/*-1440.*
+**/hero/*-2560.*
+**/hero/*-3840.*
+dist/hero/
 
 # ── Vite ──────────────────────────────────────────────────────────────────────
 *.local
@@ -95,3 +100,4 @@ out/
 
 # stato hook video2code (locale, mai nella repo)
 .v2c/
+/transizione-zoomthrough.webm

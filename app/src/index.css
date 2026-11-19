@@ -53,6 +53,10 @@
   --gutter: clamp(20px, 4vw, 56px);
   --line: 1px;
   --ease: cubic-bezier(.22, .61, .36, 1);
+
+  /* RGB del bagliore ambientale (pozze darkroom, spot delle card, polvere):
+     triplete riusabile dentro rgba() — la notte la gira in grigio. */
+  --glow: 194, 166, 120;
 }
 
 /* ─── notte ─── */
@@ -82,6 +86,7 @@
   --lightbox-bg: rgba(0, 0, 0, .96);
   --accent-contrast: #131313;
   --error: #a89383;
+  --glow: 214, 214, 214;
 }
 
 * { box-sizing: border-box; }
@@ -112,6 +117,99 @@ body[data-section="dark"] {
 }
 html:has(body[data-section="dark"]) {
   background: var(--bg-dark);
+}
+
+/* ─── ambienti darkroom (strati fissi di sfondo) ───
+   Grana pellicola + pozze di luce + polvere per le sezioni scure. body non
+   riceve mai un transform (il containing-block trap di .page-fade riguarda i
+   SUOI discendenti), quindi i suoi pseudo-elementi fissi sono safe. ATTENZIONE
+   all'ordine di pittura: il wrapper .page-fade tiene un transform permanente
+   (fill-mode both) → è uno stacking context nello strato z-auto e coprirebbe
+   qualunque layer z ≤ 0 venuto prima nell'albero. Per questo i tre strati
+   stanno SOPRA quello strato con z positivi (pozze 3 < polvere 4 < grana 5)
+   e restano sotto header (z 40) e lightbox (z 100): la luce vive nella
+   stanza, la UI resta nitida. I colori derivano da --glow/--bg-dark →
+   [data-theme="night"] eredita un'atmosfera in grigio senza una riga in più. */
+
+/* Grana pellicola: tile SVG feTurbulence su un layer sovradimensionato che
+   SALTA (transform a steps → solo compositor, niente repaint per frame) —
+   il tremolio della pellicola, non uno smear. L'overscan -10% copre con
+   ampio margine la corsa del translate (±2.8% dell'elemento). Sulle sezioni
+   chiare resta quasi impercettibile (carta), sulle scure diventa pellicola. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -10%;
+  z-index: 5;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='280' height='280' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 280px 280px;
+  opacity: .035;
+  transition: opacity .45s var(--ease);
+  animation: grainShift .9s steps(1) infinite;
+  will-change: transform;
+}
+body[data-section="dark"]::before { opacity: .06; }
+
+/* Pozze di luce bronzo + light leak + vignetta: un solo layer che deriva
+   piano (46s alternate), mentre il padre segue il puntatore via --px/--py
+   (hook usePointerParallax). Sulle sezioni chiare resta spento — la carta
+   non ha luce in camera. /experience lo disattiva da solo (data-ambient). */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(calc(var(--px, 0) * 18px), calc(var(--py, 0) * 14px), 0);
+  transition: opacity .45s var(--ease);
+  will-change: transform;
+}
+body[data-section="dark"] .ambient { opacity: 1; }
+.ambient::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background:
+    radial-gradient(38% 30% at 24% 16%, rgba(var(--glow), .13), transparent 70%),
+    radial-gradient(30% 26% at 82% 68%, rgba(var(--glow), .09), transparent 70%),
+    radial-gradient(46% 34% at 62% 34%, rgba(var(--glow), .05), transparent 72%),
+    linear-gradient(105deg, transparent 52%, rgba(var(--glow), .07) 68%, rgba(var(--glow), .02) 80%, transparent 92%),
+    radial-gradient(130% 100% at 50% 42%, transparent 55%, rgba(6, 5, 3, .5) 100%);
+  animation: poolDrift 46s ease-in-out infinite alternate;
+  will-change: transform;
+}
+/* Le sale immersive hanno la loro luce: le pozze generiche si ritirano. */
+body[data-ambient="off"] .ambient,
+body[data-ambient="off"] .dust { opacity: 0; }
+
+/* Polvere inControluce: canvas fisso (components/DustCanvas.tsx) tra le pozze
+   (z 3) e la grana (z 5) — i granuli cadono anche sotto la grana. Le sezioni
+   chiare la spengono come le pozze. */
+.dust {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .45s var(--ease);
+}
+body[data-section="dark"] .dust { opacity: 1; }
+
+@keyframes grainShift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  12.5% { transform: translate3d(-2.1%, -1.4%, 0); }
+  25%   { transform: translate3d(1.6%, -2.6%, 0); }
+  37.5% { transform: translate3d(-2.8%, 1.2%, 0); }
+  50%   { transform: translate3d(2.4%, 2.2%, 0); }
+  62.5% { transform: translate3d(-1.3%, 2.8%, 0); }
+  75%   { transform: translate3d(2.7%, -1.8%, 0); }
+  87.5% { transform: translate3d(-2.4%, -2.2%, 0); }
+}
+@keyframes poolDrift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(2.5%, -2%, 0) scale(1.06); }
+  100% { transform: translate3d(-2%, 1.5%, 0) scale(1.02); }
 }
 
 img { display: block; }
@@ -155,11 +253,99 @@ button:disabled { cursor: default; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ─── route transitions (View Transitions API) ───
+   "Zoom-through / stampa che si sviluppa": la camera ACCELERA attraverso la
+   pagina che si lascia (scala 1→2.8 con dissolve nel buio), un istante di
+   vuoto scuro attraversato dal bagliore bronzeo, e la pagina nuova EMERGE dal
+   fondo come una stampa nel bagno di sviluppo — seppia e buio che risolvono
+   nel colore vero (scala .24→1, focus-pull). La vecchia vola SOPRA la nuova
+   che sbuca dal centro — come passare una porta tra due stanze. I browser
+   senza supporto restano sul .page-fade qui sopra (e dentro i VT il page-fade
+   si spegne). Durata totale ≈ 1.0s: il lock del carosello di sito in App.tsx
+   è tarato su questo valore — se cambi i tempi, retara anche quello. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition {
+    /* il vuoto tra le stanze: velo scuro + sweep bronzeo */
+    background:
+      linear-gradient(
+        115deg,
+        transparent 38%,
+        rgba(154, 123, 80, 0.26) 49%,
+        rgba(194, 166, 120, 0.3) 51%,
+        transparent 62%
+      ),
+      radial-gradient(120% 90% at 50% 45%, rgba(10, 9, 7, 0) 0%, rgba(10, 9, 7, 0.6) 74%);
+    background-size: 100% 100%, 240% 100%;
+    background-position: 0 0, -120% 0;
+    animation:
+      vtVoid 0.9s var(--ease) both,
+      routeSweep 0.9s linear both;
+  }
+  ::view-transition-old(root) {
+    z-index: 2; /* la pagina abbandonata inghiotte la nuova che sbuca */
+    animation: routeThrough 0.55s cubic-bezier(0.55, 0, 0.85, 0.36) both;
+  }
+  ::view-transition-new(root) {
+    z-index: 1;
+    animation: routeEmerge 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  }
+  @keyframes routeThrough {
+    0% { opacity: 1; transform: scale(1); filter: brightness(1) blur(0); }
+    45% { opacity: 1; transform: scale(1.32); filter: brightness(0.75) blur(1.5px); }
+    100% { opacity: 0; transform: scale(2.8); filter: brightness(0.1) blur(16px); }
+  }
+  @keyframes routeEmerge {
+    0% { opacity: 0; transform: scale(0.24) translateY(1.5%); filter: brightness(0.2) sepia(.55) blur(14px); }
+    45% { opacity: 1; filter: brightness(.7) sepia(.4) blur(6px); }
+    78% { filter: brightness(1.05) sepia(.12) blur(.5px); }
+    100% { opacity: 1; transform: scale(1); filter: brightness(1) sepia(0) blur(0); }
+  }
+  @keyframes vtVoid {
+    0% { background-color: rgba(10, 9, 7, 0); }
+    35%, 55% { background-color: rgba(10, 9, 7, 0.78); }
+    /* il bagno di sviluppo: un respiro caldo nell'istante in cui la nuova
+       pagina sta per emergere */
+    70% { background-color: rgba(38, 28, 15, 0.62); }
+    100% { background-color: rgba(10, 9, 7, 0); }
+  }
+  @keyframes routeSweep {
+    from { background-position: 0 0, -120% 0; }
+    to { background-position: 0 0, 240% 0; }
+  }
+
+  /* ── VT di overlay (lightbox): morph, non zoom-through ──
+     vtTransition(update, 'lightbox') marca l'html per la durata della
+     transizione: il passaggio di route (vuoto, sweep, scala) si ritira e il
+     gruppo condiviso (::view-transition-group(lightbox-hero), la foto che si
+     espande dallo stage) prende il suo tempo dedicato. */
+  html[data-vt="lightbox"]::view-transition {
+    background: none;
+    animation: none;
+  }
+  html[data-vt="lightbox"]::view-transition-old(root),
+  html[data-vt="lightbox"]::view-transition-new(root) { animation: none; }
+  html[data-vt="lightbox"]::view-transition-group(lightbox-hero) {
+    animation-duration: .38s;
+    animation-timing-function: var(--ease);
+  }
+
+  @supports selector(html:active-view-transition *) {
+    /* Inside a running transition the inner crossfade would double the motion;
+       outside one (header navigations bypassing go(), redirects) it still
+       plays. :active-view-transition matches only while a VT is running — vale
+       anche per il .lightbox quando si apre col morph: la VT È il suo ingresso. */
+    html:active-view-transition .page-fade,
+    html:active-view-transition .lightbox {
+      animation: none;
+    }
+  }
+}
+
 /* Casa globale del dissolve dei lightbox: i blocchi lightbox/video-lightbox
    (ripolcati nelle pagine) vi fanno riferimento e devono trovarlo qui. */
 @keyframes lightboxDissolve {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from { opacity: 0; transform: scale(.965); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 /* ─── header ─── */
@@ -822,13 +1008,18 @@ button:disabled { cursor: default; }
 
 /* ─── reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
-  .page-fade, .lightbox { animation: none; }
+  .page-fade, .lightbox, .story-entrance { animation: none; }
   .carousel-frame, .carousel-track, .carousel-zoom-img { transition: none; }
   .card, .btn, .link-ext, .contact-row, .related-title, .related-all,
   .card .card-photo img, .site-header nav button, .site-header nav button::after,
   .theme-toggle, .site-footer .link-ext, .skip-link { transition: none; }
   .card:hover .card-photo img { transform: none; }
   html, body, .site-header, .site-footer { transition: none; }
+  /* Ambienti: la grana resta (ferma), pozze e polvere — che SONO movimento —
+     si spengono del tutto; il respiro di body e hero nemmeno parte. */
+  body::before, .ambient::before { animation: none; }
+  .ambient, .dust { display: none; }
+  .ambient, .ambient::before, .story-ambient-glow, .dust { transition: none; transform: none; }
 }
 
 /* Il blocco stili video è migrato in src/pages/Videos.css (che ne è
@@ -1037,4 +1228,43 @@ button:disabled { cursor: default; }
 
 @media (prefers-reduced-motion: reduce) {
   .room-proofbox { animation: none; }
+}
+
+/* ─── header a riga singola nelle larghezze intermedie ───
+   Il blocco ≤760px qui sopra manda l'header a capo (due righe ~77px): alle
+   larghezze intermedie lo teniamo su UNA riga compressa — le pagine
+   fullscreen (/experience) compensano con padding cieco altrimenti. Deve
+   stare DOPO quel blocco: stessa specificità, vince l'ultimo. */
+@media (max-width: 700px) and (min-width: 461px) {
+  .site-header {
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .site-header .brand {
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .site-header nav {
+    width: auto;
+    gap: 8px;
+  }
+  .site-header nav button {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 540px) and (min-width: 461px) {
+  .site-header .brand {
+    font-size: 13px;
+  }
+  .site-header nav {
+    gap: 6px;
+  }
+  .site-header nav button {
+    font-size: 9px;
+    letter-spacing: 0.04em;
+  }
 }

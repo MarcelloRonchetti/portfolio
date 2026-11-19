@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, lazy, Suspense } from 'react'
 import {
   BrowserRouter,
   Navigate,
@@ -11,7 +11,11 @@ import {
 } from 'react-router-dom'
 import { DATA, slugOf } from './lib/data'
 import type { GoFn } from './lib/data'
+import { vtNavigate } from './lib/vtNavigate'
+import { consumeStoryHero } from './lib/vtHero'
 import TopBar from './components/TopBar'
+import DustCanvas from './components/DustCanvas'
+import { usePointerParallax } from './hooks/usePointerParallax'
 import { Cover } from './pages/Cover'
 import { Gallery, PhotoStory } from './pages/Gallery'
 import DriveStory from './pages/DriveStory'
@@ -21,6 +25,9 @@ import RoomPage from './pages/Room'
 import { categories, eventById, firstEventByTag } from './lib/events'
 import { useDriveContent } from './hooks/useDriveContent'
 import { useCvDownload } from './hooks/useCvDownload'
+
+// The rooms page pays for its chunk only when someone visits it.
+const Experience = lazy(() => import('./pages/Experience'))
 
 type Theme = 'day' | 'night'
 
@@ -38,18 +45,31 @@ function initialTheme(): Theme {
 
 // Maps the semantic go() of the views onto real paths: the router is the source
 // of truth for the URL (deep-linkable, shareable, prerendered per page).
+// Every navigation runs inside a manual View Transition (vtNavigate — the
+// router's own viewTransition option never fired the API here): the camera
+// passes through the page being left into the new one.
 function useGo(): GoFn {
   const navigate = useNavigate()
   return useCallback<GoFn>(
     (next, ref, tag) => {
       if (next === 'story' && ref) {
-        navigate(
+        vtNavigate(
+          navigate,
           `/story/${encodeURIComponent(ref)}${tag ? `?t=${encodeURIComponent(tag)}` : ''}`
         )
       } else if (next === 'gallery') {
-        navigate(ref ? `/gallery/${slugOf(ref)}` : '/gallery')
+        vtNavigate(navigate, ref ? `/gallery/${slugOf(ref)}` : '/gallery')
       } else {
-        navigate(next === 'videos' ? '/videos' : next === 'contact' ? '/contact' : '/')
+        vtNavigate(
+          navigate,
+          next === 'videos'
+            ? '/videos'
+            : next === 'contact'
+              ? '/contact'
+              : next === 'experience'
+                ? '/experience'
+                : '/'
+        )
       }
     },
     [navigate]
@@ -119,7 +139,9 @@ function GalleryRoute({ go }: { go: GoFn }) {
   // Static-category URLs (and the bare /gallery) never block on Drive.
   const driveSettled = !drive.configured || drive.content !== null || drive.error !== null
   useEffect(() => {
-    if (cat && !requested && driveSettled && !drive.error) navigate('/gallery', { replace: true })
+    if (cat && !requested && driveSettled && !drive.error) {
+      navigate('/gallery', { replace: true })
+    }
   }, [cat, requested, driveSettled, drive.error, navigate])
 
   const driveCollections = (drive.content?.photoCollections ?? []).filter(
@@ -185,8 +207,13 @@ function StoryRoute({ go }: { go: GoFn }) {
   }
 
   const known = decoded !== '' && (eventById(decoded) || firstEventByTag(decoded))
-  // Unknown ids (stale links, typos) never render an empty story page.
-  if (!known) return <Navigate to="/gallery" replace />
+  // Unknown ids (stale links, typos) never render an empty story page. A
+  // morph id left by a card click is discarded here: a stale id must never
+  // leak into the next story mount.
+  if (!known) {
+    consumeStoryHero()
+    return <Navigate to="/gallery" replace />
+  }
   return <PhotoStory key={decoded} eventId={decoded} tag={tag} go={go} />
 }
 
@@ -197,6 +224,9 @@ function AppShell() {
   // One download state for the whole shell: the header's CV button and the
   // Contact row are two views of the same download.
   const cv = useCvDownload()
+  // Parallasse del puntatore: scrive --px/--py su <body> per le pozze
+  // (.ambient), l'hero di Cover e i bagliori delle storie.
+  usePointerParallax()
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -220,10 +250,19 @@ function AppShell() {
     location.pathname.startsWith('/gallery') ||
     location.pathname.startsWith('/story') ||
     location.pathname.startsWith('/videos') ||
-    location.pathname.startsWith('/room')
+    location.pathname.startsWith('/room') ||
+    location.pathname.startsWith('/experience')
+
   useEffect(() => {
     document.body.setAttribute('data-section', dark ? 'dark' : 'light')
   }, [dark])
+
+  // Le sale immersive portano la propria luce: le pozze generiche e la
+  // polvere si ritirano (la grana resta — è pellicola, ovunque).
+  const ownLight = location.pathname.startsWith('/experience')
+  useEffect(() => {
+    document.body.setAttribute('data-ambient', ownLight ? 'off' : 'on')
+  }, [ownLight])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
@@ -236,6 +275,12 @@ function AppShell() {
       <a className="skip-link" href="#contenuto">
         Vai al contenuto
       </a>
+      {/* Strati ambientali FISSI fuori dal wrapper .page-fade (che tiene un
+          transform: i fixed figli si centrerebbero sul documento, non sulla
+          viewport) e fuori dal remount per route: pozze e polvere non si
+          azzerano mai navigando. */}
+      <div className="ambient" aria-hidden="true" />
+      <DustCanvas />
       <TopBar theme={theme} onToggleTheme={toggleTheme} cv={cv} />
       <div key={location.pathname} className="page-fade" id="contenuto" tabIndex={-1}>
         <Routes>
@@ -246,6 +291,14 @@ function AppShell() {
           <Route path="/videos" element={<Videos />} />
           <Route path="/contact" element={<Contact cv={cv} />} />
           <Route path="/room/:roomId" element={<RoomPage />} />
+          <Route
+            path="/experience"
+            element={
+              <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#14120f' }} aria-hidden="true" />}>
+                <Experience go={go} />
+              </Suspense>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

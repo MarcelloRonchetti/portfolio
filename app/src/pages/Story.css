@@ -15,6 +15,57 @@
 .story-page { padding-top: 120px; padding-bottom: 90px; }
 .story-state-page { padding-top: 140px; padding-bottom: 120px; min-height: 70vh; }
 
+/* ── bagliore ambientato dalla cover ("lo sfondo dei post") ──
+   La cover della storia, sbiadita e ingigantita dal blur, vive dietro il
+   layout: la stampa appoggiata sul tavolo della darkroom. Il layer è
+   ASSOLUTO dentro .story-page — mai fixed, il wrapper .page-fade tiene un
+   transform e i fixed figli si centrerebbero sul documento, non sulla
+   viewport (vedi AGENTS.md §Transizioni). Il ::after maschera il bagliore in
+   una pozza centrata sullo stage; il glow segue il puntatore via --px/--py
+   (hook usePointerParallax). I colori vengono dalla foto: il tema notte
+   li spegne da solo per brightness. */
+.story-page { position: relative; }
+.story-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.story-ambient-glow {
+  position: absolute;
+  inset: -14%;
+  background-size: cover;
+  background-position: center 30%;
+  filter: blur(64px) brightness(.55) saturate(1.08);
+  transform: scale(1.1) translate3d(calc(var(--px, 0) * -14px), calc(var(--py, 0) * -10px), 0);
+  opacity: .4;
+  will-change: transform;
+}
+.story-ambient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(110% 80% at 45% 32%, transparent 0%, var(--bg-dark) 82%);
+}
+/* Il contenuto resta sopra il bagliore. */
+.story-page > .container { position: relative; z-index: 1; }
+
+/* ── ingresso a cascata (una sola volta per mount) ──
+   L'unico momento orchestrato della pagina: stage → strip → titolo →
+   prose/rail salgono con passo di .09s. Nei deep-link è l'ingresso; dentro
+   una View Transition il .page-fade è spento e la cascata segna il tempo
+   appena dopo l'emersione. Col morph card→stage la cascata non viene mai
+   montata (il componente la salta): la VT È l'ingresso. */
+.story-entrance {
+  animation: storyRise .55s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+@keyframes storyRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
 /* ── shared story layout: media column + related rail ── */
 /* A touch more air between media and rail; the divider stays one hairline
    with room to breathe. */
@@ -164,4 +215,6 @@
   .related-title,
   .related-all,
   .ds-action { transition: none; }
+  .story-entrance { animation: none; }
+  .story-ambient-glow { transform: none; transition: none; }
 }

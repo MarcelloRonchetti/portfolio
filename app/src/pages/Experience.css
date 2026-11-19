@@ -1,0 +1,514 @@
+/* /experience — "Le Sale". Fullscreen themed pages driven by a continuous
+   camera: JS positions every room in depth (translateZ/opacity/blur) each
+   frame; CSS supplies the themed furniture and the layered parallax.
+   Extends the shared base (index.css) without redefining it. */
+
+body[data-immersive='1'] .site-footer {
+  display: none;
+}
+
+/* ── Stage ──────────────────────────────────────────────────────────────── */
+.exp {
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-dark);
+}
+
+/* absolute (never fixed): a fixed descendant of .page-fade would be centered
+   on the document — the containing-block trap of the a784d72 fix. */
+.exp-stage {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+/* ── Themed pages: JS-driven camera states ────────────────────────────────
+   transform / opacity / filter / --p are written per frame by the loop; CSS
+   only provides the hidden default (no flash before the first frame). */
+.exp-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  background: var(--bg-dark);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity, filter;
+}
+
+.exp-page.is-near {
+  pointer-events: auto;
+}
+
+/* ── Themed furniture ──────────────────────────────────────────────────────
+   Layers move at different rates with the pointer (--mx/--my on the stage,
+   inherited): the glow drifts opposite, the ghost number follows, the body
+   barely moves — quiet depth, never a gimmick. */
+.exp-room-glow {
+  position: absolute;
+  inset: 0;
+  transform: translate(calc(var(--mx, 0) * -18px), calc(var(--my, 0) * -14px));
+  background:
+    radial-gradient(52% 44% at 24% 78%, color-mix(in srgb, var(--room-accent) 34%, transparent) 0%, transparent 72%),
+    radial-gradient(40% 34% at 82% 18%, color-mix(in srgb, var(--room-accent) 16%, transparent) 0%, transparent 70%),
+    linear-gradient(to top, rgba(20, 18, 15, 0.9), transparent 34%),
+    linear-gradient(to bottom, rgba(20, 18, 15, 0.75), transparent 26%);
+}
+
+.exp-room-glow::after {
+  /* the "floor line" of the room — one hairline, room accent */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18%;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--room-accent) 55%, transparent) 30%,
+    color-mix(in srgb, var(--room-accent) 55%, transparent) 70%,
+    transparent
+  );
+}
+
+.exp-ghost {
+  position: absolute;
+  right: 3%;
+  bottom: 4%;
+  font-family: var(--font-display);
+  font-size: clamp(180px, 30vw, 340px);
+  line-height: 0.8;
+  color: color-mix(in srgb, var(--room-accent) 13%, transparent);
+  transform: translate(calc(var(--mx, 0) * 12px), calc(var(--my, 0) * 9px));
+  user-select: none;
+  pointer-events: none;
+}
+
+.exp-room-body {
+  position: relative;
+  z-index: 1;
+  width: min(1200px, 100%);
+  margin: 0 auto;
+  padding: 96px var(--gutter) 120px; /* top clears the fixed TopBar */
+  transform: translate(calc(var(--mx, 0) * -6px), calc(var(--my, 0) * -5px));
+}
+
+.exp-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+}
+
+.exp-kicker::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 1px;
+  background: var(--room-accent);
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+.exp-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(56px, 9vw, 120px);
+  line-height: 0.98;
+  margin: 14px 0 10px;
+  color: var(--ink-inverse);
+}
+
+.exp-meta {
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+}
+
+/* ── Continuous reveal: elements land as the room becomes active ──────────
+   --p (0..1, set per frame) drives opacity and rise; --lag staggers them. */
+.exp-room-body > * {
+  --lag: 0;
+  opacity: clamp(0, calc(var(--p, 0) - var(--lag) * 0.22), 1);
+  transform: translateY(calc((1 - var(--p, 0)) * 34px * (var(--lag) + 0.4)));
+}
+
+.exp-room-body > *:nth-child(2) { --lag: 0.8; }
+.exp-room-body > *:nth-child(3) { --lag: 1.6; }
+.exp-room-body > *:nth-child(4) { --lag: 2.4; }
+.exp-room-body > *:nth-child(5) { --lag: 3.2; }
+
+/* ── The room's photographs: real covers, layered parallax, hover zoom ──── */
+.exp-shots {
+  display: grid;
+  grid-template-columns: 5fr 3fr 3fr;
+  gap: 18px;
+  margin-top: 34px;
+}
+
+/* two-shot rooms don't leave a dead third column */
+.exp-shots.is-two {
+  grid-template-columns: 5fr 4fr;
+}
+
+.exp-shot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.exp-shot-frame {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--hair-inverse);
+  background: var(--frame-bg-dark);
+  transition: border-color 0.25s var(--ease);
+}
+
+.exp-shot-frame img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  transform: translate(
+    calc(var(--mx, 0) * var(--sx, 4px)),
+    calc(var(--my, 0) * var(--sy, 4px))
+  );
+  transition: transform 0.35s var(--ease), border-color 0.25s var(--ease);
+}
+
+.exp-shot:hover .exp-shot-frame,
+.exp-shot:focus-visible .exp-shot-frame {
+  border-color: var(--room-accent);
+}
+
+.exp-shot:hover .exp-shot-frame img,
+.exp-shot:focus-visible .exp-shot-frame img {
+  transform: translate(
+      calc(var(--mx, 0) * var(--sx, 4px)),
+      calc(var(--my, 0) * var(--sy, 4px))
+    )
+    scale(1.06);
+}
+
+/* each photo sits on its own depth layer */
+.exp-shot-0 { --sx: 8px; --sy: 6px; }
+.exp-shot-1 { --sx: 13px; --sy: 10px; padding-top: 26px; }
+.exp-shot-2 { --sx: 5px; --sy: 4px; padding-top: 26px; }
+
+.exp-shot-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  color: var(--ink-inverse);
+  opacity: 0.85;
+}
+
+.exp-cta {
+  margin-top: 30px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.exp-cta .btn {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--room-accent) 70%, var(--ink-inverse));
+  color: var(--ink-inverse);
+}
+
+.exp-cta .btn:hover,
+.exp-cta .btn:focus-visible {
+  background: var(--room-accent);
+  border-color: var(--room-accent);
+  color: var(--accent-contrast);
+}
+
+.exp-cta-note {
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+}
+
+/* ── HUD ────────────────────────────────────────────────────────────────── */
+.exp-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  padding: 76px var(--gutter) 26px; /* top clears the fixed TopBar */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.exp-hud-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* The line is drawn by the ::after so the button itself keeps a 24px-tall
+   hit target (WCAG 2.5.8); .exp-hud is pointer-events:none, so the dot must
+   re-enable it explicitly. */
+.exp-dot {
+  position: relative;
+  width: 30px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.exp-dot::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: var(--hair-inverse);
+  transition: background 0.3s var(--ease);
+}
+
+.exp-dot:hover::after {
+  background: var(--muted-inverse);
+}
+
+.exp-dot.is-on {
+  width: 44px;
+}
+
+.exp-dot.is-on::after {
+  background: var(--dot-accent, var(--accent-inverse));
+}
+
+.exp-hud-room {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+}
+
+.exp-hud-back {
+  align-self: flex-end;
+  pointer-events: auto;
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-inverse);
+  cursor: pointer;
+  transition: color 0.2s var(--ease);
+}
+
+.exp-hud-back:hover,
+.exp-hud-back:focus-visible {
+  color: var(--ink-inverse);
+}
+
+.exp-hud-key {
+  margin-left: 6px;
+  padding: 2px 6px;
+  border: 1px solid var(--hair-inverse);
+  font-size: var(--t-micro);
+  color: var(--muted-inverse);
+}
+
+/* Live announcements for assistive tech. */
+.exp-sr-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Reduced motion: crossfade only — no travel, no parallax, no blur ───── */
+@media (prefers-reduced-motion: reduce) {
+  .exp-page {
+    will-change: opacity;
+  }
+  .exp-room-glow,
+  .exp-ghost,
+  .exp-room-body,
+  .exp-room-body > *,
+  .exp-shot-frame img {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ── Small screens: align to start, compact the rhythm — a centered 900px
+   room body inside a 100dvh overflow-hidden stage clips the title off-screen
+   and collides with the HUD band. On phones a room shows ONE large photo:
+   three stacked covers can never fit 100dvh without overlapping the HUD. ── */
+@media (max-width: 720px) {
+  .exp-page {
+    align-items: flex-start;
+  }
+  .exp-room-body {
+    padding-top: 76px;
+    padding-bottom: 118px;
+  }
+  .exp-title {
+    font-size: clamp(40px, 11vw, 64px);
+    margin: 10px 0 8px;
+  }
+  .exp-shots {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 20px;
+  }
+  .exp-shot-frame img {
+    aspect-ratio: 16 / 10;
+  }
+  .exp-shot-1,
+  .exp-shot-2 {
+    display: none;
+  }
+  .exp-shot-title {
+    font-size: 15px;
+  }
+  .exp-cta {
+    margin-top: 18px;
+  }
+}
+
+/* ── Short viewports (phone landscape, tiny windows): height-driven, any
+   width. A centered multi-shot room can never fit 100dvh here — compact the
+   rhythm, show one photo and cap it against the remaining space. ────────── */
+@media (max-height: 620px) {
+  .exp-page {
+    align-items: flex-start;
+  }
+  .exp-room-body {
+    padding-top: 64px;
+    padding-bottom: 104px;
+  }
+  .exp-title {
+    font-size: clamp(36px, 8vh, 56px);
+    margin: 8px 0 6px;
+  }
+  .exp-shots {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .exp-shot-1,
+  .exp-shot-2 {
+    display: none;
+  }
+  .exp-shot-frame img {
+    aspect-ratio: 16 / 9;
+    max-height: calc(100dvh - 325px);
+  }
+  .exp-shot-title {
+    font-size: 14px;
+  }
+  .exp-cta {
+    margin-top: 12px;
+  }
+  .exp-ghost {
+    display: none;
+  }
+  /* a 2-shot room never keeps the two-column grid in compact mode */
+  .exp-shots.is-two {
+    grid-template-columns: 1fr;
+  }
+  /* tablet widths need a deeper reserve than phones (wider HUD) */
+  .exp-shot-frame img {
+    max-height: calc(100dvh - 335px);
+  }
+  /* single-row HUD: the stacked dots+label band would collide with the CTA
+     on short screens */
+  .exp-hud {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+  .exp-hud-dots {
+    flex: 1;
+    justify-content: flex-start;
+  }
+  .exp-hud-room {
+    display: none;
+  }
+  .exp-hud-back {
+    align-self: flex-end;
+  }
+}
+
+@media (max-height: 460px) {
+  .exp-room-body {
+    padding-top: 64px; /* clears the compressed single-row header */
+    padding-bottom: 92px;
+  }
+  .exp-title {
+    font-size: clamp(30px, 9vh, 44px);
+    margin: 6px 0 4px;
+  }
+  .exp-meta {
+    font-size: 11px;
+  }
+  .exp-shot-frame img {
+    max-height: calc(100dvh - 310px);
+  }
+  .exp-cta {
+    margin-top: 8px;
+  }
+}
+
+/* very narrow portrait phones: the wrapped header is ~100px tall; below
+   620px of height the photo cap deepens so the CTA still clears the HUD */
+@media (max-width: 460px) {
+  .exp-room-body {
+    padding-top: 96px;
+  }
+}
+@media (max-width: 460px) and (max-height: 620px) {
+  .exp-shot-frame img {
+    max-height: calc(100dvh - 360px);
+  }
+}
+
+/* ── Desktop / tablet short windows: the round-1 failure mode (centered
+   multi-shot room overflows 100dvh) is alive on mainstream laptop heights
+   (768, 800) — align to start and cap the photos against the space left. ── */
+@media (min-width: 721px) and (max-height: 860px) {
+  .exp-page {
+    align-items: flex-start;
+  }
+  .exp-room-body {
+    padding-top: 84px;
+    padding-bottom: 104px;
+  }
+  .exp-title {
+    font-size: clamp(40px, 5vw, 64px);
+    margin: 10px 0 8px;
+  }
+  .exp-shots {
+    margin-top: 18px;
+  }
+  .exp-shot-frame img {
+    aspect-ratio: 16 / 9;
+    max-height: calc(100dvh - 420px);
+  }
+}
