@@ -289,41 +289,17 @@ const DIST_HERO_DIR = path.join(DIST, 'hero')
 let customMasters = []
 if (fs.existsSync(CUSTOM_HERO_DIR)) {
   const files = fs.readdirSync(CUSTOM_HERO_DIR)
-  customMasters = files.filter(
-    (f) => !/-(1440|2560|3840)\./i.test(f) && /\.(jpg|jpeg|png|webp|avif)$/i.test(f)
-  )
+  customMasters = files.filter((f) => /\.webp$/i.test(f))
 }
 
 let heroImage = ''
 
 if (customMasters.length > 0) {
   fs.mkdirSync(DIST_HERO_DIR, { recursive: true })
-  const probe = spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' })
-
   for (const master of customMasters) {
     const masterSrc = path.join(CUSTOM_HERO_DIR, master)
     const masterDist = path.join(DIST_HERO_DIR, master)
     fs.copyFileSync(masterSrc, masterDist)
-
-    const baseName = path.basename(master, path.extname(master))
-    const ext = path.extname(master).slice(1) || 'jpg'
-
-    if (!probe.error) {
-      for (const w of [1440, 2560, 3840]) {
-        const outPublic = path.join(CUSTOM_HERO_DIR, `${baseName}-${w}.${ext}`)
-        const outDist = path.join(DIST_HERO_DIR, `${baseName}-${w}.${ext}`)
-        if (!fs.existsSync(outDist)) {
-          spawnSync(
-            'ffmpeg',
-            ['-y', '-loglevel', 'error', '-i', masterSrc,
-             '-vf', `scale='min(iw,${w})':-1:flags=lanczos+accurate_rnd,unsharp=3:3:0.5:3:3:0`,
-             '-q:v', '2', outDist],
-            { stdio: 'ignore' }
-          )
-          if (fs.existsSync(outDist)) fs.copyFileSync(outDist, outPublic)
-        }
-      }
-    }
   }
 
   heroImage = `${SITE}/hero/${customMasters[0]}`

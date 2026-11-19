@@ -1,0 +1,1 @@
+export const HERO_ROTATION_INTERVAL_MS = 20_000

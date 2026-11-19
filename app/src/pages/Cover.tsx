@@ -6,6 +6,7 @@ import { featuredEvent, photoUrl } from '../lib/events'
 import { FLY_TARGETS, webglSupported } from '../lib/flyTargets'
 import { getAllCustomHeroes } from '../lib/customHero'
 import { moveHeroIndex } from '../lib/heroSequence'
+import { HERO_ROTATION_INTERVAL_MS } from '../lib/heroRotation'
 import { useDriveContent } from '../hooks/useDriveContent'
 import Clickable from '../components/Clickable'
 import FlyDeck from './FlyDeck'
@@ -420,7 +421,7 @@ export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
       setCustomHeroIndex((current) =>
         moveHeroIndex(current, 1, customHeroes.length)
       )
-    }, 8000)
+    }, HERO_ROTATION_INTERVAL_MS)
     return () => window.clearInterval(timer)
   }, [customHeroes.length, reduced])
 
@@ -444,7 +445,7 @@ export function Cover({ go }: { go: (next: Route, ref?: string) => void }) {
     if (customHero) {
       return {
         src: customHero.src,
-        srcSet: customHero.srcSet,
+        srcSet: undefined,
       }
     }
     if (driveHero) {
