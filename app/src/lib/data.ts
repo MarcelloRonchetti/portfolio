@@ -6,7 +6,6 @@ export type Route =
   | 'story'
   | 'videos'
   | 'contact'
-  | 'experience'
 
 // Semantic navigation target used by the views; App maps it onto router paths.
 export type GoFn = (next: Route, ref?: string, tag?: string) => void

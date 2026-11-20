@@ -1,6 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { DATA } from '../lib/data'
-import { vtNavigate } from '../lib/vtNavigate'
 import type { CvState } from '../hooks/useCvDownload'
 import CvButton from './CvButton'
 
@@ -24,12 +23,10 @@ export default function TopBar({
 }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  // Same camera-push language as go(): header navigation never hard-cuts.
-  const vt = (path: string) => vtNavigate(navigate, path)
 
   return (
     <header className="site-header">
-      <button className="brand" onClick={() => vt('/')}>
+      <button className="brand" onClick={() => navigate('/')}>
         {DATA.identity.name}
       </button>
       <nav aria-label="Navigazione principale">
@@ -37,7 +34,7 @@ export default function TopBar({
           <button
             key={it.path}
             data-active={it.active(pathname) || undefined}
-            onClick={() => vt(it.path)}
+            onClick={() => navigate(it.path)}
           >
             {it.label}
           </button>

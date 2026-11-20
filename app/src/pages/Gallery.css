@@ -64,35 +64,9 @@
 .gl-card:hover .card-title,
 .gl-card:focus-visible .card-title { color: var(--accent-inverse); }
 
-/* Spotlight che segue il puntatore (il pattern "SpotlightCard" di React
-   Bits, riscritto nell'idioma del sito): --sx/--sy sono scritti dal listener
-   delegato in Gallery.tsx; qui un solo ::after disegna il bagliore bronzeo.
-   Nel @media (pointer: fine): su touch il hover non esiste e il layer non
-   nasce nemmeno. */
-@media (pointer: fine) {
-  .gl-card { position: relative; }
-  .gl-card::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    border-radius: inherit;
-    background: radial-gradient(
-      240px circle at var(--sx, 50%) var(--sy, 50%),
-      rgba(var(--glow), .16),
-      transparent 62%
-    );
-    opacity: 0;
-    transition: opacity .3s var(--ease);
-    pointer-events: none;
-  }
-  .gl-card:hover::after,
-  .gl-card:focus-visible::after { opacity: 1; }
-}
-
 /* ── state screens (empty gallery, missing story) ── */
 /* Own equivalent of DriveStory's state block, same spirit: mono kicker
-   over a serif line, mono actions when there is something to do. */
+   over a body line, mono actions when there is something to do. */
 .gl-state {
   display: flex;
   flex-direction: column;
@@ -203,6 +177,6 @@
 /* ── reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .gl-cat, .gl-cat::after,
-  .gl-card .card-photo img, .gl-card .card-title, .gl-card::after,
+  .gl-card .card-photo img, .gl-card .card-title,
   .gl-back, .gl-state-action, .gl-notice-action { transition: none; }
 }

@@ -1,16 +1,16 @@
 /* ───────────────────────────────────────────────────────────
-   Cover — full-screen hero of the landing page.
-   Scoped to .hero / .hero-content. Loads after index.css, so
+   Cover — full-screen hero + gallerie index of the landing page.
+   Scoped to .hero / .home-index. Loads after index.css, so
    equal-specificity rules here win. Over a photograph the
    tokens don't reach: the whites (rgba(255,255,255,…)) and the
    dark scrims (rgba(10,9,7,…)) are the established hero idiom
    and stay literal by design.
 ─────────────────────────────────────────────────────────── */
 
-/* Shade: slightly heavier anchors than the original (.25/.1/.78)
-   plus a mid stop that ramps smoothly into the caption bed — the
-   name holds on bright skies and near-black imagery alike while
-   the middle of the photo stays clear. */
+/* Shade: slightly heavier anchors plus a mid stop that ramps
+   smoothly into the caption bed — the name holds on bright skies
+   and near-black imagery alike while the middle of the photo
+   stays clear. */
 .hero .hero-shade {
   background: linear-gradient(
     180deg,
@@ -27,15 +27,15 @@
   gap: 10px;
 }
 .hero-content .hero-name {
+  font-weight: 500; /* rampa display: niente 700 di default dell'UA */
   line-height: 1.06;
-  letter-spacing: .02em; /* same tracking as .t-display */
 }
 .hero-content .hero-role {
   display: inline-flex;
   align-items: flex-start;
   gap: 12px;
 }
-/* The one accent mark: a bronze hairline opens the block. On a wrapped line
+/* The one accent mark: a hairline opens the block. On a wrapped line
    (mobile) it stays glued to the first line instead of floating mid-block. */
 .hero-content .hero-role::before {
   content: "";
@@ -48,15 +48,14 @@
   margin-top: 8px;
 }
 
-/* CTA: a hairline ghost instead of the solid .btn — it sits under
-   the name without competing with it; hover and focus settle on
-   the brand bronze, like every other interactive element. */
+/* CTA row: the solid-outline button and a quiet ghost side by side;
+   hover and focus settle on the accent, like every other
+   interactive element. */
 .hero-cta {
   margin-top: 18px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 20px;
 }
 .hero-content .btn {
   background: transparent;
@@ -69,14 +68,13 @@
   border-color: var(--accent);
   color: var(--accent-contrast);
 }
-/* The global bronze outline is too dim over a photo. */
+/* The global accent outline is too dim over a photo. */
 .hero-content .btn:focus-visible {
   outline-color: var(--accent-inverse);
 }
 
-/* The discreet 3D-room entry: a mono ghost link under the CTA, kept out of
-   the TopBar nav on purpose. */
-.hero-exp {
+/* The quiet secondary: a mono ghost link, same voice as the header. */
+.hero-ghost {
   background: none;
   border: none;
   padding: 0;
@@ -88,55 +86,14 @@
   cursor: pointer;
   transition: color .2s var(--ease);
 }
-.hero-exp:hover,
-.hero-exp:focus-visible {
+.hero-ghost:hover,
+.hero-ghost:focus-visible {
   color: rgba(255, 255, 255, .95);
   text-decoration: underline;
   text-underline-offset: 6px;
 }
-.hero-exp:focus-visible {
+.hero-ghost:focus-visible {
   outline-color: var(--accent-inverse);
-}
-
-/* ── parallasse dell'eroe ──
-   La foto respira contro il puntatore (--px/--py su body, scritti dall'hook
-   usePointerParallax): la foto scappa piano, il nome la segue a metà —
-   profondità senza teatro. Solo puntatori fini; la base al 106% copre la
-   corsa del translate senza mai scoprire i bordi. La .hero-shade resta ferma:
-   la luce non si muove con la mano. */
-@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .hero .hero-photo img {
-    transform: scale(1.06)
-      translate3d(calc(var(--px, 0) * -10px), calc(var(--py, 0) * -8px), 0);
-    will-change: transform;
-  }
-  .hero .hero-content {
-    transform: translate3d(calc(var(--px, 0) * 6px), calc(var(--py, 0) * 4px), 0);
-    will-change: transform;
-  }
-}
-
-/* Invito a scorrere: l'unico indizio che sotto l'eroe c'è il flythrough. */
-.hero-scrollcue {
-  position: absolute;
-  left: 50%;
-  bottom: 26px;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  color: rgba(255, 255, 255, .55);
-  font-size: var(--t-micro);
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  z-index: 2;
-}
-.hero-scrollcue-line {
-  width: 1px;
-  height: 34px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .55), transparent);
-  animation: scrollcue 2.2s var(--ease) infinite;
 }
 
 /* Sequence controls for the local multi-hero. They sit against the lower
@@ -206,507 +163,52 @@
     width: 34px;
     height: 34px;
   }
-  .hero-scrollcue {
-    bottom: 18px;
-  }
-}
-@keyframes scrollcue {
-  0% { transform: scaleY(0); transform-origin: top; opacity: 0; }
-  35% { transform: scaleY(1); opacity: 1; }
-  100% { transform: scaleY(1) translateY(12px); transform-origin: top; opacity: 0; }
 }
 
-/* ── l'indice 3D: i collegamenti come stampe su una rastelliera ──
-   La pagina NON scorre più: la sezione è alta esattamente una viewport e a
-   muoversi sono i pannelli. Ogni posa sull'arco è uno STATO discreto
-   (data-offset → custom property): la geometria vive qui — le media query
-   ricalibrano la profondità da sole — e Cover.tsx scrive solo lo stato.
-   Le trasformazioni partono impilate nel fondo e si assemblano al primo
-   ingresso in campo (data-entered / data-entering). Immagini = segnaposto. */
-.fly {
-  background: var(--bg-dark);
-  --fly-ease: cubic-bezier(.19, 1, .22, 1);
+/* ── indice delle gallerie ──
+   La sezione sotto l'hero: una card per categoria (copertina = la foto più
+   recente della categoria) e una fila di link di chiusura. Stessa carta e
+   stesso ritmo del resto del sito — la foto è l'unico colore. */
+.home-index-title {
+  font-size: clamp(24px, 3.4vw, 40px);
 }
-/* La sezione è focusabile (le frecce del carosello vivono qui): un'ombra
-   bronzo sottile dice DOVE si è arrivati, senza cornice pesante. */
-.fly:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 1px rgba(194, 166, 120, .35);
+.home-index-meta {
+  color: var(--muted);
 }
-.fly-stage {
-  position: relative;
-  height: 100vh;
-  height: 100dvh; /* il chrome mobile non deve tagliare HUD e pannelli */
-  overflow: hidden;
-  perspective: 1500px;
-  perspective-origin: 50% 44%;
-  touch-action: pan-y; /* lo swipe orizzontale è del carosello, il verticale resta della pagina */
-  cursor: grab;
-  background:
-    radial-gradient(120% 54% at 50% -8%, rgba(194, 166, 120, .13), transparent 62%),
-    radial-gradient(72% 36% at 50% 110%, rgba(194, 166, 120, .10), transparent 70%),
-    linear-gradient(180deg, #12100c 0%, var(--bg-dark) 62%);
+/* Le card casa: come le card galleria (base .card in index.css). */
+.home-cat .card-photo img {
+  transition: transform .45s var(--ease);
 }
-.fly-stage:active { cursor: grabbing; }
-/* Vignetta sui bordi: lo sguardo resta al centro della scena. */
-.fly-stage::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  box-shadow: inset 0 0 200px rgba(0, 0, 0, .5);
-}
-/* Orizzonte: una crepa di luce sul pavimento della scena. */
-.fly-horizon {
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  top: 68%;
-  height: 1px;
-  z-index: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, .055) 32%,
-    rgba(255, 255, 255, .055) 68%,
-    transparent
-  );
-}
-.fly-head {
-  position: absolute;
-  /* sotto la TopBar sticky (63px): la sezione riposa a viewport piena */
-  top: clamp(80px, 11vh, 118px);
-  left: 0;
-  right: 0;
-  z-index: 30;
+.home-cat:hover .card-photo img,
+.home-cat:focus-visible .card-photo img { transform: scale(1.03); }
+.home-cat:hover .card-title,
+.home-cat:focus-visible .card-title { color: var(--accent); }
+
+.home-links {
   display: flex;
-  justify-content: center;
-  pointer-events: none;
+  flex-wrap: wrap;
+  gap: 14px 40px;
+  margin-top: 40px;
+  padding-top: 22px;
+  border-top: var(--line) solid var(--hair);
 }
-.fly-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 16px;
-  margin: 0;
-  color: var(--muted-inverse);
-  letter-spacing: .26em;
-  text-transform: uppercase;
-}
-.fly-kicker::before,
-.fly-kicker::after {
-  content: "";
-  width: 44px;
-  height: 1px;
-  background: rgba(255, 255, 255, .16);
-}
-
-/* Il mondo CSS (pila di riserva): leggermente inclinato verso il puntatore
-   (--px/--py su body, scritti da usePointerParallax — già smorzati in JS). */
-.fly-world {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  transform-style: preserve-3d;
-}
-@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .fly-world {
-    transform: rotateY(calc(var(--px, 0) * -3.4deg)) rotateX(calc(var(--py, 0) * 1.6deg));
-  }
-}
-
-/* La scena WebGL (HomeScene): riempie lo stage, sotto l'HUD. Il canvas è
-   dimensionato da renderer.setSize(..., false) e steso via CSS. Il cursore
-   hover arriva da data-hover (scritto dalla scena per frame): il :active
-   del trascinamento deve poter vincere — specificity più alta e dopo. */
-.fly-canvas {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  touch-action: pan-y; /* lo swipe orizzontale è del carosello, il verticale resta della pagina */
-  cursor: grab;
-}
-.fly-canvas[data-hover="pointer"] { cursor: pointer; }
-.fly-stage:active .fly-canvas { cursor: grabbing; }
-.fly-canvas canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-/* Le stampe: ingresso impilate nel fondo, poi la posa decide trasformazione,
-   opacità e sfocatura. La pila è UNA rastelliera che arretra a destra: la
-   stampa davanti (0), poi le tre pose sempre più in fondo; il rientro dal
-   fondo della pila (-1) scivola DIETRO le altre e riemerge davanti — ogni
-   passo è un moto continuo, in entrambe le direzioni, senza salti. */
-.fly-card {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: min(56vw, 780px, calc(100dvh - 240px));
-  transform-style: preserve-3d;
-  will-change: transform, opacity, filter;
-  opacity: 0;
-  filter: blur(10px);
-  transform: translate(-50%, -50%) translate3d(0, 16vh, -1300px) rotateY(0deg) scale(.4);
-  transition:
-    transform 1.1s var(--fly-ease),
-    opacity .85s var(--fly-ease),
-    filter .85s var(--fly-ease);
-}
-.fly[data-entering="true"] .fly-card {
-  transition-delay: calc(var(--i, 0) * 130ms);
-}
-.fly-card[data-offset="0"]  { --x: 0vw;    --y: 0px;  --z: 0px;    --ry: 0deg;  --s: 1;   --o: 1;   --b: 0px; }
-.fly-card[data-offset="1"]  { --x: 9vw;   --y: -3vh; --z: -250px; --ry: 8deg;  --s: .92; --o: .92; --b: 0px; }
-.fly-card[data-offset="2"]  { --x: 17.5vw; --y: -6vh; --z: -500px; --ry: 15deg; --s: .85; --o: .8;  --b: 1px; }
-.fly-card[data-offset="-1"] { --x: 26vw;  --y: -9vh; --z: -750px; --ry: 22deg; --s: .78; --o: .62; --b: 2px; }
-/* Slot di sicurezza (non raggiunti con n=4, ma la pila deve reggere se n cambia). */
-.fly-card[data-offset="3"],
-.fly-card[data-offset="-2"],
-.fly-card[data-offset="-3"] { --x: 26vw; --y: -9vh; --z: -750px; --ry: 22deg; --s: .78; --o: .62; --b: 2px; }
-.fly[data-entered="true"] .fly-card {
-  opacity: var(--o);
-  filter: blur(var(--b));
-  transform: translate(-50%, -50%) translate3d(var(--x), var(--y), var(--z))
-    rotateY(var(--ry)) scale(var(--s));
-}
-
-/* Il pannello davanti si alza verso chi lo guarda (hover/focus). */
-.fly-hit {
-  display: block;
-  position: relative;
-  transform-style: preserve-3d;
-  cursor: pointer;
-  transition: transform .5s var(--fly-ease);
-}
-.fly-card[data-offset="0"] .fly-hit:hover,
-.fly-card[data-offset="0"] .fly-hit:focus-visible {
-  transform: translateZ(36px);
-}
-
-.fly-frame {
-  position: relative;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  background: var(--frame-bg-dark);
-  border: 1px solid var(--hair-inverse);
-  box-shadow: 0 34px 80px -24px rgba(0, 0, 0, .8);
-  transition: border-color .35s var(--ease), box-shadow .35s var(--ease);
-}
-.fly-card[data-offset="0"] .fly-frame {
-  border-color: rgba(194, 166, 120, .38);
-  box-shadow:
-    0 44px 110px -26px rgba(0, 0, 0, .9),
-    0 0 0 1px rgba(194, 166, 120, .12),
-    0 0 70px -12px rgba(194, 166, 120, .22);
-}
-.fly-frame img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  user-select: none;
-  -webkit-user-select: none;
-  transition: filter .4s var(--ease), transform .8s var(--fly-ease);
-}
-.fly-card[data-offset="0"] .fly-hit:hover .fly-frame img {
-  filter: brightness(1.08);
-  transform: scale(1.025);
-}
-.fly-card:not([data-offset="0"]) .fly-hit:hover .fly-frame {
-  border-color: rgba(255, 255, 255, .26);
-}
-.fly-hit:focus-visible .fly-frame {
-  outline: 2px solid var(--accent-inverse);
-  outline-offset: 3px;
-}
-/* Riflesso che segue il puntatore: la luce scorre sulla lastra. */
-.fly-glare {
-  position: absolute;
-  inset: -1px;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent 42%, rgba(255, 241, 220, .06) 50%, transparent 58%);
-  background-size: 240% 100%;
-  background-position: calc(var(--px, 0) * 42px) 0;
-}
-.fly-num {
-  position: absolute;
-  top: 2%;
-  right: 3.5%;
-  font-family: var(--font-display);
-  font-size: clamp(60px, 8vw, 120px);
-  line-height: 1;
-  color: rgba(255, 255, 255, .07);
-  pointer-events: none;
-}
-
-/* Targhetta dentro la stampa: piattezza di scrim in basso, titolo, nota e
-   CTA che appare al passaggio — solo sulla stampa davanti. */
-.fly-caption {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: block;
-  padding: 40px 22px 18px;
-  background: linear-gradient(180deg, transparent, rgba(10, 9, 7, .78));
-  pointer-events: none;
-}
-.fly-caption-label {
-  display: block;
-  font-family: var(--font-display);
-  font-size: clamp(20px, 2.2vw, 30px);
-  letter-spacing: .04em;
-  color: var(--ink-inverse);
-  transition: color .3s var(--ease);
-}
-.fly-caption-note {
-  display: block;
-  margin-top: 4px;
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--muted-inverse);
-  opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity .35s var(--ease), transform .35s var(--ease);
-}
-.fly-caption-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: var(--accent-inverse);
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity .35s var(--ease), transform .35s var(--ease);
-}
-.fly-caption-arrow { transition: transform .3s var(--ease); }
-.fly-card[data-offset="0"] .fly-caption-note { opacity: 1; transform: none; }
-.fly-card[data-offset="0"] .fly-hit:hover .fly-caption-cta,
-.fly-card[data-offset="0"] .fly-hit:focus-visible .fly-caption-cta {
-  opacity: 1;
-  transform: none;
-}
-.fly-card[data-offset="0"] .fly-hit:hover .fly-caption-arrow {
-  transform: translateX(4px);
-}
-
-/* HUD: lista-indice a sinistra, contatore e frecce a destra. Il WRAPPER non
-   prende eventi (non deve mai coprire il canvas all'hover); li prendono solo
-   lista e frecce. La selezione del testo è spenta: un trascinamento che
-   parte qui non deve scrivere righe blu. */
-.fly-hud {
-  position: absolute;
-  left: var(--gutter);
-  right: var(--gutter);
-  bottom: 26px;
-  z-index: 30;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 18px;
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.fly-hud-list,
-.fly-hud-nav {
-  pointer-events: auto;
-}
-.fly-hud-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 14px 18px;
-  background: rgba(12, 10, 7, .55);
-  border: 1px solid var(--hair-inverse);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-.fly-hud-item {
-  position: relative;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 3px 0;
+.home-links .link-ext {
   background: none;
   border: none;
+  border-bottom: 1px solid var(--hair);
+  padding: 0 0 3px;
+  color: var(--muted);
   cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: var(--t-meta);
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--muted-inverse);
-  text-align: left;
-  transition: color .25s var(--ease);
 }
-.fly-hud-num {
-  font-size: var(--t-micro);
-  letter-spacing: .08em;
-  color: rgba(255, 255, 255, .3);
-  transition: color .25s var(--ease);
-}
-.fly-hud-item::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 1px;
-  width: 100%;
-  background: var(--accent-inverse);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform .45s var(--fly-ease);
-}
-.fly-hud-item:hover,
-.fly-hud-item:focus-visible { color: var(--ink-inverse); }
-.fly-hud-item:hover::after,
-.fly-hud-item:focus-visible::after { transform: scaleX(1); }
-.fly-hud-item[data-active="true"] { color: var(--accent-inverse); }
-.fly-hud-item[data-active="true"] .fly-hud-num { color: var(--accent-inverse); }
-.fly-hud-item[data-active="true"]::after { transform: scaleX(1); }
-.fly-hud-item:focus-visible {
-  outline: 1px solid var(--accent-inverse);
-  outline-offset: 3px;
-}
-
-.fly-hud-nav {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.fly-count {
-  margin: 0 8px 0 0;
-  font-family: var(--font-mono);
-  font-size: var(--t-meta);
-  letter-spacing: .22em;
-  color: var(--muted-inverse);
-}
-.fly-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-.fly-arrow {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  background: rgba(12, 10, 7, .55);
-  border: 1px solid var(--hair-inverse);
-  color: var(--muted-inverse);
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: color .25s var(--ease), border-color .25s var(--ease), opacity .25s var(--ease);
-}
-.fly-arrow svg {
-  width: 15px;
-  height: 15px;
-  stroke: currentColor;
-  stroke-width: 1.3;
-  fill: none;
-}
-.fly-arrow:hover:not(:disabled),
-.fly-arrow:focus-visible:not(:disabled) {
-  color: var(--ink-inverse);
-  border-color: rgba(194, 166, 120, .5);
-}
-.fly-arrow:disabled {
-  opacity: .32;
-  cursor: default;
-}
-.fly-arrow:focus-visible { outline-color: var(--accent-inverse); }
-
-.fly-progress {
-  position: absolute;
-  left: var(--gutter);
-  right: var(--gutter);
-  bottom: 0;
-  height: 2px;
-  z-index: 30;
-  background: rgba(255, 255, 255, .07);
-  pointer-events: none;
-}
-.fly-progress span {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(194, 166, 120, .35), var(--accent-inverse));
-  transition: width .8s var(--fly-ease);
-}
-
-/* ── motion ridotto: niente carosello, lista statica di link ── */
-.fly-fallback { padding: 120px var(--gutter) 110px; background: var(--bg-dark); }
-.fly-fallback-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 18px;
-  margin-top: 26px;
-}
-.fly-fallback-item {
-  display: block;
-  border: var(--line) solid var(--hair-inverse);
-  background: var(--frame-bg-dark);
-}
-.fly-fallback-item img {
-  width: 100%;
-  aspect-ratio: 3 / 2;
-  object-fit: cover;
-  display: block;
-}
-.fly-fallback-caption {
-  display: block;
-  padding: 12px 14px;
-  color: var(--ink-inverse);
-}
-.fly-fallback-num { color: var(--accent-inverse); margin-right: 6px; }
-.fly-fallback-note {
-  display: block;
-  margin-top: 4px;
-  color: var(--muted-inverse);
-  font-size: var(--t-micro);
-  letter-spacing: .16em;
-  text-transform: uppercase;
-}
-
-@media (max-width: 640px) {
-  .fly-card { width: min(82vw, calc(100dvh - 190px)); }
-  .fly-card[data-offset="1"]  { --x: 6.5%;  --y: 1.8vh; --z: -180px; --ry: 7deg;  --s: .93; }
-  .fly-card[data-offset="2"]  { --x: 13%;   --y: 3.6vh; --z: -360px; --ry: 13deg; --s: .86; }
-  .fly-card[data-offset="-1"] { --x: 19.5%; --y: 5.4vh; --z: -540px; --ry: 19deg; --s: .79; }
-  .fly-card[data-offset="3"],
-  .fly-card[data-offset="-2"],
-  .fly-card[data-offset="-3"] { --x: 19.5%; --y: 5.4vh; --z: -540px; --ry: 19deg; --s: .79; }
-  .fly-kicker { gap: 10px; letter-spacing: .2em; }
-  .fly-kicker::before, .fly-kicker::after { width: 18px; }
-  .fly-hud { bottom: 20px; }
-  .fly-hud-list { flex-direction: row; gap: 12px; padding: 10px 12px; }
-  .fly-hud-item { font-size: var(--t-micro); gap: 5px; }
-  .fly-hud-label { display: none; }
-  .fly-count { display: none; }
-  .fly-arrow { width: 38px; height: 38px; }
-  .fly-caption-note { display: none; }
-  .fly-num { font-size: 52px; }
+.home-links .link-ext:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-content .btn { transition: none; }
-  .hero-scrollcue-line { animation: none; }
-  .fly-card, .fly-hit, .fly-frame img, .fly-caption-cta, .fly-caption-note,
-  .fly-hud-item::after, .fly-progress span { transition: none; }
+  .hero-content .btn,
+  .hero-ghost,
+  .hero-carousel-arrow,
+  .home-cat .card-photo img,
+  .home-links .link-ext { transition: none; }
 }

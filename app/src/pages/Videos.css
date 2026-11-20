@@ -158,7 +158,7 @@
 
 /* ── state screens (unconfigured / error / empty) ── */
 /* Own equivalent of Gallery's .gl-state and DriveStory's .ds-state: mono
-   kicker over a serif line, mono actions when there is something to do. */
+   kicker over a body line, mono actions when there is something to do. */
 .vl-state {
   display: flex;
   flex-direction: column;

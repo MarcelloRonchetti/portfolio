@@ -1,6 +1,6 @@
 // Checks for custom high-resolution hero images placed in app/public/hero/.
 // Any camera masters placed in public/hero/ (e.g. porsche.jpg, ferrari.jpg, 01.jpg)
-// will be detected for the home-page carousel and the 3D print corridor.
+// are detected for the home-page hero carousel.
 
 const heroModules = import.meta.glob(
   '/public/hero/*.webp',
@@ -29,13 +29,3 @@ export function getAllCustomHeroes(): CustomHero[] {
   })
 }
 
-export function getRandomCustomHero(): CustomHero | null {
-  const all = getAllCustomHeroes()
-  if (all.length === 0) return null
-  const idx = Math.floor(Math.random() * all.length)
-  return all[idx]
-}
-
-export function getCustomHero(): CustomHero | null {
-  return getRandomCustomHero()
-}

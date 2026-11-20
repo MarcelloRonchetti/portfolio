@@ -43,11 +43,6 @@ type StoryCarouselProps = {
   /** Frecce sul bordo della cornice (solo scena storia: nel lightbox ci sono
       già le .lightbox-nav del dialog — due set si sovrapporrebbero). */
   arrows?: boolean
-  /** view-transition-name da applicare alla SOLO immagine attiva: il chiamante
-      decide quando (morph card→storia "story-hero", espansione lightbox
-      "lightbox-hero") e garantisce che il nome stia su UNA sola immagine per
-      snapshot — altrimenti il browser salta la coppia condivisa. */
-  heroName?: string
   label?: string
   className?: string
 }
@@ -69,7 +64,6 @@ export default function StoryCarousel({
   onActivate,
   activateLabel,
   arrows = false,
-  heroName,
   label,
   className,
 }: StoryCarouselProps) {
@@ -313,11 +307,6 @@ export default function StoryCarousel({
                     alt={s.alt ?? ''}
                     draggable={false}
                     decoding="async"
-                    style={
-                      heroName && i === idx
-                        ? ({ viewTransitionName: heroName } as React.CSSProperties)
-                        : undefined
-                    }
                     ref={(img) => {
                       if (img && img.complete && img.naturalWidth > 0)
                         recordRatio(s.key, img.naturalWidth / img.naturalHeight)

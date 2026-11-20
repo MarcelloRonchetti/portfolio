@@ -198,7 +198,7 @@ for (const e of prunable) {
     title: `${e.title} — ${IDENTITY.name}`,
     description,
     canonical: `${SITE}/story/${e.id}/`,
-    ogImage: `${SITE}/photos/${e.id}/${e.cover}`,
+    ogImage: encodeURI(`${SITE}/photos/${e.id}/${e.cover}`),
     jsonLd: {
       ...siteGraph(),
       '@graph': [
@@ -221,7 +221,7 @@ for (const e of prunable) {
     },
     noscript: `<h1>${escHtml(e.title)}</h1>
         <p>${escHtml(description)}</p>
-        <p><img src="${escHtml(`${SITE}/photos/${e.id}/${e.cover}`)}" alt="${escHtml(e.title)}" /></p>
+        <p><img src="${escHtml(encodeURI(`${SITE}/photos/${e.id}/${e.cover}`))}" alt="${escHtml(e.title)}" /></p>
         <p>Fotografie di ${escHtml(IDENTITY.name)} — <a href="${escHtml(`${SITE}/story/${e.id}/`)}">Apri la raccolta completa</a></p>`,
   })
 }
@@ -350,8 +350,8 @@ if (!shellHtml.includes('property="og:title"')) {
   shellHtml = shellHtml.replace(
     '</head>',
     () =>
-      ogBlock(SHELL_TITLE, SITE_DESC, `${SITE}/`, heroImage) +
-      `  <link rel="preload" as="image" href="${escHtml(heroImage)}" fetchpriority="high" />\n  </head>`
+      ogBlock(SHELL_TITLE, SITE_DESC, `${SITE}/`, encodeURI(heroImage)) +
+      `  <link rel="preload" as="image" href="${escHtml(encodeURI(heroImage))}" fetchpriority="high" />\n  </head>`
   )
   fs.writeFileSync(shellPath, shellHtml)
 }

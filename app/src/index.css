@@ -1,62 +1,60 @@
 /* ───────────────────────────────────────────────────────────
    Marcello Ronchetti — fotografo
-   Palette neutra professionale: bianco caldo, antracite, bronzo
+   Carta editoriale: paper caldo, inchiostro, un accento spento.
+   Le fotografie sono l'unico elemento saturo della pagina —
+   niente glow, niente grana, niente effetti di sfondo.
 ─────────────────────────────────────────────────────────── */
 
 :root {
-  /* giorno — palette neutra professionale: bianco caldo, antracite, bronzo */
+  /* giorno — carta editoriale */
   color-scheme: light;
-  --bg: #faf9f6;
-  --bg-soft: #f1efe9;
-  --ink: #1c1915;
-  --muted: #6f6a61;
-  --accent: #9a7b50;
-  --hair: #e4e1d9;
+  --bg: #faf8f3;
+  --bg-soft: #f1ede4;
+  --ink: #1f1c16;
+  --muted: #75705f;
+  --accent: #8a6a3f;
+  --hair: #e4dfd2;
 
-  --bg-dark: #14120f;
-  --ink-inverse: #f5f3ee;
-  --muted-inverse: #a39d92;
-  --hair-inverse: #2e2a25;
-  --accent-inverse: #c2a678;
+  --bg-dark: #191611;
+  --ink-inverse: #eae5d9;
+  --muted-inverse: #9a927f;
+  --hair-inverse: #2e2a22;
+  --accent-inverse: #b99a68;
 
-  --header-bg: rgba(250, 249, 246, .92);
-  --header-bg-dark: rgba(20, 18, 15, .92);
-  --card-bg: #fff;
-  --card-bg-dark: #1d1a16;
-  --card-sub: #857e70;
-  --frame-bg-dark: #211e19;
-  --shadow-card: 0 18px 36px -22px rgba(28, 25, 21, .45);
-  --lightbox-bg: rgba(10, 9, 7, .95);
+  --header-bg: rgba(250, 248, 243, .92);
+  --header-bg-dark: rgba(25, 22, 17, .92);
+  --card-bg: #fffdf9;
+  --card-bg-dark: #221e18;
+  --card-sub: #75705f;
+  --frame-bg-dark: #24201a;
+  --shadow-card: 0 18px 36px -22px rgba(31, 28, 22, .35);
+  --lightbox-bg: rgba(12, 10, 8, .96);
   --accent-contrast: #fff;
-  --error: #c0705a;
+  --error: #b3543e;
 
-  --font-display: 'Italiana', serif;
-  --font-serif: 'Cormorant Garamond', Georgia, serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Archivo Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Archivo Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
 
-  /* Scala tipografica — Italiana per i titoli, Cormorant per il testo, mono
-     per le meta. Gradoni: display → h1 (titoli di pagina) → h2 (titoli
-     scheda) → lead (standfirst, paragrafi editoriali) → body → small
-     (annotazioni serif) → meta (etichette mono) → micro (caption e rail).
-     Le etichette mono maiuscole condividono la base .16em; le eccezioni sono
-     volute e documentate nel loro blocco (kicker di stato .22em, contatore
+  /* Scala tipografica — Archivo per display/UI, Plex Mono per le meta.
+     Gradoni: display → h1 (titoli di pagina) → h2 (titoli scheda) →
+     lead (standfirst, paragrafi editoriali) → body → small → meta
+     (etichette mono) → micro (caption e rail). Le etichette mono
+     maiuscole condividono la base .16em; le eccezioni sono volute e
+     documentate nel loro blocco (kicker di stato .22em, contatore
      lightbox .18em, chip durata .14em). */
-  --t-display: clamp(38px, 5.5vw, 72px);
-  --t-h1: clamp(28px, 4vw, 52px);
-  --t-h2: 22px;
-  --t-lead: 18px;
-  --t-body: 17px;
-  --t-small: 15px;
+  --t-display: clamp(38px, 5vw, 64px);
+  --t-h1: clamp(24px, 3.4vw, 42px);
+  --t-h2: 20px;
+  --t-lead: 17px;
+  --t-body: 16px;
+  --t-small: 14px;
   --t-meta: 12px;
   --t-micro: 10px;
 
   --gutter: clamp(20px, 4vw, 56px);
   --line: 1px;
   --ease: cubic-bezier(.22, .61, .36, 1);
-
-  /* RGB del bagliore ambientale (pozze darkroom, spot delle card, polvere):
-     triplete riusabile dentro rgba() — la notte la gira in grigio. */
-  --glow: 194, 166, 120;
 }
 
 /* ─── notte ─── */
@@ -86,35 +84,24 @@
   --lightbox-bg: rgba(0, 0, 0, .96);
   --accent-contrast: #131313;
   --error: #a89383;
-  --glow: 214, 214, 214;
 }
 
 * { box-sizing: border-box; }
-
-/* La scrollbar della pagina non esiste più: il sito è guidato — hero con la
-   propia alla "Scorri", indice 3D con HUD e progress line — e la barra
-   sempre in vista spezzava la scena. Scroll (rotella/touch/tastiera) resta
-   identico. Stesso pattern già usato da .catnav. */
-html {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-html::-webkit-scrollbar { display: none; width: 0; }
 
 html, body {
   margin: 0;
   padding: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-serif);
+  font-family: var(--font-body);
   font-size: var(--t-body);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   /* background-color follows the section change on route swap (see
-     body[data-section="dark"] below); .45s matches .page-fade so the colour
+     body[data-section="dark"] below); .3s matches .page-fade so the colour
      crossfades with the incoming screen instead of flipping in one frame. */
-  transition: background-color .45s var(--ease), color .3s var(--ease);
+  transition: background-color .3s var(--ease), color .3s var(--ease);
 }
 
 /* The dark gallery/story sections painted over a body that stayed light —
@@ -127,99 +114,6 @@ body[data-section="dark"] {
 }
 html:has(body[data-section="dark"]) {
   background: var(--bg-dark);
-}
-
-/* ─── ambienti darkroom (strati fissi di sfondo) ───
-   Grana pellicola + pozze di luce + polvere per le sezioni scure. body non
-   riceve mai un transform (il containing-block trap di .page-fade riguarda i
-   SUOI discendenti), quindi i suoi pseudo-elementi fissi sono safe. ATTENZIONE
-   all'ordine di pittura: il wrapper .page-fade tiene un transform permanente
-   (fill-mode both) → è uno stacking context nello strato z-auto e coprirebbe
-   qualunque layer z ≤ 0 venuto prima nell'albero. Per questo i tre strati
-   stanno SOPRA quello strato con z positivi (pozze 3 < polvere 4 < grana 5)
-   e restano sotto header (z 40) e lightbox (z 100): la luce vive nella
-   stanza, la UI resta nitida. I colori derivano da --glow/--bg-dark →
-   [data-theme="night"] eredita un'atmosfera in grigio senza una riga in più. */
-
-/* Grana pellicola: tile SVG feTurbulence su un layer sovradimensionato che
-   SALTA (transform a steps → solo compositor, niente repaint per frame) —
-   il tremolio della pellicola, non uno smear. L'overscan -10% copre con
-   ampio margine la corsa del translate (±2.8% dell'elemento). Sulle sezioni
-   chiare resta quasi impercettibile (carta), sulle scure diventa pellicola. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: -10%;
-  z-index: 5;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='280' height='280' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 280px 280px;
-  opacity: .035;
-  transition: opacity .45s var(--ease);
-  animation: grainShift .9s steps(1) infinite;
-  will-change: transform;
-}
-body[data-section="dark"]::before { opacity: .06; }
-
-/* Pozze di luce bronzo + light leak + vignetta: un solo layer che deriva
-   piano (46s alternate), mentre il padre segue il puntatore via --px/--py
-   (hook usePointerParallax). Sulle sezioni chiare resta spento — la carta
-   non ha luce in camera. /experience lo disattiva da solo (data-ambient). */
-.ambient {
-  position: fixed;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-  opacity: 0;
-  transform: translate3d(calc(var(--px, 0) * 18px), calc(var(--py, 0) * 14px), 0);
-  transition: opacity .45s var(--ease);
-  will-change: transform;
-}
-body[data-section="dark"] .ambient { opacity: 1; }
-.ambient::before {
-  content: "";
-  position: absolute;
-  inset: -12%;
-  background:
-    radial-gradient(38% 30% at 24% 16%, rgba(var(--glow), .13), transparent 70%),
-    radial-gradient(30% 26% at 82% 68%, rgba(var(--glow), .09), transparent 70%),
-    radial-gradient(46% 34% at 62% 34%, rgba(var(--glow), .05), transparent 72%),
-    linear-gradient(105deg, transparent 52%, rgba(var(--glow), .07) 68%, rgba(var(--glow), .02) 80%, transparent 92%),
-    radial-gradient(130% 100% at 50% 42%, transparent 55%, rgba(6, 5, 3, .5) 100%);
-  animation: poolDrift 46s ease-in-out infinite alternate;
-  will-change: transform;
-}
-/* Le sale immersive hanno la loro luce: le pozze generiche si ritirano. */
-body[data-ambient="off"] .ambient,
-body[data-ambient="off"] .dust { opacity: 0; }
-
-/* Polvere inControluce: canvas fisso (components/DustCanvas.tsx) tra le pozze
-   (z 3) e la grana (z 5) — i granuli cadono anche sotto la grana. Le sezioni
-   chiare la spengono come le pozze. */
-.dust {
-  position: fixed;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .45s var(--ease);
-}
-body[data-section="dark"] .dust { opacity: 1; }
-
-@keyframes grainShift {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  12.5% { transform: translate3d(-2.1%, -1.4%, 0); }
-  25%   { transform: translate3d(1.6%, -2.6%, 0); }
-  37.5% { transform: translate3d(-2.8%, 1.2%, 0); }
-  50%   { transform: translate3d(2.4%, 2.2%, 0); }
-  62.5% { transform: translate3d(-1.3%, 2.8%, 0); }
-  75%   { transform: translate3d(2.7%, -1.8%, 0); }
-  87.5% { transform: translate3d(-2.4%, -2.2%, 0); }
-}
-@keyframes poolDrift {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  50%  { transform: translate3d(2.5%, -2%, 0) scale(1.06); }
-  100% { transform: translate3d(-2%, 1.5%, 0) scale(1.02); }
 }
 
 img { display: block; }
@@ -242,113 +136,23 @@ button:disabled { cursor: default; }
 ::selection { background: var(--accent); color: var(--accent-contrast); }
 
 /* ─── typography helpers ─── */
-.t-display { font-family: var(--font-display); font-weight: 400; line-height: 1.05; letter-spacing: .02em; }
-/* Italiana's em dash is nearly invisible — render it in the body serif */
-.t-dash { font-family: var(--font-serif); font-style: normal; padding: 0 .1em; }
-.t-h1      { font-family: var(--font-display); font-weight: 400; line-height: 1.1; font-size: var(--t-h1); letter-spacing: .02em; }
-.t-serif   { font-family: var(--font-serif); }
-.t-italic  { font-family: var(--font-serif); font-style: italic; }
+.t-h1      { font-family: var(--font-display); font-weight: 500; line-height: 1.15; font-size: var(--t-h1); letter-spacing: -.01em; }
+.t-italic  { font-style: italic; }
 .t-meta {
   font-family: var(--font-mono);
   font-size: var(--t-meta);
   letter-spacing: .16em; /* la tracking delle etichette mono, ovunque */
   text-transform: uppercase;
 }
-.t-muted { color: var(--muted); }
 
 /* ─── page fade ─── */
-.page-fade { animation: pageFade .45s var(--ease) both; }
+/* Opacity ONLY: un transform qui renderebbe il wrapper keyed un containing
+   block per i fixed discendenti (il vecchio trap del lightbox) e uno stacking
+   context permanente (fill-mode both) che coprirebbe i layer fissi. */
+.page-fade { animation: pageFade .3s var(--ease) both; }
 @keyframes pageFade {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ─── route transitions (View Transitions API) ───
-   "Zoom-through / stampa che si sviluppa": la camera ACCELERA attraverso la
-   pagina che si lascia (scala 1→2.8 con dissolve nel buio), un istante di
-   vuoto scuro attraversato dal bagliore bronzeo, e la pagina nuova EMERGE dal
-   fondo come una stampa nel bagno di sviluppo — seppia e buio che risolvono
-   nel colore vero (scala .24→1, focus-pull). La vecchia vola SOPRA la nuova
-   che sbuca dal centro — come passare una porta tra due stanze. I browser
-   senza supporto restano sul .page-fade qui sopra (e dentro i VT il page-fade
-   si spegne). Durata totale ≈ 1.0s: il lock del carosello di sito in App.tsx
-   è tarato su questo valore — se cambi i tempi, retara anche quello. */
-@media (prefers-reduced-motion: no-preference) {
-  ::view-transition {
-    /* il vuoto tra le stanze: velo scuro + sweep bronzeo */
-    background:
-      linear-gradient(
-        115deg,
-        transparent 38%,
-        rgba(154, 123, 80, 0.26) 49%,
-        rgba(194, 166, 120, 0.3) 51%,
-        transparent 62%
-      ),
-      radial-gradient(120% 90% at 50% 45%, rgba(10, 9, 7, 0) 0%, rgba(10, 9, 7, 0.6) 74%);
-    background-size: 100% 100%, 240% 100%;
-    background-position: 0 0, -120% 0;
-    animation:
-      vtVoid 0.9s var(--ease) both,
-      routeSweep 0.9s linear both;
-  }
-  ::view-transition-old(root) {
-    z-index: 2; /* la pagina abbandonata inghiotte la nuova che sbuca */
-    animation: routeThrough 0.55s cubic-bezier(0.55, 0, 0.85, 0.36) both;
-  }
-  ::view-transition-new(root) {
-    z-index: 1;
-    animation: routeEmerge 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
-  }
-  @keyframes routeThrough {
-    0% { opacity: 1; transform: scale(1); filter: brightness(1) blur(0); }
-    45% { opacity: 1; transform: scale(1.32); filter: brightness(0.75) blur(1.5px); }
-    100% { opacity: 0; transform: scale(2.8); filter: brightness(0.1) blur(16px); }
-  }
-  @keyframes routeEmerge {
-    0% { opacity: 0; transform: scale(0.24) translateY(1.5%); filter: brightness(0.2) sepia(.55) blur(14px); }
-    45% { opacity: 1; filter: brightness(.7) sepia(.4) blur(6px); }
-    78% { filter: brightness(1.05) sepia(.12) blur(.5px); }
-    100% { opacity: 1; transform: scale(1); filter: brightness(1) sepia(0) blur(0); }
-  }
-  @keyframes vtVoid {
-    0% { background-color: rgba(10, 9, 7, 0); }
-    35%, 55% { background-color: rgba(10, 9, 7, 0.78); }
-    /* il bagno di sviluppo: un respiro caldo nell'istante in cui la nuova
-       pagina sta per emergere */
-    70% { background-color: rgba(38, 28, 15, 0.62); }
-    100% { background-color: rgba(10, 9, 7, 0); }
-  }
-  @keyframes routeSweep {
-    from { background-position: 0 0, -120% 0; }
-    to { background-position: 0 0, 240% 0; }
-  }
-
-  /* ── VT di overlay (lightbox): morph, non zoom-through ──
-     vtTransition(update, 'lightbox') marca l'html per la durata della
-     transizione: il passaggio di route (vuoto, sweep, scala) si ritira e il
-     gruppo condiviso (::view-transition-group(lightbox-hero), la foto che si
-     espande dallo stage) prende il suo tempo dedicato. */
-  html[data-vt="lightbox"]::view-transition {
-    background: none;
-    animation: none;
-  }
-  html[data-vt="lightbox"]::view-transition-old(root),
-  html[data-vt="lightbox"]::view-transition-new(root) { animation: none; }
-  html[data-vt="lightbox"]::view-transition-group(lightbox-hero) {
-    animation-duration: .38s;
-    animation-timing-function: var(--ease);
-  }
-
-  @supports selector(html:active-view-transition *) {
-    /* Inside a running transition the inner crossfade would double the motion;
-       outside one (header navigations bypassing go(), redirects) it still
-       plays. :active-view-transition matches only while a VT is running — vale
-       anche per il .lightbox quando si apre col morph: la VT È il suo ingresso. */
-    html:active-view-transition .page-fade,
-    html:active-view-transition .lightbox {
-      animation: none;
-    }
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* Casa globale del dissolve dei lightbox: i blocchi lightbox/video-lightbox
@@ -381,8 +185,10 @@ button:disabled { cursor: default; }
 }
 .site-header .brand {
   font-family: var(--font-display);
-  font-size: 20px;
-  letter-spacing: .08em;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 .site-header nav { display: flex; gap: 28px; }
@@ -466,9 +272,9 @@ button:disabled { cursor: default; }
   text-shadow: 0 1px 14px rgba(10, 9, 7, .95), 0 0 34px rgba(10, 9, 7, .6);
 }
 .hero-content .hero-location {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 17px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: .08em;
   color: rgba(255, 255, 255, .78);
   text-shadow: 0 1px 12px rgba(10, 9, 7, .9);
 }
@@ -562,10 +368,8 @@ button:disabled { cursor: default; }
 .card .card-body {
   padding: 16px;
 }
-.card .card-title { font-family: var(--font-display); font-size: var(--t-h2); line-height: 1.1; }
+.card .card-title { font-family: var(--font-display); font-weight: 500; font-size: var(--t-h2); line-height: 1.15; }
 .card .card-sub {
-  font-family: var(--font-serif);
-  font-style: italic;
   font-size: var(--t-small);
   color: var(--card-sub);
   margin-top: 2px;
@@ -854,8 +658,7 @@ button:disabled { cursor: default; }
   color: var(--muted);
 }
 .contact-row .contact-value {
-  font-family: var(--font-serif);
-  font-size: 20px;
+  font-size: 18px;
   justify-self: start;
   overflow-wrap: anywhere;
 }
@@ -896,7 +699,6 @@ button:disabled { cursor: default; }
 .related-item .frame { background: var(--frame-bg-dark); }
 .related-body { min-width: 0; }
 .related-title {
-  font-family: var(--font-serif);
   font-size: var(--t-body);
   line-height: 1.3;
   color: var(--ink-inverse);
@@ -1018,18 +820,13 @@ button:disabled { cursor: default; }
 
 /* ─── reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
-  .page-fade, .lightbox, .story-entrance { animation: none; }
+  .page-fade, .lightbox { animation: none; }
   .carousel-frame, .carousel-track, .carousel-zoom-img { transition: none; }
   .card, .btn, .link-ext, .contact-row, .related-title, .related-all,
   .card .card-photo img, .site-header nav button, .site-header nav button::after,
   .theme-toggle, .site-footer .link-ext, .skip-link { transition: none; }
   .card:hover .card-photo img { transform: none; }
   html, body, .site-header, .site-footer { transition: none; }
-  /* Ambienti: la grana resta (ferma), pozze e polvere — che SONO movimento —
-     si spengono del tutto; il respiro di body e hero nemmeno parte. */
-  body::before, .ambient::before { animation: none; }
-  .ambient, .dust { display: none; }
-  .ambient, .ambient::before, .story-ambient-glow, .dust { transition: none; transform: none; }
 }
 
 /* Il blocco stili video è migrato in src/pages/Videos.css (che ne è
@@ -1212,7 +1009,7 @@ button:disabled { cursor: default; }
   background: transparent;
   border: 1px solid var(--hair-inverse);
   color: var(--ink-inverse);
-  font-family: var(--font-serif);
+  font-family: var(--font-body);
   font-size: 16px;
   padding: 12px 14px;
 }
@@ -1242,9 +1039,8 @@ button:disabled { cursor: default; }
 
 /* ─── header a riga singola nelle larghezze intermedie ───
    Il blocco ≤760px qui sopra manda l'header a capo (due righe ~77px): alle
-   larghezze intermedie lo teniamo su UNA riga compressa — le pagine
-   fullscreen (/experience) compensano con padding cieco altrimenti. Deve
-   stare DOPO quel blocco: stessa specificità, vince l'ultimo. */
+   larghezze intermedie lo teniamo su UNA riga compressa. Deve stare DOPO
+   quel blocco: stessa specificità, vince l'ultimo. */
 @media (max-width: 700px) and (min-width: 461px) {
   .site-header {
     flex-wrap: nowrap;
