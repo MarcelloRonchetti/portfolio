@@ -91,6 +91,16 @@
 
 * { box-sizing: border-box; }
 
+/* La scrollbar della pagina non esiste più: il sito è guidato — hero con la
+   propia alla "Scorri", indice 3D con HUD e progress line — e la barra
+   sempre in vista spezzava la scena. Scroll (rotella/touch/tastiera) resta
+   identico. Stesso pattern già usato da .catnav. */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar { display: none; width: 0; }
+
 html, body {
   margin: 0;
   padding: 0;
