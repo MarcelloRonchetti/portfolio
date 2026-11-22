@@ -88,8 +88,11 @@ export function planEvent(media, existingKeys = new Set()) {
 
 async function resolveAccountId(token, fetchImpl) {
   if (process.env.IG_ACCOUNT_ID) return process.env.IG_ACCOUNT_ID
+  // Campo SEMPLICE, senza sottoselezione `{id}`: da fine 2026 Meta la scarta
+  // in silenzio su me/accounts (misurato 2026-11-22 — con `{id}` il campo
+  // sparisce dalla risposta e la risoluzione fallisce).
   const res = await fetchImpl(
-    `https://graph.facebook.com/v23.0/me/accounts?fields=instagram_business_account{id}&access_token=${token}`
+    `https://graph.facebook.com/v23.0/me/accounts?fields=instagram_business_account&access_token=${token}`
   )
   const body = await res.json()
   const id = body.data?.[0]?.instagram_business_account?.id
